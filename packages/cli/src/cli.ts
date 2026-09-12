@@ -21,7 +21,10 @@ async function printVersion(): Promise<void> {
     const pkg = JSON.parse(await Bun.file(pkgPath).text());
     console.log(`forkhub v${pkg.version ?? "unknown"}`);
   } catch {
-    console.log("forkhub (version unknown)");
+    // Standalone sidecar builds bake the version in at compile time
+    // (see apps/desktop/scripts/build-desktop.sh).
+    const baked = process.env.FH_VERSION;
+    console.log(baked ? `forkhub v${baked}` : "forkhub (version unknown)");
   }
 }
 

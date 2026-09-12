@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.forkhub.app",
   "build": {
-    "devUrl": "http://localhost:3001",
-    "frontendDist": "../../web/out",
-    "beforeDevCommand": "pnpm --filter web dev",
-    "beforeBuildCommand": "bash scripts/build-web.sh"
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../../desktop-ui/dist",
+    "beforeDevCommand": "bash scripts/build-sidecar.sh && pnpm --filter @forkhub/desktop-ui dev",
+    "beforeBuildCommand": "bash scripts/build-desktop.sh"
   },
   "app": {
     "windows": [
@@ -15,8 +15,8 @@
         "title": "ForkHub",
         "width": 1200,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600
+        "minWidth": 980,
+        "minHeight": 640
       }
     ],
     "security": {
@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "targets": ["deb", "appimage"],
+    "externalBin": ["binaries/fh"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,6 +36,6 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Keep your fork's patches while staying up-to-date with upstream",
-    "longDescription": "ForkHub desktop: declare each local change once as an intent, and an AI coding agent re-derives it against every new upstream release."
+    "longDescription": "ForkHub desktop: every fh CLI feature behind a native GUI. Declare each local change once as an intent, and an AI coding agent re-derives it against every new upstream release."
   }
 }
