@@ -104,11 +104,16 @@ type ReleaseRow = {
   assets?: Array<{ name?: unknown; browser_download_url?: unknown }> | unknown;
 };
 
-/** Newest release (by semver tag) on a channel, or an exact version. */
-export function pickReleaseTag(
+/**
+ * Candidate release tags, newest semver first: the exact version when
+ * pinned, else every channel-matching tag. Callers walk the list because a
+ * shared catalog can hold other targets' releases, which won't carry this
+ * package's asset.
+ */
+export function pickReleaseTags(
   releases: ReleaseRow[],
   input: { channel: string; tagMatch: string; version?: string },
-): string {
+): string[] {
   const usable = releases.filter(
     (row) => typeof row.tag_name === "string" && row.draft !== true,
   ) as Array<{ tag_name: string }>;
@@ -120,14 +125,14 @@ export function pickReleaseTag(
         `No ${input.channel} release found for version '${input.version}'.`,
       );
     }
-    return hit.tag_name;
+    return [hit.tag_name];
   }
   const pattern = new RegExp(input.tagMatch);
   const matching = usable.map((row) => row.tag_name).filter((tag) => pattern.test(tag));
   if (matching.length === 0) {
     throw new Error(`No published releases found on channel '${input.channel}'.`);
   }
-  return matching.sort(compareSemver).at(-1) as string;
+  return matching.sort(compareSemver).reverse();
 }
 
 export function resolveCacheDir(owner: string, pkg: string, version: string): string {
@@ -197,21 +202,34 @@ export async function resolvePackage(
   const releases = (await githubApi(
     `/repos/${options.owner}/.forkhub/releases?per_page=100`,
   )) as ReleaseRow[];
-  const tag = pickReleaseTag(releases, {
+  const candidates = pickReleaseTags(releases, {
     channel,
     tagMatch: channelDef.tagMatch,
     version: options.version,
   });
-  const release = releases.find((row) => row.tag_name === tag) as
-    | { assets?: Array<{ name?: unknown; browser_download_url?: unknown }> }
-    | undefined;
-  const version = tag.replace(/^v/, "");
-  const assetName = fillAssetTemplate(entry.asset, { owner: options.owner, version });
-  const asset = (Array.isArray(release?.assets) ? release?.assets : []).find(
-    (row) => row?.name === assetName,
-  );
-  if (!asset || typeof asset.browser_download_url !== "string") {
-    throw new Error(`Release ${tag} has no asset named ${assetName}.`);
+  let tag: string | undefined;
+  let assetUrl: string | undefined;
+  let version = "";
+  let assetName = "";
+  for (const candidate of candidates) {
+    const release = releases.find((row) => row.tag_name === candidate) as
+      | { assets?: Array<{ name?: unknown; browser_download_url?: unknown }> }
+      | undefined;
+    version = candidate.replace(/^v/, "");
+    assetName = fillAssetTemplate(entry.asset, { owner: options.owner, version });
+    const asset = (Array.isArray(release?.assets) ? release?.assets : []).find(
+      (row) => row?.name === assetName,
+    );
+    if (asset && typeof asset.browser_download_url === "string") {
+      tag = candidate;
+      assetUrl = asset.browser_download_url;
+      break;
+    }
+  }
+  if (!tag || !assetUrl) {
+    throw new Error(
+      `No ${channel} release of '${options.package}' carries ${fillAssetTemplate(entry.asset, { owner: options.owner, version: "<version>" })}.`,
+    );
   }
   const binPath = (entry.binPath ?? `package/${entry.bin}`).replaceAll("{bin}", entry.bin);
   return {
@@ -221,10 +239,10 @@ export async function resolvePackage(
     version,
     tag,
     assetName,
-    assetUrl: asset.browser_download_url,
+    assetUrl,
     binPath,
     cacheDir: resolveCacheDir(options.owner, options.package, version),
-    downloadUrl: asset.browser_download_url,
+    downloadUrl: assetUrl,
   };
 }
 

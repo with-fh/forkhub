@@ -4,7 +4,7 @@ import {
   compareSemver,
   fillAssetTemplate,
   findChecksum,
-  pickReleaseTag,
+  pickReleaseTags,
   resolveCacheDir,
 } from "../src/run";
 
@@ -28,7 +28,7 @@ test("fillAssetTemplate substitutes owner and version", () => {
   );
 });
 
-test("pickReleaseTag takes the newest channel tag by semver", () => {
+test("pickReleaseTags takes the newest channel tag by semver", () => {
   const releases = [
     { tag_name: "v0.0.42", draft: false },
     { tag_name: "v0.0.43-nightly.20260926.2318.fh.imbios.1", draft: false },
@@ -37,24 +37,27 @@ test("pickReleaseTag takes the newest channel tag by semver", () => {
     { tag_name: "v9.9.9-draft", draft: true },
   ];
   expect(
-    pickReleaseTag(releases, { channel: "nightly", tagMatch: "-nightly\\.[0-9]{8}\\." }),
-  ).toBe("v0.0.43-nightly.20260927.2331.fh.imbios.1");
+    pickReleaseTags(releases, { channel: "nightly", tagMatch: "-nightly\\.[0-9]{8}\\." }),
+  ).toEqual([
+    "v0.0.43-nightly.20260927.2331.fh.imbios.1",
+    "v0.0.43-nightly.20260926.2318.fh.imbios.1",
+  ]);
 });
 
-test("pickReleaseTag resolves exact versions with or without v", () => {
+test("pickReleaseTags resolves exact versions with or without v", () => {
   const releases = [{ tag_name: "v0.0.42", draft: false }];
   expect(
-    pickReleaseTag(releases, { channel: "stable", tagMatch: "^v", version: "0.0.42" }),
-  ).toBe("v0.0.42");
+    pickReleaseTags(releases, { channel: "stable", tagMatch: "^v", version: "0.0.42" }),
+  ).toEqual(["v0.0.42"]);
   expect(() =>
-    pickReleaseTag(releases, { channel: "stable", tagMatch: "^v", version: "9.9.9" }),
+    pickReleaseTags(releases, { channel: "stable", tagMatch: "^v", version: "9.9.9" }),
   ).toThrow("No stable release found for version '9.9.9'.");
 });
 
-test("pickReleaseTag skips drafts and fails loudly when empty", () => {
-  expect(() => pickReleaseTag([{ tag_name: "v1.0.0", draft: true }], { channel: "x", tagMatch: ".*" })).toThrow(
-    "No published releases found on channel 'x'.",
-  );
+test("pickReleaseTags skips drafts and fails loudly when empty", () => {
+  expect(() =>
+    pickReleaseTags([{ tag_name: "v1.0.0", draft: true }], { channel: "x", tagMatch: ".*" }),
+  ).toThrow("No published releases found on channel 'x'.");
 });
 
 test("findChecksum parses sha256sum lines", () => {
