@@ -14,6 +14,7 @@ import { runPr } from "./pr";
 import { runPublish } from "./publish";
 import { runLinkPr } from "./link-pr";
 import { runReuse } from "./reuse";
+import { runRun } from "./run";
 
 async function printVersion(): Promise<void> {
   try {
@@ -47,6 +48,9 @@ Usage:
                                          Daemon: auto-detect drift + generate bundles
   fh update [--tag <tag>] [--dry-run]    Update to latest (or specified) tag
   fh rollback                            Roll back to the previous tag
+  fh run <package> <owner> [-c|--channel <name>] [-v|--version <ver>] [-- <args...>]
+                                         Run a published ForkHub package
+                                         (e.g. fh run t3 ImBIOS -- --version)
   fh status                              Show current state
   fh --version                           Show version
   fh --help                              Show this help
@@ -66,6 +70,12 @@ function parseArgs(argv: string[]): {
   const positional: string[] = [];
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
+    // `--` ends option parsing: everything after it is a positional, so
+    // commands like `run` can forward arbitrary flags to their target.
+    if (arg === "--") {
+      positional.push(...rest.slice(i + 1).filter((a): a is string => a !== undefined));
+      break;
+    }
     if (
       arg &&
       (arg.startsWith("--") || (arg.startsWith("-") && arg.length > 1 && !/^-?\d/.test(arg)))
@@ -310,6 +320,35 @@ async function main() {
         if (typeof opts.interval === "string") watchOpts.interval = parseInt(opts.interval, 10);
         if (typeof opts.agent === "string") watchOpts.agent = opts.agent;
         await runWatch(watchOpts);
+        break;
+      }
+
+      case "run": {
+        const pkg = positional[0];
+        const owner = positional[1];
+        if (!pkg || !owner) {
+          throw new Error(
+            "Usage: fh run <package> <owner> [-c|--channel <name>] [-v|--version <ver>] [-- <args...>]",
+          );
+        }
+        if (positional.length > 2 && !process.argv.includes("--")) {
+          throw new Error(
+            "Target arguments must follow `--` (e.g. fh run t3 ImBIOS -- --version).",
+          );
+        }
+        const channel =
+          typeof opts.channel === "string"
+            ? opts.channel
+            : typeof opts.c === "string"
+              ? opts.c
+              : undefined;
+        const version =
+          typeof opts.version === "string"
+            ? opts.version
+            : typeof opts.v === "string"
+              ? opts.v
+              : undefined;
+        await runRun({ package: pkg, owner, channel, version, args: positional.slice(2) });
         break;
       }
 
