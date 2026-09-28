@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "build:worker": "OPENNEXT=1 opennextjs-cloudflare build",
+    "deploy:worker": "OPENNEXT=1 opennextjs-cloudflare deploy",
+    "preview:worker": "OPENNEXT=1 opennextjs-cloudflare build --preview",
     "start": "next start"
   },
   "dependencies": {
@@ -29,12 +32,14 @@
   },
   "devDependencies": {
     "@forkhub/config": "workspace:*",
+    "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "catalog:",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@types/node": "^20",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "wrangler": "^4.141.0"
   }
 }
