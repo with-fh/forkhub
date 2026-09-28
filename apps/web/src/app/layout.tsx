@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "forkhub",
-  description: "forkhub",
+  title: "forkhub — intent patches for OSS forks",
+  description:
+    "ForkHub keeps your fork's patches while staying up-to-date with upstream. Patches are intent, not diffs.",
 };
 
 export default function RootLayout({
