@@ -110,6 +110,7 @@ Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
 | `watch [--once] [--interval <sec>]`                         | Daemon: auto-detect drift + regenerate + apply                                                          |
 | `update [--tag]`                                            | Consumer: advance to latest tag                                                                         |
 | `rollback`                                                  | Consumer: roll back to previous tag                                                                     |
+| `run <pkg> <owner> [-c|--channel] [-v|--version] [-- args]` | Run a published ForkHub package (e.g. `fh run t3 ImBIOS -- --version`) |
 | `status`                                                    | Inspect current state                                                                                   |
 | `--version` / `--help`                                      | Version / help                                                                                          |
 
