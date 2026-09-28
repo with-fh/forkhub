@@ -50,7 +50,7 @@ Usage:
   fh rollback                            Roll back to the previous tag
   fh run <package> <owner> [-c|--channel <name>] [-v|--version <ver>] [-- <args...>]
                                          Run a published ForkHub package
-                                         (e.g. fh run t3 ImBIOS -- --version)
+                                         (e.g. fh run t3 with-fh -- --version)
   fh status                              Show current state
   fh --version                           Show version
   fh --help                              Show this help
@@ -333,7 +333,7 @@ async function main() {
         }
         if (positional.length > 2 && !process.argv.includes("--")) {
           throw new Error(
-            "Target arguments must follow `--` (e.g. fh run t3 ImBIOS -- --version).",
+            "Target arguments must follow `--` (e.g. fh run t3 with-fh -- --version).",
           );
         }
         const channel =
