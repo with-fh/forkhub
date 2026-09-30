@@ -51,6 +51,13 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
 }
 
 function ownerOf(r: GhRelease): "t3" | "natively" | null {
+  // Proposed scheme embeds the upstream repo as a trailing slug —
+  // v<upstream>.fh.<owner>.<n>.<repo> — so parse that first. Legacy
+  // families (v2.8.8-fh.with-fh.3, pingdotgg-t3code--…-fh4) carry no
+  // slug and fall through to release-name matching below.
+  const slugHit = /\.([a-z0-9]+(?:-[a-z0-9]+)+)\s*$/i.exec(r.tag_name)?.[1] ?? "";
+  if (/t3code/i.test(slugHit)) return "t3";
+  if (/natively/i.test(slugHit)) return "natively";
   if (/^t3 code/i.test(r.name) || /t3code/i.test(r.tag_name)) return "t3";
   if (/^natively/i.test(r.name) || /natively/i.test(r.tag_name)) return "natively";
   return null;
