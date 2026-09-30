@@ -8,6 +8,15 @@ export default function Header() {
     <nav className="fh-nav" id="fh-nav">
       <div className="fh-nav-inner">
         <Link href="/" className="fh-nav-brand" aria-label="ForkHub home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icon.svg"
+            alt=""
+            aria-hidden="true"
+            width={22}
+            height={22}
+            style={{ borderRadius: 6, display: "inline-block", verticalAlign: "-4px" }}
+          />{" "}
           ForkHub <span>for OSS forks</span>
         </Link>
         <div className="fh-nav-right">

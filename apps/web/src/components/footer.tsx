@@ -5,6 +5,15 @@ export default function Footer() {
     <footer className="fh-footer">
       <div className="fh-container fh-footer-inner">
         <div className="fh-footer-brand">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icon.svg"
+            alt=""
+            aria-hidden="true"
+            width={18}
+            height={18}
+            style={{ borderRadius: 5 }}
+          />
           <span>© {new Date().getFullYear()} ForkHub · MIT licensed</span>
         </div>
         <div className="fh-footer-links">
