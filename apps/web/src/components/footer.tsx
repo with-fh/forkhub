@@ -11,10 +11,12 @@ export default function Footer() {
           <a href={FORKHUB_REPO_URL} target="_blank" rel="noreferrer">
             GitHub
           </a>
-          <a href="/oss">Supported OSS</a>
+          <a href="/download">Download</a>
           <a href={CATALOG_REPO_URL} target="_blank" rel="noreferrer">
             Patch catalog
           </a>
+          <a href="/privacy-policy">Privacy</a>
+          <a href="/security-policy">Security</a>
         </div>
       </div>
     </footer>

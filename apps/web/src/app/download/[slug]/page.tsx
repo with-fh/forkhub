@@ -17,7 +17,7 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
     <div className="fh-container" style={{ paddingTop: 64, paddingBottom: 96 }}>
       <div style={{ maxWidth: 760 }}>
         <Link
-          href="/oss"
+          href="/download"
           style={{
             fontSize: 13,
             color: "var(--t3-fg-muted)",
@@ -25,7 +25,7 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
             textUnderlineOffset: 4,
           }}
         >
-          ← All supported OSS
+          ← All downloads
         </Link>
         <h1
           className="fh-display"

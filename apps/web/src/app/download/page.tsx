@@ -53,7 +53,7 @@ export default function OssPage() {
       <section className="fh-hero">
         <div className="fh-hero-grid" aria-hidden="true" />
         <div className="fh-container" style={{ position: "relative" }}>
-          <span className="fh-eyebrow">Supported OSS</span>
+          <span className="fh-eyebrow">Download</span>
           <h1
             className="fh-display"
             style={{ fontSize: "clamp(36px, 5vw, 64px)", marginBottom: 16 }}
@@ -84,7 +84,7 @@ export default function OssPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search name, upstream, tagline…"
-              aria-label="Search supported OSS"
+              aria-label="Search patched builds"
               className="fh-search"
             />
             <select

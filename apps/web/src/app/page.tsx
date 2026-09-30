@@ -65,8 +65,8 @@ export default function Home() {
             upstream release — you keep your patches and upstream&apos;s features.
           </p>
           <div className="fh-hero-actions" style={{ flexDirection: "column", gap: 16 }}>
-            <Link href="/oss" className="fh-btn fh-btn-primary fh-btn-lg">
-              Browse supported OSS
+            <Link href="/download" className="fh-btn fh-btn-primary fh-btn-lg">
+              Download
             </Link>
             <a
               href={FORKHUB_REPO_URL}
@@ -163,7 +163,7 @@ export default function Home() {
         <div className="fh-marquee" aria-label="Catalog patches">
           <MarqueeRow>
             {OSS_CATALOG.map((e) => (
-              <Link key={e.slug} href={`/oss/${e.slug}`} className="fh-marquee-card">
+              <Link key={e.slug} href={`/download/${e.slug}`} className="fh-marquee-card">
                 <div className="fh-marquee-author">
                   <span className="fh-marquee-mark">
                     <Package width={15} height={15} />
@@ -210,7 +210,7 @@ export default function Home() {
             </p>
           </div>
           <div className="fh-harness-grid">
-            <Link href="/oss/t3code" className="fh-harness">
+            <Link href="/download/t3code" className="fh-harness">
               <span className="fh-harness-mark">
                 <Package width={18} height={18} />
               </span>
@@ -219,7 +219,7 @@ export default function Home() {
                 <div className="fh-harness-tag">fh reuse t3 with-fh</div>
               </span>
             </Link>
-            <Link href="/oss/natively" className="fh-harness">
+            <Link href="/download/natively" className="fh-harness">
               <span className="fh-harness-mark">
                 <Package width={18} height={18} />
               </span>
@@ -467,7 +467,7 @@ export default function Home() {
                 >
                   Fork on GitHub
                 </a>
-                <Link href="/oss" style={{ color: "var(--t3-fg-muted)", fontSize: 14 }}>
+                <Link href="/download" style={{ color: "var(--t3-fg-muted)", fontSize: 14 }}>
                   Browse the catalog →
                 </Link>
               </div>
@@ -490,7 +490,7 @@ export default function Home() {
       <section className="fh-section">
         <div className="fh-container">
           <div className="fh-section-head" style={{ marginBottom: 32 }}>
-            <span className="fh-eyebrow">Supported OSS</span>
+            <span className="fh-eyebrow">Download</span>
             <h2>Run patched builds, stay current.</h2>
             <p>ForkHub-maintained today. 3rd-party and community catalogs next.</p>
           </div>
@@ -500,8 +500,8 @@ export default function Home() {
             ))}
           </div>
           <div style={{ marginTop: 24 }}>
-            <Link href="/oss" className="fh-btn fh-btn-ghost">
-              View all supported OSS
+            <Link href="/download" className="fh-btn fh-btn-ghost">
+              View all downloads
             </Link>
           </div>
         </div>
@@ -516,8 +516,8 @@ export default function Home() {
             community&apos;s, and stay current with upstream.
           </p>
           <div className="fh-hero-actions" style={{ marginBottom: 0 }}>
-            <Link href="/oss" className="fh-btn fh-btn-primary fh-btn-lg">
-              Browse supported OSS
+            <Link href="/download" className="fh-btn fh-btn-primary fh-btn-lg">
+              Download
             </Link>
             <a
               href={FORKHUB_REPO_URL}

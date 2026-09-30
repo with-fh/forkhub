@@ -1,6 +1,6 @@
 # forkhub (`fh`) — keep your fork's patches while staying up-to-date with upstream
 
-[![Test](https://github.com/ImBIOS/forkhub/actions/workflows/test.yml/badge.svg)](https://github.com/ImBIOS/forkhub/actions/workflows/test.yml)
+[![Test](https://github.com/with-fh/forkhub/actions/workflows/test.yml/badge.svg)](https://github.com/with-fh/forkhub/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Bun](https://img.shields.io/badge/runtime-Bun%20%E2%89%A51.3-f472b6)](https://bun.sh)
 
@@ -54,7 +54,7 @@ fh watch     # daemon-side: auto-detect drift, generate bundles, apply
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap ImBIOS/tap https://github.com/ImBIOS/forkhub
+brew tap ImBIOS/tap https://github.com/with-fh/forkhub
 brew install forkhub
 ```
 
@@ -71,20 +71,20 @@ Canary builds are published automatically on every push to the `canary` branch:
 
 ```bash
 # pnpm (recommended)
-pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"
+pnpm add -g "github:with-fh/forkhub#canary&path:packages/cli"
 fh --help
 
 # or via dlx without global install
-pnpm dlx "github:ImBIOS/forkhub#canary&path:packages/cli" fh --help
-bunx --bun "github:ImBIOS/forkhub#canary&path:packages/cli" fh --help
+pnpm dlx "github:with-fh/forkhub#canary&path:packages/cli" fh --help
+bunx --bun "github:with-fh/forkhub#canary&path:packages/cli" fh --help
 ```
 
 ### Standalone binary
 
-Grab a prebuilt binary from [GitHub Releases](https://github.com/ImBIOS/forkhub/releases/latest):
+Grab a prebuilt binary from [GitHub Releases](https://github.com/with-fh/forkhub/releases/latest):
 
 ```bash
-curl -fsSL https://github.com/ImBIOS/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o fh
+curl -fsSL https://github.com/with-fh/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o fh
 chmod +x fh && sudo mv fh /usr/local/bin/
 ```
 
@@ -93,7 +93,7 @@ Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
 ## Commands
 
 | Command                                                     | Purpose                                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------- |
 | `init`                                                      | Set up `.forkhub` repo + config                                                                         |
 | `draft "<intent>"`                                          | Create a `*` branch + draft INTENT.md                                                                   |
 | `satisfied`                                                 | Finalize intent, capture diff, port to `forkhub/main`, tag                                              |
@@ -110,7 +110,7 @@ Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
 | `watch [--once] [--interval <sec>]`                         | Daemon: auto-detect drift + regenerate + apply                                                          |
 | `update [--tag]`                                            | Consumer: advance to latest tag                                                                         |
 | `rollback`                                                  | Consumer: roll back to previous tag                                                                     |
-| `run <pkg> <owner> [-c|--channel] [-v|--version] [-- args]` | Run a published ForkHub package (e.g. `fh run t3 ImBIOS -- --version`) |
+| `run <pkg> <owner> [-c                                      | --channel] [-v                                                                                          | --version] [-- args]` | Run a published ForkHub package (e.g. `fh run t3 ImBIOS -- --version`) |
 | `status`                                                    | Inspect current state                                                                                   |
 | `--version` / `--help`                                      | Version / help                                                                                          |
 

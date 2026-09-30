@@ -19,9 +19,9 @@ AND your feature. **Now you can have both.**
 upstream/main    ─────●─────●─────●─────►  (v1.0.0, v1.1.0, v2.0.0, v2.1.0)
                                │
                                └─ your patch: --cheat flag (rejected PR)
-                                  
+
 your fork       ─────●─────●─────●─────►  (frozen at v2.0.0 + your patch)
-                                  
+
 gap: v2.1.0 features you don't have
 ```
 
@@ -35,7 +35,7 @@ The pain: every upstream release, manually re-apply, re-fix, re-test.
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap ImBIOS/tap https://github.com/ImBIOS/forkhub
+brew tap ImBIOS/tap https://github.com/with-fh/forkhub
 brew install forkhub
 ```
 
@@ -52,7 +52,7 @@ npx forkhub init
 ### Standalone binary
 
 ```bash
-curl -fsSL https://github.com/ImBIOS/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o forkhub
+curl -fsSL https://github.com/with-fh/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o forkhub
 chmod +x forkhub
 sudo mv forkhub /usr/local/bin/
 ```
@@ -60,13 +60,25 @@ sudo mv forkhub /usr/local/bin/
 ### From source
 
 ```bash
-git clone https://github.com/ImBIOS/forkhub
+git clone https://github.com/with-fh/forkhub
 cd forkhub
 bun install
 bun run build:binaries  # → ./dist/forkhub-*
 ```
 
 Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
+
+### Agent skill
+
+Teach your coding agent the ForkHub workflow (draft → satisfied → update, drift-check, reuse):
+
+```bash
+npx skills add with-fh/forkhub --skill forkhub
+```
+
+The skill ships inside the npm package too (`forkhub` ≥ 0.3.0 bundles it under
+`.agents/skills/`), so `npx skills experimental_sync` picks it up automatically
+from `node_modules`.
 
 ## Quick start
 
@@ -87,19 +99,19 @@ forkhub watch     # daemon-side: auto-detect drift, generate bundles, apply
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `init` | Set up `.forkhub` repo + config |
-| `draft "<intent>"` | Create a `*` branch + draft INTENT.md |
-| `satisfied` | Finalize intent, capture diff, port to `forkhub/main`, tag |
-| `import <github-url>` | Import a patch from another user's `.forkhub` |
-| `re-derive <patch-id>` | Generate context bundle for AI re-derivation |
-| `apply <bundle-path>` | Apply realization from bundle (with verify gate) |
-| `drift-check` | Detect drift (with target_area skip for cost optimization) |
-| `watch [--once] [--interval N]` | Daemon: auto-detect drift + generate bundles + apply |
-| `update [--tag <tag>]` | Consumer: advance to latest tag |
-| `rollback` | Consumer: roll back to previous tag |
-| `status` | Show current state |
+| Command                         | Purpose                                                    |
+| ------------------------------- | ---------------------------------------------------------- |
+| `init`                          | Set up `.forkhub` repo + config                            |
+| `draft "<intent>"`              | Create a `*` branch + draft INTENT.md                      |
+| `satisfied`                     | Finalize intent, capture diff, port to `forkhub/main`, tag |
+| `import <github-url>`           | Import a patch from another user's `.forkhub`              |
+| `re-derive <patch-id>`          | Generate context bundle for AI re-derivation               |
+| `apply <bundle-path>`           | Apply realization from bundle (with verify gate)           |
+| `drift-check`                   | Detect drift (with target_area skip for cost optimization) |
+| `watch [--once] [--interval N]` | Daemon: auto-detect drift + generate bundles + apply       |
+| `update [--tag <tag>]`          | Consumer: advance to latest tag                            |
+| `rollback`                      | Consumer: roll back to previous tag                        |
+| `status`                        | Show current state                                         |
 
 ## How it works
 
@@ -158,6 +170,7 @@ forkhub watch --interval 300  # check every 5 minutes
 ```
 
 Loops:
+
 1. Detect drift (per-patch target_area check, skip if untouched)
 2. Generate context bundle for drifted patches
 3. Wait for AI to produce REALIZATION/realization.diff

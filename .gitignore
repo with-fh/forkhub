@@ -58,3 +58,6 @@ temp
 _local/
 *.local.*
 *.local
+
+# Generated at npm pack time by packages/cli/scripts/sync-skill.mjs
+packages/cli/.agents/

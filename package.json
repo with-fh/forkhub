@@ -1,6 +1,11 @@
 {
   "name": "forkhub-monorepo",
   "private": true,
+  "license": "MIT",
+  "bin": {
+    "fh": "./packages/cli/bin/fh.js",
+    "forkhub": "./packages/cli/bin/fh.js"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -40,9 +45,5 @@
     "turbo": "^2.10.2",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@11.22.0",
-  "bin": {
-    "fh": "./packages/cli/bin/fh.js",
-    "forkhub": "./packages/cli/bin/fh.js"
-  }
+  "packageManager": "pnpm@11.22.0"
 }

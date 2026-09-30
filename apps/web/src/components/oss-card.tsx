@@ -23,7 +23,7 @@ export default function OssCard({ entry }: { entry: OssEntry }) {
         <span className="fh-badge">★ {formatStars(entry.stars)}</span>
       </div>
       <div style={{ marginTop: "auto" }}>
-        <Link href={`/oss/${entry.slug}`} className="fh-btn fh-btn-ghost fh-btn-sm">
+        <Link href={`/download/${entry.slug}`} className="fh-btn fh-btn-ghost fh-btn-sm">
           Open {entry.name}
         </Link>
       </div>

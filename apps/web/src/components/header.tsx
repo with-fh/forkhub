@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { FORKHUB_REPO_URL } from "@/lib/site";
+import StarsPill from "./stars-pill";
 
 export default function Header() {
   return (
@@ -10,8 +11,8 @@ export default function Header() {
           ForkHub <span>for OSS forks</span>
         </Link>
         <div className="fh-nav-right">
-          <Link href="/oss" className="fh-nav-link">
-            Supported OSS
+          <Link href="/download" className="fh-nav-link">
+            Download
           </Link>
           <a
             href="https://github.com/with-fh/.forkhub"
@@ -21,20 +22,26 @@ export default function Header() {
           >
             Patch catalog
           </a>
-          <a
-            className="fh-nav-stars"
-            href={FORKHUB_REPO_URL}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Star ForkHub on GitHub"
+          <Suspense
+            fallback={
+              <span className="fh-nav-stars" aria-hidden="true">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z" />
+                </svg>
+                <span>
+                  <strong>ForkHub</strong> on GitHub
+                </span>
+              </span>
+            }
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M12 2.3l2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.12l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94L12 2.3z" />
-            </svg>
-            <span>
-              <strong>ForkHub</strong> on GitHub
-            </span>
-          </a>
+            <StarsPill />
+          </Suspense>
         </div>
       </div>
       <script
