@@ -1,74 +1,57 @@
-"use client";
-
-import { buttonVariants } from "@forkhub/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@forkhub/ui/components/card";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { use } from "react";
+import { notFound } from "next/navigation";
+import { MAINTAINER_LABEL, OSS_CATALOG, getOss } from "@forkhub/api/oss/data";
 
-import { orpc } from "@/utils/orpc";
+import { formatStars } from "@/components/oss-card";
 
-export default function OssDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
-  const entry = useQuery(orpc.oss.get.queryOptions({ input: { slug } }));
+export function generateStaticParams() {
+  return OSS_CATALOG.map((e) => ({ slug: e.slug }));
+}
 
-  if (entry.isLoading) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </div>
-    );
-  }
-
-  if (entry.isError || !entry.data) {
-    return (
-      <div className="mx-auto grid w-full max-w-3xl gap-4 px-4 py-10">
-        <h1 className="text-2xl font-bold">Not found</h1>
-        <p className="text-sm text-muted-foreground">
-          No OSS entry for <span className="font-mono">{slug}</span>.
-        </p>
-        <Link href="/oss" className={buttonVariants({ variant: "outline", size: "sm" })}>
-          Back to OSS
-        </Link>
-      </div>
-    );
-  }
-
-  const e = entry.data;
+export default async function OssDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const e = getOss(slug);
+  if (!e) notFound();
 
   return (
-    <div className="mx-auto grid w-full max-w-3xl gap-6 px-4 py-10">
-      <section className="grid gap-2">
-        <Link href="/oss" className="text-xs text-muted-foreground underline underline-offset-4">
+    <div className="fh-container" style={{ paddingTop: 64, paddingBottom: 96 }}>
+      <div style={{ maxWidth: 760 }}>
+        <Link
+          href="/oss"
+          style={{
+            fontSize: 13,
+            color: "var(--t3-fg-muted)",
+            textDecoration: "underline",
+            textUnderlineOffset: 4,
+          }}
+        >
           ← All supported OSS
         </Link>
-        <h1 className="text-4xl font-bold tracking-tight">{e.name}</h1>
-        <p className="font-mono text-xs text-muted-foreground">{e.upstream}</p>
-        <p className="text-sm text-muted-foreground sm:text-base">{e.description}</p>
-        <div className="flex flex-wrap gap-2 text-[11px]">
-          <span className="rounded border px-2 py-0.5">
-            {e.maintainer === "forkhub"
-              ? "ForkHub-maintained"
-              : e.maintainer === "third-party"
-                ? "3rd-party-maintained"
-                : "Community-maintained"}
-          </span>
-          <span className="rounded border px-2 py-0.5">{e.status}</span>
-          <span className="rounded border px-2 py-0.5">trains: {e.trains.join(", ")}</span>
-          <span className="rounded border px-2 py-0.5">updated {e.updated}</span>
+        <h1
+          className="fh-display"
+          style={{ fontSize: "clamp(36px, 5vw, 60px)", margin: "16px 0 8px" }}
+        >
+          {e.name}
+        </h1>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--t3-fg-dim)" }}>
+          {e.upstream}
+        </p>
+        <p style={{ color: "var(--t3-fg-muted)", fontSize: 16, marginTop: 12, lineHeight: 1.6 }}>
+          {e.description}
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 16 }}>
+          <span className="fh-badge fh-badge-accent">{MAINTAINER_LABEL[e.maintainer]}</span>
+          <span className="fh-badge">{e.status}</span>
+          <span className="fh-badge">★ {formatStars(e.stars)}</span>
+          <span className="fh-badge">trains: {e.trains.join(", ")}</span>
+          <span className="fh-badge">updated {e.updated}</span>
         </div>
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}>
           <a
             href={e.upstreamUrl}
             rel="noreferrer"
             target="_blank"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className="fh-btn fh-btn-ghost fh-btn-sm"
           >
             Upstream repo
           </a>
@@ -76,47 +59,69 @@ export default function OssDetailPage({ params }: { params: Promise<{ slug: stri
             href={e.catalogUrl}
             rel="noreferrer"
             target="_blank"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
+            className="fh-btn fh-btn-ghost fh-btn-sm"
           >
             Patch catalog
           </a>
         </div>
-      </section>
 
-      <section className="rounded-lg border p-4">
-        <h2 className="mb-2 font-medium">Use it</h2>
-        <div className="grid gap-2">
-          {e.install.map((cmd) => (
-            <pre key={cmd} className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs">
-              {`$ ${cmd}`}
-            </pre>
+        <div className="fh-tile" style={{ marginTop: 32 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Use it</h2>
+          <div style={{ display: "grid", gap: 10 }}>
+            {e.install.map((cmd) => (
+              <pre
+                key={cmd}
+                className="fh-term-body"
+                style={{ margin: 0, padding: "12px 14px", fontSize: 12 }}
+              >
+                <span className="prompt">$</span>
+                {cmd}
+              </pre>
+            ))}
+          </div>
+        </div>
+
+        <h2 className="fh-display" style={{ fontSize: 24, marginTop: 40, marginBottom: 16 }}>
+          Patches ({e.patches.length})
+        </h2>
+        <div style={{ display: "grid", gap: 12 }}>
+          {e.patches.map((p) => (
+            <div key={p.id} className="fh-tile" style={{ padding: 20 }}>
+              <p style={{ fontSize: 15, fontWeight: 600 }}>{p.title}</p>
+              <p
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--t3-fg-dim)",
+                  marginTop: 4,
+                }}
+              >
+                {p.id}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 12,
+                  alignItems: "center",
+                }}
+              >
+                <span className="fh-badge">{p.status}</span>
+                <span className="fh-badge">v{p.version}</span>
+                <a
+                  href={p.intentUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                  className="fh-btn fh-btn-ghost fh-btn-sm"
+                >
+                  Read INTENT.md
+                </a>
+              </div>
+            </div>
           ))}
         </div>
-      </section>
-
-      <section className="grid gap-3">
-        <h2 className="text-xl font-bold tracking-tight">Patches ({e.patches.length})</h2>
-        {e.patches.map((p) => (
-          <Card key={p.id}>
-            <CardHeader>
-              <CardTitle className="text-sm">{p.title}</CardTitle>
-              <CardDescription className="font-mono text-[11px]">{p.id}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-2">
-              <span className="rounded border px-2 py-0.5 text-[11px]">{p.status}</span>
-              <span className="rounded border px-2 py-0.5 text-[11px]">v{p.version}</span>
-              <a
-                href={p.intentUrl}
-                rel="noreferrer"
-                target="_blank"
-                className={buttonVariants({ variant: "outline", size: "sm" })}
-              >
-                Read INTENT.md
-              </a>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      </div>
     </div>
   );
 }

@@ -1,146 +1,164 @@
 "use client";
 
-import { buttonVariants } from "@forkhub/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@forkhub/ui/components/card";
-import { Input } from "@forkhub/ui/components/input";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  MAINTAINER_LABEL,
+  OSS_CATALOG,
+  type OssMaintainer,
+  type OssStatus,
+} from "@forkhub/api/oss/data";
 
-import { orpc } from "@/utils/orpc";
+import OssCard from "@/components/oss-card";
+import { CATALOG_DIR, CATALOG_REPO_URL } from "@/lib/site";
 
-type Maintainer = "all" | "forkhub" | "third-party" | "community";
-type Status = "all" | "active" | "draft" | "coming-soon";
+type MaintainerFilter = "all" | OssMaintainer;
+type StatusFilter = "all" | OssStatus;
 type Sort = "stars" | "updated" | "patches" | "name";
-
-const selectClass =
-  "h-8 rounded-none border border-input bg-transparent px-2 text-xs outline-none focus-visible:border-ring dark:bg-input/30";
 
 export default function OssPage() {
   const [q, setQ] = useState("");
-  const [maintainer, setMaintainer] = useState<Maintainer>("all");
-  const [status, setStatus] = useState<Status>("all");
+  const [maintainer, setMaintainer] = useState<MaintainerFilter>("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<Sort>("stars");
 
-  const entries = useQuery(orpc.oss.list.queryOptions({ input: { q, maintainer, status, sort } }));
+  // Static catalog, filtered client-side: zero backend, instant, and the
+  // forkhub.imbios.dev Workers deploy needs no database or RPC roundtrip.
+  const entries = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const out = OSS_CATALOG.filter((e) => {
+      if (maintainer !== "all" && e.maintainer !== maintainer) return false;
+      if (status !== "all" && e.status !== status) return false;
+      if (!needle) return true;
+      return [e.name, e.upstream, e.tagline, e.slug].join(" ").toLowerCase().includes(needle);
+    });
+    return [...out].sort((a, b) => {
+      switch (sort) {
+        case "stars":
+          return b.stars - a.stars;
+        case "updated":
+          return b.updated.localeCompare(a.updated);
+        case "patches":
+          return b.patchCount - a.patchCount;
+        case "name":
+          return a.name.localeCompare(b.name);
+      }
+    });
+  }, [q, maintainer, status, sort]);
+
+  const forkhubCount = OSS_CATALOG.filter((e) => e.maintainer === "forkhub").length;
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10">
-      <div className="grid gap-6">
-        <section className="grid gap-2">
-          <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-            Supported OSS
-          </p>
-          <h1 className="text-4xl font-bold tracking-tight">Run patched builds, stay current.</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-            Every entry ships ForkHub intent-patches from the{" "}
+    <div>
+      <section className="fh-hero">
+        <div className="fh-hero-grid" aria-hidden="true" />
+        <div className="fh-container" style={{ position: "relative" }}>
+          <span className="fh-eyebrow">Supported OSS</span>
+          <h1
+            className="fh-display"
+            style={{ fontSize: "clamp(36px, 5vw, 64px)", marginBottom: 16 }}
+          >
+            Run patched builds, stay current.
+          </h1>
+          <p style={{ color: "var(--t3-fg-muted)", maxWidth: 640, fontSize: 17 }}>
+            {forkhubCount} ForkHub-maintained {forkhubCount === 1 ? "entry" : "entries"} today.
+            Every entry ships intent-patches from the{" "}
             <a
-              className="underline underline-offset-4"
-              href="https://github.com/with-fh/.forkhub"
+              href={CATALOG_REPO_URL}
               rel="noreferrer"
               target="_blank"
+              style={{
+                color: "var(--t3-fg)",
+                textDecoration: "underline",
+                textUnderlineOffset: 4,
+              }}
             >
-              with-fh/.forkhub
+              {CATALOG_DIR}
             </a>{" "}
             catalog. Search, filter by maintainer, sort by what matters — then reuse with one
             command.
           </p>
-        </section>
 
-        {/* Controls */}
-        <section className="flex flex-wrap items-center gap-2">
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, upstream, tagline…"
-            className="max-w-xs"
-          />
-          <select
-            aria-label="Maintainer"
-            className={selectClass}
-            value={maintainer}
-            onChange={(e) => setMaintainer(e.target.value as Maintainer)}
-          >
-            <option value="all">All maintainers</option>
-            <option value="forkhub">ForkHub-maintained</option>
-            <option value="third-party">3rd-party-maintained</option>
-            <option value="community">Community-maintained</option>
-          </select>
-          <select
-            aria-label="Status"
-            className={selectClass}
-            value={status}
-            onChange={(e) => setStatus(e.target.value as Status)}
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="draft">Draft</option>
-            <option value="coming-soon">Coming soon</option>
-          </select>
-          <select
-            aria-label="Sort"
-            className={selectClass}
-            value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
-          >
-            <option value="stars">Sort: stars</option>
-            <option value="updated">Sort: recently updated</option>
-            <option value="patches">Sort: most patches</option>
-            <option value="name">Sort: name</option>
-          </select>
-        </section>
+          <div className="fh-controls" style={{ marginTop: 28 }}>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search name, upstream, tagline…"
+              aria-label="Search supported OSS"
+              className="fh-search"
+            />
+            <select
+              aria-label="Maintainer"
+              className="fh-select"
+              value={maintainer}
+              onChange={(e) => setMaintainer(e.target.value as MaintainerFilter)}
+            >
+              <option value="all">All maintainers</option>
+              <option value="forkhub">{MAINTAINER_LABEL.forkhub}</option>
+              <option value="third-party">{MAINTAINER_LABEL["third-party"]}</option>
+              <option value="community">{MAINTAINER_LABEL.community}</option>
+            </select>
+            <select
+              aria-label="Status"
+              className="fh-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as StatusFilter)}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+              <option value="coming-soon">Coming soon</option>
+            </select>
+            <select
+              aria-label="Sort"
+              className="fh-select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as Sort)}
+            >
+              <option value="stars">Sort: stars</option>
+              <option value="updated">Sort: recently updated</option>
+              <option value="patches">Sort: most patches</option>
+              <option value="name">Sort: name</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
-        {/* Results */}
-        <section className="grid gap-4 sm:grid-cols-2">
-          {entries.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading catalog…</p>
-          ) : entries.data?.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No matches. Try clearing the search or choosing a different maintainer.
-            </p>
+      <section className="fh-section" style={{ paddingTop: 48 }}>
+        <div className="fh-container">
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--t3-fg-dim)",
+              marginBottom: 20,
+            }}
+          >
+            {entries.length} {entries.length === 1 ? "result" : "results"}
+            {maintainer !== "all" ? ` · ${MAINTAINER_LABEL[maintainer as OssMaintainer]}` : ""}
+          </p>
+          {entries.length === 0 ? (
+            <div className="fh-tile">
+              <p style={{ color: "var(--t3-fg-muted)", fontSize: 15 }}>
+                No matches. Try clearing the search or choosing a different maintainer —{" "}
+                {MAINTAINER_LABEL["third-party"]} and {MAINTAINER_LABEL.community} catalogs are
+                coming next.
+              </p>
+            </div>
           ) : (
-            entries.data?.map((e) => (
-              <Card key={e.slug}>
-                <CardHeader>
-                  <CardTitle>{e.name}</CardTitle>
-                  <CardDescription className="font-mono text-[11px]">{e.upstream}</CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3">
-                  <p className="text-xs text-muted-foreground">{e.tagline}</p>
-                  <div className="flex flex-wrap gap-2 text-[11px]">
-                    <span className="rounded border px-2 py-0.5">
-                      {e.maintainer === "forkhub"
-                        ? "ForkHub-maintained"
-                        : e.maintainer === "third-party"
-                          ? "3rd-party-maintained"
-                          : "Community-maintained"}
-                    </span>
-                    <span className="rounded border px-2 py-0.5">
-                      {e.patchCount} {e.patchCount === 1 ? "patch" : "patches"}
-                    </span>
-                    <span className="rounded border px-2 py-0.5">{e.status}</span>
-                    <span className="rounded border px-2 py-0.5">
-                      ★ {e.stars >= 1000 ? `${(e.stars / 1000).toFixed(0)}k` : e.stars}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/oss/${e.slug}`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
-                  >
-                    Open {e.name}
-                  </Link>
-                </CardContent>
-              </Card>
-            ))
+            <div className="fh-oss-grid">
+              {entries.map((e) => (
+                <OssCard key={e.slug} entry={e} />
+              ))}
+            </div>
           )}
-        </section>
-      </div>
+          <div style={{ marginTop: 32 }}>
+            <Link href="/" className="fh-btn fh-btn-ghost fh-btn-sm">
+              ← Back home
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
