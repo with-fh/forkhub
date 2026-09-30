@@ -527,12 +527,16 @@ body::after {
 
 .fh-float-mark {
   position: absolute;
-  animation: fh-float-drift 9s ease-in-out infinite;
+  /* pointer parallax (vars set from hero pointermove); the idle drift
+     animation lives on the inner card so the two transforms compose
+     instead of the animation overriding this one */
   transform: translate3d(
-    calc(var(--mx, 0) * var(--depth, 20px)),
-    calc(var(--my, 0) * var(--depth, 20px)),
+    calc(var(--mx, 0) * var(--depth, 30px)),
+    calc(var(--my, 0) * var(--depth, 30px)),
     0
   );
+  transition: transform 0.25s ease-out;
+  will-change: transform;
 }
 
 .fh-float-card {
@@ -545,6 +549,7 @@ body::after {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02));
   border: 1px solid var(--t3-border-strong);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  animation: fh-float-drift 9s ease-in-out infinite;
 }
 
 .fh-float-card svg {
