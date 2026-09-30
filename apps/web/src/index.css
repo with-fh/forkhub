@@ -777,7 +777,11 @@ body::after {
 
 .fh-marquee-group {
   display: flex;
-  gap: 16px;
+  /* span the full viewport so 2–3 cards spread edge-to-edge like t3's
+     full rows instead of hugging the left; the track still loops
+     seamlessly since both groups are identical */
+  min-width: 100vw;
+  justify-content: space-evenly;
 }
 
 .fh-marquee-card {
