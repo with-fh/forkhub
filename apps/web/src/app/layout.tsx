@@ -16,8 +16,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "forkhub",
-  description: "forkhub",
+  title: "forkhub — keep your fork's patches while staying up-to-date",
+  description:
+    "Declare each local change once as intent, and an AI agent re-derives it against every new upstream release.",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "32x32 16x16", type: "image/x-icon" },
+    ],
+  },
 };
 
 export default function RootLayout({

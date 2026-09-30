@@ -12,7 +12,11 @@ export default function Header() {
   return (
     <div>
       <div className="flex flex-row items-center justify-between px-2 py-1">
-        <nav className="flex gap-4 text-lg">
+        <nav className="flex items-center gap-4 text-lg">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <img src="/icon.svg" alt="forkhub logo" className="size-6 rounded-md" />
+            forkhub
+          </Link>
           {links.map(({ to, label }) => {
             return (
               <Link key={to} href={to}>
