@@ -17,6 +17,10 @@ export type OssEntry = {
   description: string;
   upstream: string;
   upstreamUrl: string;
+  /** "owner/repo" of the upstream, used for live star counts. */
+  upstreamRepo: string;
+  /** Public mark path for cards and hero floats. */
+  mark: string;
   publisher: string;
   catalogUrl: string;
   maintainer: OssMaintainer;
@@ -50,11 +54,13 @@ export const OSS_CATALOG: OssEntry[] = [
       "Patched fork track for T3 Code desktop: per-publisher trains (stable/nightly) served from a .forkhub catalog, x ForkHub branding, side-by-side installs with stock, and an update-all nudge for connected servers.",
     upstream: "github.com/pingdotgg/t3code",
     upstreamUrl: "https://github.com/pingdotgg/t3code",
+    upstreamRepo: "pingdotgg/t3code",
+    mark: "/marks/t3code.webp",
     publisher: "with-fh",
     catalogUrl: CATALOG,
     maintainer: "forkhub",
     status: "active",
-    stars: 22000,
+    stars: 23940,
     patchCount: 1,
     trains: ["stable", "nightly"],
     updated: "2026-09-28",
@@ -81,11 +87,13 @@ export const OSS_CATALOG: OssEntry[] = [
       "Fork feed repointed at the .forkhub catalog (no stock/fork cross-talk), fork-counter upgrade ordering, and a stable hardware ID so free-trial binding works without the private premium submodule.",
     upstream: "github.com/natively-ai-assistant/natively-cluely-ai-assistant",
     upstreamUrl: "https://github.com/natively-ai-assistant/natively-cluely-ai-assistant",
+    upstreamRepo: "natively-ai-assistant/natively-cluely-ai-assistant",
+    mark: "/marks/natively.png",
     publisher: "with-fh",
     catalogUrl: CATALOG,
     maintainer: "forkhub",
     status: "draft",
-    stars: 0,
+    stars: 2623,
     patchCount: 1,
     trains: ["nightly"],
     updated: "2026-09-27",

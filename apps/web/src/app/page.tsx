@@ -4,6 +4,7 @@ import { OSS_CATALOG, listOss } from "@forkhub/api/oss/data";
 
 import HeroFloat from "@/components/hero-float";
 import OssCard from "@/components/oss-card";
+import { getStarsMap } from "@/lib/live";
 import { CATALOG_DIR, CATALOG_REPO_URL, FORKHUB_REPO_URL } from "@/lib/site";
 
 function Check({ children }: { children: React.ReactNode }) {
@@ -40,8 +41,8 @@ function MarqueeRow({ reverse, children }: { reverse?: boolean; children: React.
   );
 }
 
-export default function Home() {
-  const preview = listOss({ sort: "stars" }).slice(0, 2);
+export default async function Home() {
+  const [preview, starsMap] = [listOss({ sort: "stars" }).slice(0, 2), await getStarsMap()];
   const patches = OSS_CATALOG.flatMap((e) =>
     e.patches.map((p) => ({ ...p, ossName: e.name, slug: e.slug })),
   );
@@ -118,11 +119,6 @@ export default function Home() {
                 <div className="fh-preview-body">
                   <div className="fh-term-body fh-preview-term" style={{ border: 0 }}>
                     <div>
-                      <span className="prompt">$</span>fh reuse
-                      …/t3code-forkhub-update-track/INTENT.md
-                    </div>
-                    <div className="dim">✓ intent captured · verify gate passing</div>
-                    <div>
                       <span className="prompt">$</span>fh run t3 with-fh -- --version
                     </div>
                     <div className="dim">
@@ -132,13 +128,17 @@ export default function Home() {
                       <span className="prompt">$</span>fh update
                     </div>
                     <div className="dim">✓ re-derived onto upstream v2.4.1 · 1 patch applied</div>
+                    <div>
+                      <span className="prompt">$</span>fh reuse …/INTENT.md
+                    </div>
+                    <div className="dim">✓ fork it — modify the intent, rebuild</div>
                   </div>
                   <div className="fh-preview-patches">
                     {patches.slice(0, 3).map((p) => (
                       <div key={p.id} className="fh-preview-patch">
                         <strong>{p.ossName}</strong>
                         <code>
-                          {p.id} · v{p.version} · {p.status}
+                          {p.id} · rev {p.version} · {p.status}
                         </code>
                       </div>
                     ))}
@@ -191,7 +191,7 @@ export default function Home() {
                 </div>
                 <p>{p.title}</p>
                 <code>
-                  {p.id} · v{p.version}
+                  {p.id} · rev {p.version}
                 </code>
               </a>
             ))}
@@ -216,7 +216,7 @@ export default function Home() {
               </span>
               <span>
                 <span className="fh-harness-name">T3 Code</span>
-                <div className="fh-harness-tag">fh reuse t3 with-fh</div>
+                <div className="fh-harness-tag">fh run t3 with-fh</div>
               </span>
             </Link>
             <Link href="/download/natively" className="fh-harness">
@@ -225,7 +225,7 @@ export default function Home() {
               </span>
               <span>
                 <span className="fh-harness-name">Natively</span>
-                <div className="fh-harness-tag">fh reuse natively with-fh</div>
+                <div className="fh-harness-tag">AppImage · stable</div>
               </span>
             </Link>
             <a href={CATALOG_REPO_URL} target="_blank" rel="noreferrer" className="fh-harness">
@@ -496,7 +496,7 @@ export default function Home() {
           </div>
           <div className="fh-oss-grid">
             {preview.map((e) => (
-              <OssCard key={e.slug} entry={e} />
+              <OssCard key={e.slug} entry={e} liveStars={starsMap[e.slug] ?? undefined} />
             ))}
           </div>
           <div style={{ marginTop: 24 }}>
