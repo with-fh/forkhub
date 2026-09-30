@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#18181B"/>
+  <rect width="512" height="512" rx="112" fill="#111113"/>
   <!-- fork links -->
-  <path d="M176 196 v64 a80 80 0 0 0 80 80 h8" fill="none" stroke="#F97316" stroke-width="28" stroke-linecap="round"/>
-  <path d="M336 196 v64 a80 80 0 0 1 -80 80 h-8" fill="none" stroke="#F97316" stroke-width="28" stroke-linecap="round"/>
-  <path d="M256 340 v20" fill="none" stroke="#F97316" stroke-width="28" stroke-linecap="round"/>
+  <path d="M176 196 v64 a80 80 0 0 0 80 80 h8" fill="none" stroke="#319CFC" stroke-width="28" stroke-linecap="round"/>
+  <path d="M336 196 v64 a80 80 0 0 1 -80 80 h-8" fill="none" stroke="#319CFC" stroke-width="28" stroke-linecap="round"/>
+  <path d="M256 340 v20" fill="none" stroke="#319CFC" stroke-width="28" stroke-linecap="round"/>
   <!-- nodes -->
-  <circle cx="176" cy="152" r="44" fill="#F97316"/>
-  <circle cx="336" cy="152" r="44" fill="#F97316"/>
-  <circle cx="256" cy="392" r="44" fill="#F97316"/>
-  <circle cx="176" cy="152" r="16" fill="#18181B"/>
-  <circle cx="336" cy="152" r="16" fill="#18181B"/>
-  <circle cx="256" cy="392" r="16" fill="#fff"/>
+  <circle cx="176" cy="152" r="44" fill="#319CFC"/>
+  <circle cx="336" cy="152" r="44" fill="#319CFC"/>
+  <circle cx="256" cy="392" r="44" fill="#319CFC"/>
+  <circle cx="176" cy="152" r="16" fill="#111113"/>
+  <circle cx="336" cy="152" r="16" fill="#111113"/>
+  <circle cx="256" cy="392" r="16" fill="#111113"/>
 </svg>
