@@ -30,6 +30,10 @@ export const metadata: Metadata = {
     siteName: "ForkHub",
     type: "website",
   },
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
