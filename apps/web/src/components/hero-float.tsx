@@ -1,18 +1,13 @@
 "use client";
 
-import { Boxes, FileText, GitFork, GitPullRequest, Package, SquareTerminal } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 const MARKS = [
-  { key: "fork", Icon: GitFork, cls: "hf-1", tag: "fork it" },
-  { key: "intent", Icon: FileText, cls: "hf-2", tag: "INTENT.md" },
-  { key: "build", Icon: Package, cls: "hf-3", tag: "patched builds" },
-  { key: "pr", Icon: GitPullRequest, cls: "hf-4", tag: "one-button PR" },
-  { key: "cli", Icon: SquareTerminal, cls: "hf-5", tag: "fh CLI" },
-  { key: "trains", Icon: Boxes, cls: "hf-6", tag: "stable / nightly" },
+  { key: "t3code", src: "/marks/t3code.webp", alt: "T3 Code", cls: "hf-1" },
+  { key: "natively", src: "/marks/natively.png", alt: "Natively", cls: "hf-3" },
 ] as const;
 
-// Floating mark cards around the hero (t3.codes .hero-float):
+// Floating app-icon cards around the hero (t3.codes .hero-float):
 // idle drift via CSS + pointer parallax via --mx/--my custom props.
 export default function HeroFloat() {
   const ref = useRef<HTMLDivElement>(null);
@@ -40,12 +35,13 @@ export default function HeroFloat() {
 
   return (
     <div className="fh-hero-float" aria-hidden="true" ref={ref}>
-      {MARKS.map(({ key, Icon, cls, tag }) => (
+      {MARKS.map(({ key, src, alt, cls }) => (
         <span key={key} className={`fh-float-mark ${cls}`}>
-          <span className="fh-float-card">
-            <Icon />
+          <span className="fh-float-card fh-float-app">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="" aria-hidden="true" />
           </span>
-          <span className="fh-float-tag">{tag}</span>
+          <span className="fh-float-tag">{alt}</span>
         </span>
       ))}
     </div>

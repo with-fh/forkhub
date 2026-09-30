@@ -56,7 +56,7 @@ export const OSS_CATALOG: OssEntry[] = [
     status: "active",
     stars: 22000,
     patchCount: 1,
-    trains: ["nightly"],
+    trains: ["stable", "nightly"],
     updated: "2026-09-28",
     install: [
       "fh reuse https://github.com/with-fh/.forkhub/blob/main/repos/github.com/pingdotgg/t3code/patches/t3code-forkhub-update-track-bb0ed06f/INTENT.md",
