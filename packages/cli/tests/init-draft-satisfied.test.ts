@@ -50,7 +50,10 @@ afterEach(() => {
 });
 
 test("init autodetects master as upstream_main_branch", async () => {
-  const result = await runInit({ target: "github.com/test/test-game" });
+  const result = await runInit({
+    forkhubDir: join(dir, ".forkhub"),
+    target: "github.com/test/test-game",
+  });
   expect(result.isFork).toBe(false); // single remote setup
   const manifest = JSON.parse(
     await Bun.file(
@@ -67,9 +70,9 @@ test("init autodetects master as upstream_main_branch", async () => {
 });
 
 test("draft → implement → satisfied works on a master-default repo", async () => {
-  await runInit({ target: "github.com/test/test-game" });
+  await runInit({ forkhubDir: join(dir, ".forkhub"), target: "github.com/test/test-game" });
 
-  const draft = await runDraft("add debug flag");
+  const draft = await runDraft("add debug flag", { forkhubDir: join(dir, ".forkhub") });
   expect(draft.slug).toBe("add-debug-flag");
   expect(existsSync(join(fork, ".forkhub-draft.md"))).toBe(true);
   const current = await sh(["rev-parse", "--abbrev-ref", "HEAD"], fork);
@@ -79,7 +82,7 @@ test("draft → implement → satisfied works on a master-default repo", async (
   await sh(["add", "-A"], fork);
   await sh(["commit", "-qm", "add debug flag"], fork);
 
-  const done = await runSatisfied({ skipPort: true });
+  const done = await runSatisfied({ forkhubDir: join(dir, ".forkhub"), skipPort: true });
   expect(done.patchId.startsWith("add-debug-flag-")).toBe(true);
   expect(done.filesChanged).toContain("game.ts");
   expect(done.forkhubMainUpdated).toBe(false);
@@ -99,15 +102,17 @@ test("draft → implement → satisfied works on a master-default repo", async (
 });
 
 test("link-pr records an existing PR without gh (offline-safe)", async () => {
-  await runInit({ target: "github.com/test/test-game" });
-  await runDraft("add debug flag");
+  await runInit({ forkhubDir: join(dir, ".forkhub"), target: "github.com/test/test-game" });
+  await runDraft("add debug flag", { forkhubDir: join(dir, ".forkhub") });
   await Bun.write(join(fork, "game.ts"), "export const x = 2;\n");
   await sh(["add", "-A"], fork);
   await sh(["commit", "-qm", "add debug flag"], fork);
-  const done = await runSatisfied({ skipPort: true });
+  const done = await runSatisfied({ forkhubDir: join(dir, ".forkhub"), skipPort: true });
 
   // No `gh` auth offline — runLinkPr still records the PR number.
-  const linked = await runLinkPr(done.patchId, "https://github.com/test/test-game/pull/42");
+  const linked = await runLinkPr(done.patchId, "https://github.com/test/test-game/pull/42", {
+    forkhubDir: join(dir, ".forkhub"),
+  });
   expect(linked.prNumber).toBe(42);
   expect(linked.patchId).toBe(done.patchId);
 
@@ -120,12 +125,12 @@ test("link-pr records an existing PR without gh (offline-safe)", async () => {
 });
 
 test("draft rejects duplicate branch names", async () => {
-  await runInit({ target: "github.com/test/test-game" });
-  await runDraft("add debug flag");
+  await runInit({ forkhubDir: join(dir, ".forkhub"), target: "github.com/test/test-game" });
+  await runDraft("add debug flag", { forkhubDir: join(dir, ".forkhub") });
   await sh(["checkout", "-q", "master"], fork);
   let threw = false;
   try {
-    await runDraft("add debug flag");
+    await runDraft("add debug flag", { forkhubDir: join(dir, ".forkhub") });
   } catch (err) {
     threw = true;
     expect((err as Error).message).toMatch(/already exists/);

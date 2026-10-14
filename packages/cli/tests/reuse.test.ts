@@ -68,9 +68,10 @@ afterEach(() => {
 });
 
 test("reuse imports and builds a re-derivation bundle in one step", async () => {
-  await runInit({ target: "github.com/test/t" });
+  await runInit({ forkhubDir: join(dir, ".forkhub"), target: "github.com/test/t" });
   const result = await runReuse(
     "https://github.com/alice/.forkhub/blob/main/repos/github.com/test/t/patches/shared-fix/INTENT.md",
+    { forkhubDir: join(dir, ".forkhub") },
   );
   expect(result.patchId).toBe("shared-fix");
   expect(result.author).toBe("alice");

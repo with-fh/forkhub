@@ -1,11 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  isGitRepo,
-  gitOrThrow,
-  gitExec,
-  shortSha,
-} from "./git";
+import { resolveForkhubDir } from "./forkhub-dir";
+import { isGitRepo, gitOrThrow, gitExec, shortSha } from "./git";
 
 export type DriftCheckOptions = {
   forkhubDir?: string;
@@ -59,7 +55,10 @@ function readUpstreamConfig(repoDir: string): any {
   return JSON.parse(readFileSync(upstreamJsonPath, "utf-8"));
 }
 
-function readIntentMeta(repoDir: string, patchId: string): { title: string | null; targetArea: string[] } {
+function readIntentMeta(
+  repoDir: string,
+  patchId: string,
+): { title: string | null; targetArea: string[] } {
   const intentPath = join(repoDir, "patches", patchId, "INTENT.md");
   if (!existsSync(intentPath)) return { title: null, targetArea: [] };
   const content = readFileSync(intentPath, "utf-8");
@@ -119,13 +118,13 @@ async function checkUpstreamPrState(
   prNumber: number,
 ): Promise<{ state: "open" | "merged" | "closed"; mergeCommit?: string } | null> {
   // Use gh CLI (not git) to query PR state
-  const proc = Bun.spawn(["gh", "pr", "view", String(prNumber),
-    "--repo", targetRepo,
-    "--json", "state,mergeCommit",
-  ], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  const proc = Bun.spawn(
+    ["gh", "pr", "view", String(prNumber), "--repo", targetRepo, "--json", "state,mergeCommit"],
+    {
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
   const [stdout] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
@@ -155,7 +154,7 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
     throw new Error("Not a git repository. Run from inside your fork's checkout.");
   }
 
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   if (!existsSync(forkhubDir)) {
     throw new Error(".forkhub repo not found. Run `forkhub init` first.");
   }
@@ -212,9 +211,8 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
           // silently corrupt drift tracking.
           const mergeOnTracked =
             !!prState.mergeCommit &&
-            (
-              await gitExec(["merge-base", "--is-ancestor", prState.mergeCommit, upstreamSha])
-            ).exitCode === 0;
+            (await gitExec(["merge-base", "--is-ancestor", prState.mergeCommit, upstreamSha]))
+              .exitCode === 0;
           if (mergeOnTracked) {
             status = "upstreamed";
             // Advance last_realized to the merge commit so the next drift
@@ -241,7 +239,10 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
         if (targetArea.length > 0) {
           const areaArgs = targetArea.flatMap((a) => ["--", a]);
           const diffResult = await gitExec([
-            "diff", "--name-only", `${lastRealizedSha}..${upstreamSha}`, ...areaArgs,
+            "diff",
+            "--name-only",
+            `${lastRealizedSha}..${upstreamSha}`,
+            ...areaArgs,
           ]);
           filesChangedInTargetArea = diffResult.stdout
             ? diffResult.stdout.split("\n").filter(Boolean)
@@ -328,7 +329,9 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
 
   lines.push(
     `Upstream: ${shortSha(result.upstreamSha)} ${
-      result.upstreamAdvanced ? `(advanced from ${shortSha(result.lastKnownSha)})` : "(unchanged since last check)"
+      result.upstreamAdvanced
+        ? `(advanced from ${shortSha(result.lastKnownSha)})`
+        : "(unchanged since last check)"
     }`,
   );
 
@@ -357,14 +360,18 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
         );
         lines.push(`                ${summarizeFiles(patch.filesChangedInTargetArea)}`);
       } else {
-        lines.push("      reason:   target_area not declared — cannot prove it's still safe, treat as drifted");
+        lines.push(
+          "      reason:   target_area not declared — cannot prove it's still safe, treat as drifted",
+        );
       }
       if (patch.appliedUpstreamPr?.state === "open") {
         lines.push(
           `      upstream: PR #${patch.appliedUpstreamPr.number} still open — once merged, this patch becomes obsolete`,
         );
       } else if (patch.appliedUpstreamPr?.state === "closed") {
-        lines.push(`      upstream: PR #${patch.appliedUpstreamPr.number} was closed without merging`);
+        lines.push(
+          `      upstream: PR #${patch.appliedUpstreamPr.number} was closed without merging`,
+        );
       } else if (
         patch.appliedUpstreamPr?.state === "merged" &&
         patch.appliedUpstreamPr.mergeOnTrackedBranch === false
@@ -402,7 +409,9 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
 
   if (drifted.length > 0) {
     lines.push("What to do next:");
-    lines.push("  1. fh re-derive <patch-id>          regenerate the context bundle for each drifted patch");
+    lines.push(
+      "  1. fh re-derive <patch-id>          regenerate the context bundle for each drifted patch",
+    );
     lines.push("  2. point your AI agent at prompt.md in the bundle and let it fill");
     lines.push("     REALIZATION/realization.diff (fh watch --agent can automate this)");
     lines.push("  3. fh apply <bundle-path>           apply + tag when tests pass");

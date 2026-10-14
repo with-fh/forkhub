@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isGitRepo } from "./git";
 import { generateULID8 } from "./patch-id";
+import { resolveForkhubDir } from "./forkhub-dir";
 
 export type ImportOptions = {
   forkhubDir?: string;
@@ -101,7 +102,7 @@ export async function runImport(
     throw new Error("Not a git repository. Run from inside your fork's checkout.");
   }
 
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   if (!existsSync(forkhubDir)) {
     throw new Error(".forkhub repo not found. Run `forkhub init` first.");
   }

@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { isGitRepo, gitOrThrow, gitExec } from "./git";
+import { resolveForkhubDir } from "./forkhub-dir";
 
 export type PublishOptions = {
   forkhubDir?: string;
@@ -150,8 +151,66 @@ async function validatePatchesHavePrIssue(
   }
 }
 
+async function ensureOriginRemote(forkhubDir: string): Promise<string> {
+  const existing = await gitExec(["remote", "get-url", "origin"], forkhubDir);
+  if (existing.exitCode === 0 && existing.stdout) return existing.stdout;
+
+  // No origin — try to create USERNAME/.forkhub via `gh` so `fh publish`
+  // works on first run without manual repo creation.
+  const ghCheck = Bun.spawnSync(["gh", "--version"]);
+  if (ghCheck.exitCode !== 0) {
+    throw new Error(
+      "No 'origin' remote set on .forkhub repo. Add one:\n" +
+        `  cd ${forkhubDir}\n` +
+        "  git remote add origin git@github.com:USERNAME/.forkhub.git\n" +
+        "Or install `gh` (GitHub CLI) and re-run — fh will create USERNAME/.forkhub for you.",
+    );
+  }
+  const loginProc = Bun.spawnSync(["gh", "api", "user", "--jq", ".login"]);
+  const login = new TextDecoder().decode(loginProc.stdout).trim();
+  if (loginProc.exitCode !== 0 || !login) {
+    throw new Error(
+      "Could not determine GitHub user (`gh api user` failed). " +
+        "Run `gh auth login`, or set the remote manually:\n" +
+        `  cd ${forkhubDir} && git remote add origin git@github.com:USERNAME/.forkhub.git`,
+    );
+  }
+  // Repo may already exist remotely (e.g. created via web UI) — just attach it.
+  const viewProc = Bun.spawnSync(["gh", "repo", "view", `${login}/.forkhub`, "--json", "name"], {
+    cwd: forkhubDir,
+  });
+  if (viewProc.exitCode !== 0) {
+    const createProc = Bun.spawnSync(
+      ["gh", "repo", "create", ".forkhub", "--public", "--confirm"],
+      { cwd: forkhubDir },
+    );
+    if (createProc.exitCode !== 0) {
+      const err = new TextDecoder().decode(createProc.stderr).trim();
+      throw new Error(
+        `Could not create ${login}/.forkhub via gh: ${err}\n` +
+          `Create it manually, then:\n  cd ${forkhubDir} && git remote add origin git@github.com:${login}/.forkhub.git`,
+      );
+    }
+  }
+  const remoteUrl = `git@github.com:${login}/.forkhub.git`;
+  const addProc = Bun.spawnSync(["git", "remote", "add", "origin", remoteUrl], {
+    cwd: forkhubDir,
+  });
+  // Tolerate race where gh already added origin.
+  if (addProc.exitCode !== 0) {
+    const retry = await gitExec(["remote", "get-url", "origin"], forkhubDir);
+    if (retry.exitCode !== 0) {
+      throw new Error(
+        `Could not add origin remote: ${new TextDecoder().decode(addProc.stderr).trim()}`,
+      );
+    }
+    return retry.stdout;
+  }
+  return remoteUrl;
+}
+
 export async function runPublish(options: PublishOptions = {}): Promise<PublishResult> {
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   if (!existsSync(forkhubDir)) {
     throw new Error(".forkhub repo not found. Run `forkhub init` first.");
   }
@@ -166,16 +225,8 @@ export async function runPublish(options: PublishOptions = {}): Promise<PublishR
     );
   }
 
-  // Check remote exists
-  const remoteResult = await gitExec(["remote", "get-url", "origin"], forkhubDir);
-  if (remoteResult.exitCode !== 0) {
-    throw new Error(
-      "No 'origin' remote set on .forkhub repo. Add one:\n" +
-        `  cd ${forkhubDir}\n` +
-        "  git remote add origin git@github.com:USERNAME/.forkhub.git",
-    );
-  }
-  const remote = remoteResult.stdout;
+  // Check remote exists (auto-create USERNAME/.forkhub via gh on first run).
+  const remote = await ensureOriginRemote(forkhubDir);
 
   // Stage all patch files
   await gitOrThrow(["add", "-A"], forkhubDir);

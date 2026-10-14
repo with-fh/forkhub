@@ -58,6 +58,10 @@ Usage:
 Producer commands run from inside your fork's checkout.
 Consumer commands (update, rollback, status) also run from the fork checkout.
 The \`pr\` command requires a fork setup (separate \`upstream\` and \`origin\` remotes).
+
+Global options:
+  [--forkhub-dir <path>]               Override store location (default: ~/.forkhub,
+                                       legacy ../.forkhub auto-detected; $FORKHUB_DIR also works)
 `;
 
 function parseArgs(argv: string[]): {
@@ -121,6 +125,12 @@ async function runStatus() {
 
 async function main() {
   const { command, opts, positional } = parseArgs(process.argv.slice(2));
+  const forkhubDirOpt =
+    typeof opts["forkhub-dir"] === "string"
+      ? (opts["forkhub-dir"] as string)
+      : typeof opts["forkhubDir"] === "string"
+        ? (opts["forkhubDir"] as string)
+        : undefined;
 
   if (!command || command === "--help" || command === "-h" || command === "help") {
     console.log(HELP);
@@ -135,7 +145,13 @@ async function main() {
   try {
     switch (command) {
       case "init": {
-        const initOpts: { upstreamRemote?: string; forkRemote?: string; target?: string } = {};
+        const initOpts: {
+          upstreamRemote?: string;
+          forkRemote?: string;
+          target?: string;
+          forkhubDir?: string;
+        } = {};
+        if (forkhubDirOpt) initOpts.forkhubDir = forkhubDirOpt;
         if (typeof opts["upstream-remote"] === "string")
           initOpts.upstreamRemote = opts["upstream-remote"];
         if (typeof opts["fork-remote"] === "string") initOpts.forkRemote = opts["fork-remote"];
@@ -164,7 +180,7 @@ async function main() {
         if (!intent) {
           throw new Error('Intent description required. Usage: fh draft "<intent>"');
         }
-        const result = await runDraft(intent);
+        const result = await runDraft(intent, forkhubDirOpt ? { forkhubDir: forkhubDirOpt } : {});
         console.log(`Branch:    ${result.branch}`);
         console.log(`Slug:      ${result.slug}`);
         console.log(`Base:      ${result.baseSha.slice(0, 7)}`);
@@ -175,7 +191,8 @@ async function main() {
       }
 
       case "satisfied": {
-        const satisfiedOpts: { skipPort?: boolean } = {};
+        const satisfiedOpts: { skipPort?: boolean; forkhubDir?: string } = {};
+        if (forkhubDirOpt) satisfiedOpts.forkhubDir = forkhubDirOpt;
         if (opts["skip-port"] === true) satisfiedOpts.skipPort = true;
 
         const result = await runSatisfied(satisfiedOpts);
@@ -247,7 +264,7 @@ async function main() {
       }
 
       case "drift-check": {
-        const result = await runDriftCheck();
+        const result = await runDriftCheck(forkhubDirOpt ? { forkhubDir: forkhubDirOpt } : {});
         if (opts.json === true) {
           console.log(JSON.stringify(result, null, 2));
         } else {
@@ -298,7 +315,8 @@ async function main() {
         if (!source) {
           throw new Error("Source URL required. Usage: fh reuse <github-url-to-INTENT.md>");
         }
-        const reuseOpts: { force?: boolean; agent?: string } = {};
+        const reuseOpts: { force?: boolean; agent?: string; forkhubDir?: string } = {};
+        if (forkhubDirOpt) reuseOpts.forkhubDir = forkhubDirOpt;
         if (opts.force === true) reuseOpts.force = true;
         if (typeof opts.agent === "string") reuseOpts.agent = opts.agent;
 
@@ -315,7 +333,13 @@ async function main() {
       }
 
       case "watch": {
-        const watchOpts: { once?: boolean; interval?: number; agent?: string } = {};
+        const watchOpts: {
+          once?: boolean;
+          interval?: number;
+          agent?: string;
+          forkhubDir?: string;
+        } = {};
+        if (forkhubDirOpt) watchOpts.forkhubDir = forkhubDirOpt;
         if (opts.once === true) watchOpts.once = true;
         if (typeof opts.interval === "string") watchOpts.interval = parseInt(opts.interval, 10);
         if (typeof opts.agent === "string") watchOpts.agent = opts.agent;
@@ -357,7 +381,8 @@ async function main() {
         if (!source) {
           throw new Error("Source URL required. Usage: fh import <github-url>");
         }
-        const importOpts: { force?: boolean } = {};
+        const importOpts: { force?: boolean; forkhubDir?: string } = {};
+        if (forkhubDirOpt) importOpts.forkhubDir = forkhubDirOpt;
         if (opts.force === true) importOpts.force = true;
 
         const result = await runImport(source, importOpts);
@@ -374,7 +399,8 @@ async function main() {
         if (!patchId) {
           throw new Error("Patch ID required. Usage: fh re-derive <patch-id>");
         }
-        const reDeriveOpts: { force?: boolean } = {};
+        const reDeriveOpts: { force?: boolean; forkhubDir?: string } = {};
+        if (forkhubDirOpt) reDeriveOpts.forkhubDir = forkhubDirOpt;
         if (opts.force === true) reDeriveOpts.force = true;
 
         const result = await runReDerive(patchId, reDeriveOpts);
@@ -403,7 +429,8 @@ async function main() {
         if (!bundlePath) {
           throw new Error("Bundle path required. Usage: fh apply <bundle-path>");
         }
-        const applyOpts: { skipTests?: boolean; skipTag?: boolean } = {};
+        const applyOpts: { skipTests?: boolean; skipTag?: boolean; forkhubDir?: string } = {};
+        if (forkhubDirOpt) applyOpts.forkhubDir = forkhubDirOpt;
         if (opts["skip-tests"] === true) applyOpts.skipTests = true;
         if (opts["skip-tag"] === true) applyOpts.skipTag = true;
 
@@ -427,7 +454,9 @@ async function main() {
           title?: string;
           body?: string;
           noPush?: boolean;
+          forkhubDir?: string;
         } = {};
+        if (forkhubDirOpt) prOpts.forkhubDir = forkhubDirOpt;
         if (opts.draft === true) prOpts.draft = true;
         if (typeof opts.base === "string") prOpts.base = opts.base;
         if (typeof opts.title === "string") prOpts.title = opts.title;
@@ -458,7 +487,11 @@ async function main() {
         if (!patchRef || !prRef) {
           throw new Error("Usage: fh link-pr <patch-id|branch> <pr-number|pr-url>");
         }
-        const result = await runLinkPr(patchRef, prRef);
+        const result = await runLinkPr(
+          patchRef,
+          prRef,
+          forkhubDirOpt ? { forkhubDir: forkhubDirOpt } : {},
+        );
         console.log(`Patch:     ${result.patchId} (${result.branch})`);
         console.log(`PR:        ${result.prUrl}`);
         console.log(`PR #:      ${result.prNumber} (${result.prState})`);
@@ -467,7 +500,8 @@ async function main() {
       }
 
       case "publish": {
-        const pubOpts: { message?: string; allowMissingPr?: boolean } = {};
+        const pubOpts: { message?: string; allowMissingPr?: boolean; forkhubDir?: string } = {};
+        if (forkhubDirOpt) pubOpts.forkhubDir = forkhubDirOpt;
         if (typeof opts.message === "string") pubOpts.message = opts.message;
         if (typeof opts.m === "string") pubOpts.message = opts.m;
         if (opts["allow-missing-pr"] === true) pubOpts.allowMissingPr = true;

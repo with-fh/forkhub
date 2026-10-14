@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { resolveForkhubDir } from "./forkhub-dir";
 import {
   gitExec,
   gitOrThrow,
@@ -87,7 +88,7 @@ export async function runInit(options: InitOptions = {}): Promise<InitResult> {
     );
   }
 
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   const alreadyExists = existsSync(join(forkhubDir, ".git"));
   const created = !alreadyExists;
 

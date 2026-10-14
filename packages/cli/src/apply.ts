@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { isGitRepo, gitOrThrow, gitExec, currentSha, shortSha, checkout } from "./git";
+import { resolveForkhubDir } from "./forkhub-dir";
 
 export type ApplyOptions = {
   forkhubDir?: string;
@@ -99,7 +100,7 @@ export async function runApply(
     diffApplied = true;
 
     if (!options.skipTests) {
-      const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+      const forkhubDir = resolveForkhubDir(options.forkhubDir);
       let patchDir: string | null = null;
       const { existsSync: exists, readdirSync, statSync } = await import("node:fs");
       function findPatch(dir: string, targetId: string): string | null {
@@ -153,7 +154,7 @@ export async function runApply(
     await checkout(previousBranch);
   }
 
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   if (existsSync(forkhubDir)) {
     const reposDir = join(forkhubDir, "repos");
     const { readdirSync, statSync } = await import("node:fs");

@@ -2,6 +2,7 @@ import { existsSync, readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { isGitRepo } from "./git";
 import { runGh } from "./pr";
+import { resolveForkhubDir } from "./forkhub-dir";
 
 export type LinkPrOptions = {
   forkhubDir?: string;
@@ -71,7 +72,7 @@ export async function runLinkPr(
   if (!(await isGitRepo())) {
     throw new Error("Not a git repository. Run from inside your fork's checkout.");
   }
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
   if (!existsSync(forkhubDir))
     throw new Error(".forkhub repo not found. Run `forkhub init` first.");
 

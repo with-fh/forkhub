@@ -1,7 +1,7 @@
-import { join } from "node:path";
 import { isGitRepo } from "./git";
 import { runImport } from "./import";
 import { runReDerive } from "./re-derive";
+import { resolveForkhubDir } from "./forkhub-dir";
 
 export type ReuseOptions = {
   forkhubDir?: string;
@@ -29,7 +29,7 @@ export async function runReuse(source: string, options: ReuseOptions = {}): Prom
   if (!(await isGitRepo())) {
     throw new Error("Not a git repository. Run from inside your fork's checkout.");
   }
-  const forkhubDir = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+  const forkhubDir = resolveForkhubDir(options.forkhubDir);
 
   const imported = await runImport(source, { forkhubDir, force: options.force });
   const derived = await runReDerive(imported.patchId, { forkhubDir });
