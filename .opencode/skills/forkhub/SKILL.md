@@ -233,6 +233,67 @@ The INTENT.md is the ONLY artifact that survives across re-derivations. It must 
 Bad intent: "make the game easier"
 Good intent: "add --hint flag that shows narrowed range (guess+1 to max, or min to guess-1) after each wrong guess"
 
+## Patch Granularity Rules (split vs combine)
+
+Catalog policy: **one intent-patch per software per fork-purpose**
+(e.g. `<repo>` has exactly one `forkhub-support` patch — "add ForkHub
+support into that OSS"). A published `.forkhub` catalog is
+ForkHub-maintained and ForkHub-enabled: agents must merge same-purpose
+patches instead of adding new ones, and split only by the rules below.
+
+Measure a patch by: `reference.diff` lines + files touched,
+`verify.sh` wall time, number of independent "Why"s in the intent, and
+architectural layers in `target_area` (e.g. main-process, renderer,
+build scripts, native).
+
+### SPLIT when any of these hold
+
+1. **Too big to verify cheaply**: `reference.diff` > ~1500 lines or
+   > ~25 files, or `verify.sh` takes > ~10 min / needs > 1 runtime
+   > (node + electron + docker). Each patch pays this cost on EVERY
+   > drift re-derivation.
+2. **Multiple independent behaviors**: the intent has ≥2 "Why"s that
+   could ship, release, and be acceptance-tested alone. Rule of thumb:
+   if you can write two ACCEPTANCE.md files that pass independently,
+   those are two patches.
+3. **Independent drift rates**: one behavior's `target_area` churns
+   upstream far more often than the rest. Split it so re-derivation
+   doesn't burn agent tokens + CI time re-proving the stable parts.
+4. **Independent layers with independent acceptance**: `target_area`
+   spans ≥3 layers (e.g. main-process + renderer + build scripts)
+   whose criteria don't overlap. Shared files alone don't force a
+   split — shared _behavior_ does.
+
+### COMBINE when any of these hold
+
+1. **Same purpose, overlapping files**: two patches for one software
+   touch the same files or one only applies on top of the other
+   ("applied after" coupling). Stacked diffs on shared files make
+   `apply_order` fragile; a single diff applies atomically.
+2. **Too small to stand alone**: each `reference.diff` < ~100 lines
+   AND < ~5 files AND identical/trivial verify AND they always drift
+   together (the same upstream change triggers all of them).
+3. **Cannot ship or verify independently**: patch B is meaningless
+   without patch A (no standalone acceptance story).
+4. **Catalog count rule**: more than one patch for the same
+   (software, purpose) pair → squash. Procedure: verify the stack
+   applies cleanly in order → capture the combined diff → run the
+   union of all `verify.sh` suites → replace the manifest entries with
+   one patch + one `apply_order` entry (note the squash in
+   `attempts.jsonl`).
+
+### Size bands (defaults, adjust per repo)
+
+- **Combine candidate**: < 100 diff lines, < 5 files, verify < 2 min.
+- **Healthy single patch**: one independently shippable behavior,
+  verify < 10 min.
+- **Split**: > 1500 lines or > 25 files or verify > 10 min or ≥2
+  independent Whys or ≥3 layers with independent acceptance.
+
+When unsure, bias to ONE patch: a slightly large patch that verifies
+in one run is cheaper over its lifetime than two patches that drift,
+re-derive, and rebuild separately forever.
+
 ## CLI Location
 
 The forkhub CLI is at the project root:
