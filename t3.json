@@ -1,4 +1,12 @@
 {
   "$schema": "https://t3.codes/schema/t3.json",
-  "iconPath": "assets/icon.svg"
+  "iconPath": "assets/icon.svg",
+  "scripts": [
+    {
+      "name": "Setup Worktree",
+      "command": "pnpm install && ln -sf $T3CODE_PROJECT_ROOT/apps/server/.env apps/server/.env && ln -sf $T3CODE_PROJECT_ROOT/apps/web/.env apps/web/.env",
+      "icon": "configure",
+      "runOnWorktreeCreate": true
+    }
+  ]
 }
