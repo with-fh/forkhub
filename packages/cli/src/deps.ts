@@ -144,22 +144,18 @@ export function parseDepSpec(spec: string): ParsedDep {
     s = s.slice(0, -1).trim();
   }
   const at = s.lastIndexOf("@");
-  // `@` only splits id/req when the tail parses as a requirement; patch ids
-  // themselves never contain `@`, so a failed parse means the whole string is the id.
+  // `@` separates id from version requirement (patch ids never contain `@`,
+  // so a failed requirement parse is a user error, not part of the id).
   if (at > 0) {
     const id = s.slice(0, at).trim();
     const req = s.slice(at + 1).trim();
+    if (!id) throw new Error(`Invalid dependency spec: "${raw}".`);
     try {
-      const constraint = parseConstraint(req);
-      if (!id) throw new Error(`Invalid dependency spec: "${raw}".`);
-      return { raw, id, constraint, optional };
+      return { raw, id, constraint: parseConstraint(req), optional };
     } catch {
-      // fall through → treat whole string as id (will re-throw if truly invalid)
-      if (req.includes("<") || req.includes(">") || req.includes("^") || req.includes("~")) {
-        throw new Error(
-          `Invalid version requirement in "${raw}". Use "*", "2", ">=2", "^2", "~2", or ">=1 <3".`,
-        );
-      }
+      throw new Error(
+        `Invalid version requirement in "${raw}". Use "*", "2", ">=2", "^2", "~2", or ">=1 <3".`,
+      );
     }
   }
   if (!s) throw new Error(`Invalid dependency spec: "${raw}".`);
@@ -431,7 +427,12 @@ export function validateManifest(manifest: Manifest): ValidateResult {
     }
   }
 
+  const selfLoopReported = new Set(
+    errors.filter((e) => e.kind === "cycle" && e.dep).map((e) => e.patchId),
+  );
   for (const c of cycles) {
+    // A single-node self-loop is already reported as "depends on itself" above.
+    if (c.length === 1 && selfLoopReported.has(c[0]!)) continue;
     errors.push({
       kind: "cycle",
       patchId: c[0]!,

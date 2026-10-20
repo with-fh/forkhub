@@ -101,8 +101,20 @@ test("satisfied blocks on missing dep and conflicting patch", async () => {
     threw = (err as Error).message;
   }
   expect(threw).toMatch(/depends on unknown patch|Unsatisfied/);
+  // Failed satisfied must not leave an orphan patch dir (pre-validated).
+  expect(existsSync(join(dir, ".forkhub", "repos", "github.com/test/dep-game", "patches"))).toBe(
+    true,
+  );
+  {
+    const { readdirSync } = await import("node:fs");
+    const patchDir = join(dir, ".forkhub", "repos", "github.com/test/dep-game", "patches");
+    const leftovers = existsSync(patchDir)
+      ? readdirSync(patchDir).filter((d) => d.startsWith("lonely-feature-"))
+      : [];
+    expect(leftovers).toEqual([]);
+  }
 
-  // Cleanup draft left behind by the failed satisfied (patch dir was created, draft file kept).
+  // Cleanup draft branch left behind by the failed satisfied (draft file kept for retry).
   await sh(["checkout", "-q", "main"], fork);
   try {
     await sh(["branch", "-D", "lonely-feature"], fork);
@@ -180,4 +192,67 @@ test("fh deps enable/disable/fix-order round-trip", async () => {
   expect(manifest().patches[b.patchId].depends_on).toEqual([`${a.patchId}@>=1`]);
   expect(validateManifest(manifest()).valid).toBe(true);
   expect(existsSync(join(fork, ".forkhub-draft.md"))).toBe(false);
+});
+
+test("import preserves upstream depends_on/conflicts_with/version", async () => {
+  const { runImport } = await import("../src/import");
+  await runInit({ target: "github.com/test/dep-game" });
+
+  const originalFetch = globalThis.fetch;
+  const upstreamIntent = `---
+id: shared-fix-abcdef12
+title: Shared fix
+target_repo: github.com/test/dep-game
+target_area: [game.ts]
+depends_on: [base-feat-12345678@>=2]
+optional_depends_on: []
+conflicts_with: [rival-feat-87654321]
+status: applied
+version: 3
+license: MIT
+author: alice
+source_url: null
+imported_at: null
+---
+
+## Intent
+
+Shared fix
+`;
+  globalThis.fetch = (async (url: any) => {
+    const u = String(url);
+    if (u.endsWith("/patches/shared-fix-abcdef12/INTENT.md"))
+      return new Response(upstreamIntent, { status: 200 });
+    return new Response("not found", { status: 404 });
+  }) as unknown as typeof fetch;
+  try {
+    const imported = await runImport(
+      "https://github.com/alice/.forkhub/blob/main/repos/github.com/test/dep-game/patches/shared-fix-abcdef12/INTENT.md",
+    );
+    expect(imported.patchId).toBe("shared-fix-abcdef12");
+    const m = manifest();
+    expect(m.patches["shared-fix-abcdef12"].version).toBe(3);
+    expect(m.patches["shared-fix-abcdef12"].depends_on).toEqual(["base-feat-12345678@>=2"]);
+    expect(m.patches["shared-fix-abcdef12"].conflicts_with).toEqual(["rival-feat-87654321"]);
+    expect(m.patches["shared-fix-abcdef12"].status).toBe("imported");
+    // Missing transitive dep is recorded, not fatal at import (npm installs later).
+    const check = validateManifest(m);
+    expect(check.valid).toBe(false);
+    expect(check.errors.some((e) => e.kind === "missing")).toBe(true);
+    const intent = readFileSync(
+      join(
+        dir,
+        ".forkhub",
+        "repos",
+        "github.com/test/dep-game",
+        "patches",
+        "shared-fix-abcdef12",
+        "INTENT.md",
+      ),
+      "utf-8",
+    );
+    expect(intent).toMatch(/depends_on: \[base-feat-12345678@>=2\]/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

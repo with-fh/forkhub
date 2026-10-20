@@ -155,12 +155,38 @@ export async function runSatisfied(options: SatisfiedOptions = {}): Promise<Sati
     throw new Error(`Target repo directory not found: ${repoDir}. Run \`forkhub init\` first.`);
   }
 
+  const manifestPath = join(repoDir, "manifest.json");
+  const manifest = JSON.parse(await Bun.file(manifestPath).text());
+  // Pre-validate on a prospective copy BEFORE writing anything: a failed
+  // satisfied must not leave an orphan patch dir behind (npm validates the
+  // dep tree before installing).
+  {
+    const prospective = JSON.parse(JSON.stringify(manifest));
+    prospective.patches ??= {};
+    prospective.apply_order ??= [];
+    prospective.patches[patchId] = {
+      status: "applied",
+      version: 1,
+      depends_on: dependsOn,
+      optional_depends_on: optionalDependsOn,
+      conflicts_with: conflictsWith,
+      enabled: true,
+    };
+    if (!prospective.apply_order.includes(patchId)) prospective.apply_order.push(patchId);
+    const pre = validateManifest(prospective);
+    const blocking = pre.errors.filter((e) => e.kind !== "order-violation");
+    if (blocking.length > 0) {
+      throw new Error(
+        `Unsatisfied patch dependencies:\n` +
+          blocking.map((e) => `  - [${e.kind}] ${e.message}`).join("\n") +
+          `\nFix with --depends-on/--conflicts-with, or import the missing patch first.`,
+      );
+    }
+  }
+
   const patchDir = join(repoDir, "patches", patchId);
   const { mkdirSync } = await import("node:fs");
   mkdirSync(patchDir, { recursive: true });
-
-  const manifestPath = join(repoDir, "manifest.json");
-  const manifest = JSON.parse(await Bun.file(manifestPath).text());
   const upstreamRemote =
     typeof manifest.upstream_remote === "string" ? manifest.upstream_remote : "upstream";
   const upstreamBranch =
@@ -287,26 +313,11 @@ bun test
     enabled: true,
   };
   if (!manifest.apply_order.includes(patchId)) manifest.apply_order.push(patchId);
-  // Keep install order topological (npm-style); then reject unresolved deps.
+  // Keep install order topological (npm-style). Blocking dep errors were
+  // already rejected pre-write; only order repair remains here.
   {
     const check = validateManifest(manifest);
     if (!check.orderOk) manifest.apply_order = check.fixedOrder;
-    const recheck = validateManifest(manifest);
-    const blocking = recheck.errors.filter(
-      (e) =>
-        e.kind === "missing" ||
-        e.kind === "cycle" ||
-        e.kind === "conflict" ||
-        e.kind === "version-mismatch" ||
-        e.kind === "disabled",
-    );
-    if (blocking.length > 0) {
-      throw new Error(
-        `Unsatisfied patch dependencies:\n` +
-          blocking.map((e) => `  - [${e.kind}] ${e.message}`).join("\n") +
-          `\nFix with --depends-on/--conflicts-with, or import the missing patch first.`,
-      );
-    }
   }
   await Bun.write(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 

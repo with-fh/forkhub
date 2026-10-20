@@ -16,13 +16,11 @@ import { runLinkPr } from "./link-pr";
 import { runReuse } from "./reuse";
 import { runRun } from "./run";
 import { runDeps, formatDepsResult } from "./deps-cmd";
+import { parseDepList } from "./deps";
 
 function splitDepOpt(value: string | boolean | undefined): string[] | undefined {
   if (typeof value !== "string") return undefined;
-  const list = value
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const list = parseDepList(value);
   return list.length > 0 ? list : [];
 }
 
@@ -286,6 +284,9 @@ async function main() {
         } else {
           console.log(formatDriftCheckResult(result));
         }
+        // Broken dep graph (missing/cycle/conflict/version) fails CI-style,
+        // like `npm ls` exiting non-zero on invalid trees. Warnings don't fail.
+        if (result.depErrors.length > 0) process.exitCode = 1;
         break;
       }
 
@@ -472,6 +473,10 @@ async function main() {
         console.log(`Diff applied: ${result.diffApplied ? "yes" : "no"}`);
         console.log(`Tests pass:   ${result.testsPass ? "yes" : "no"}`);
         if (result.tag) console.log(`Tag:          ${result.tag}`);
+        if (result.warnings.length > 0) {
+          console.log(`\nWarnings:`);
+          for (const warn of result.warnings) console.log(`  ⚠ ${warn}`);
+        }
         if (result.errors.length > 0) {
           console.log(`\nErrors:`);
           for (const err of result.errors) console.log(`  - ${err}`);

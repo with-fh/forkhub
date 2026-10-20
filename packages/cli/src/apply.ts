@@ -15,6 +15,7 @@ export type ApplyResult = {
   testsPass: boolean;
   tag: string | null;
   errors: string[];
+  warnings: string[];
 };
 
 function readFrontmatterField(content: string, field: string): string | null {
@@ -71,18 +72,31 @@ export async function runApply(
     : null;
 
   const errors: string[] = [];
+  const warnings: string[] = [];
   let diffApplied = false;
   let testsPass = false;
   let tag: string | null = null;
 
+  const earlyReturn = () => ({
+    bundlePath,
+    patchId,
+    diffApplied,
+    testsPass,
+    tag,
+    errors,
+    warnings,
+  });
+
   const fhMainExists = await gitExec(["rev-parse", "--verify", "forkhub/main"]);
   if (fhMainExists.exitCode !== 0) {
     errors.push("forkhub/main branch does not exist. Run `forkhub satisfied` at least once first.");
-    return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+    return earlyReturn();
   }
 
   // npm-style dependency gate: deps must be enabled + applied + version-satisfied,
   // and no enabled conflicting patch may be present.
+  // Drift-stale deps (realized against an older upstream) are a non-blocking
+  // warning — the realization may already account for them.
   {
     const forkhubDirProbe = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
     const { readdirSync: rd, statSync: st } = await import("node:fs");
@@ -105,6 +119,7 @@ export async function runApply(
       const entry = manifestProbe.patches?.[patchId];
       if (entry && isEnabled(entry)) {
         const depErrors: string[] = [];
+        const depIds: string[] = [];
         for (const spec of parseDepList(entry.depends_on ?? [])) {
           try {
             const parsed = parseDepSpec(spec);
@@ -113,6 +128,7 @@ export async function runApply(
               depErrors.push(`missing dependency "${spec}" — import it first`);
               continue;
             }
+            depIds.push(targetKey);
             const target = manifestProbe.patches[targetKey];
             if (!isEnabled(target)) {
               depErrors.push(
@@ -140,7 +156,33 @@ export async function runApply(
         }
         if (depErrors.length > 0) {
           errors.push(`Unsatisfied dependencies for ${patchId}:\n  - ${depErrors.join("\n  - ")}`);
-          return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+          return earlyReturn();
+        }
+        // Staleness warning: dep realized against an older upstream than HEAD.
+        // Best-effort (no fetch here); drift-check/watch own the fresh signal.
+        try {
+          const upstreamRemote =
+            typeof manifestProbe.upstream_remote === "string"
+              ? manifestProbe.upstream_remote
+              : "upstream";
+          const upstreamBranch =
+            typeof manifestProbe.upstream_main_branch === "string"
+              ? manifestProbe.upstream_main_branch
+              : "main";
+          const headRef = await gitExec(["rev-parse", `${upstreamRemote}/${upstreamBranch}`]);
+          if (headRef.exitCode === 0) {
+            const headShort = shortSha(headRef.stdout);
+            for (const depId of depIds) {
+              const realized = manifestProbe.patches?.[depId]?.last_realized_against_commit;
+              if (realized && shortSha(String(realized)) !== headShort) {
+                warnings.push(
+                  `dependency "${depId}" was realized against ${shortSha(String(realized))} but upstream is at ${headShort} — consider re-deriving ${depId} first (fh drift-check).`,
+                );
+              }
+            }
+          }
+        } catch {
+          // never block apply on staleness probing
         }
       }
     }
@@ -153,13 +195,13 @@ export async function runApply(
     const checkResult = await gitExec(["apply", "--check", realizationDiffPath]);
     if (checkResult.exitCode !== 0) {
       errors.push(`Diff does not apply: ${checkResult.stderr || checkResult.stdout}`);
-      return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+      return earlyReturn();
     }
 
     const applyResult = await gitExec(["apply", realizationDiffPath]);
     if (applyResult.exitCode !== 0) {
       errors.push(`Failed to apply: ${applyResult.stderr || applyResult.stdout}`);
-      return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+      return earlyReturn();
     }
     diffApplied = true;
 
@@ -188,14 +230,14 @@ export async function runApply(
         if (!testsPass) {
           errors.push(`Verification failed:\n${verifyResult.output}`);
           await gitExec(["apply", "-R", realizationDiffPath]);
-          return { bundlePath, patchId, diffApplied: false, testsPass, tag, errors };
+          return { bundlePath, patchId, diffApplied: false, testsPass, tag, errors, warnings };
         }
       } else if (verifyCommand) {
         testsPass = await runVerificationCommand(verifyCommand, process.cwd());
         if (!testsPass) {
           errors.push(`Verification command failed: ${verifyCommand}`);
           await gitExec(["apply", "-R", realizationDiffPath]);
-          return { bundlePath, patchId, diffApplied: false, testsPass, tag, errors };
+          return { bundlePath, patchId, diffApplied: false, testsPass, tag, errors, warnings };
         }
       } else {
         testsPass = true;
@@ -274,5 +316,5 @@ export async function runApply(
     }
   }
 
-  return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+  return earlyReturn();
 }

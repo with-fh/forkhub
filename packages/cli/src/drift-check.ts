@@ -543,6 +543,11 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
   }
 
   if (drifted.length > 0) {
+    if (result.depErrors.length > 0) {
+      lines.push(
+        "⚠ Fix the dependency errors above before re-deriving — blocked patches will fail apply.",
+      );
+    }
     lines.push("What to do next:");
     lines.push(
       "  1. fh re-derive <patch-id>          regenerate the context bundle for each drifted patch (deps first — see blocked: above)",
@@ -552,6 +557,14 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
     lines.push("  3. fh apply <bundle-path>           apply + tag when tests pass");
   } else if (unknown.length > 0) {
     lines.push("Everything else is current; only the unclear entries above need attention.");
+  } else if (result.depErrors.length > 0) {
+    lines.push(
+      "Patches are current but the dependency graph is broken — fix the errors above first:",
+    );
+    lines.push("  fh deps --fix-order   (repairs install order; cannot fix cycles/conflicts)");
+    lines.push(
+      "  fh deps <patch-id> --depends-on ... / --conflicts-with ...   (edit relationships)",
+    );
   } else if (upstreamed.length > 0) {
     lines.push("All covered. Consider removing the upstreamed patches from .forkhub.");
   } else {

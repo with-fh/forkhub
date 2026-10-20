@@ -48,14 +48,19 @@ async function checkBundleComplete(bundlePath: string): Promise<boolean> {
 async function applyBundle(
   bundlePath: string,
   forkhubDir: string,
-): Promise<{ success: boolean; tag: string | null; errors: string[] }> {
+): Promise<{ success: boolean; tag: string | null; errors: string[]; warnings: string[] }> {
   const { runApply } = await import("./apply");
   try {
     const result = await runApply(bundlePath, { forkhubDir, skipTests: false });
-    return { success: result.diffApplied, tag: result.tag, errors: result.errors };
+    return {
+      success: result.diffApplied,
+      tag: result.tag,
+      errors: result.errors,
+      warnings: result.warnings,
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return { success: false, tag: null, errors: [msg] };
+    return { success: false, tag: null, errors: [msg], warnings: [] };
   }
 }
 
@@ -216,6 +221,7 @@ export async function runWatch(options: WatchOptions = {}): Promise<void> {
         if (applyOutcome.success) {
           bundle.status = "applied";
           console.log(`✅ ${bundle.patchId} applied successfully!`);
+          for (const w of applyOutcome.warnings) console.log(`   ⚠ ${w}`);
           if (applyOutcome.tag) console.log(`   Tagged: ${applyOutcome.tag}`);
         } else {
           bundle.status = "failed";

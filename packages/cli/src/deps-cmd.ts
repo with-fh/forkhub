@@ -62,12 +62,8 @@ function findTargetRepo(forkhubDir: string): string {
 
 function splitListOpt(raw: string | undefined): string[] | null {
   if (raw == null) return null;
-  // `--depends-on a,b --depends-on c` isn't supported by the simple parser;
-  // accept comma-separated (and repeat via multiple flags is out of scope).
-  return String(raw)
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  // Accept the same conventions as INTENT.md frontmatter (`[]`, `a, b@>=2`).
+  return parseDepList(raw);
 }
 
 function upsertIntentFrontmatter(intentPath: string, field: string, values: string[]): void {
