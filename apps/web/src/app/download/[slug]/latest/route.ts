@@ -36,8 +36,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (list.length === 0 && !channelExplicit) {
     list = history.stable.length > 0 ? history.stable : history.nightly;
   }
+  const apiNote =
+    !history.apiOk && history.apiStatus != null
+      ? ` Catalog API said HTTP ${history.apiStatus} — retry shortly.`
+      : "";
   if (list.length === 0) {
-    return new Response(`No ${channel} builds published yet for ${slug}.`, {
+    return new Response(`No ${channel} builds published yet for ${slug}.${apiNote}`, {
       status: 404,
       headers: { "content-type": "text/plain; charset=utf-8" },
     });
