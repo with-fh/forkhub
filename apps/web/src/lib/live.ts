@@ -1,7 +1,11 @@
 import { OSS_CATALOG } from "@forkhub/api/oss/data";
 
-const CATALOG_RELEASES_URL =
-  "https://api.github.com/repos/with-fh/.forkhub/releases?per_page=100";
+import { channelHistory, type ChannelRelease, type GhRelease } from "./releases";
+
+const CATALOG_RELEASES_URL = "https://api.github.com/repos/with-fh/.forkhub/releases?per_page=100";
+
+/** Number of recent releases kept per channel for the version picker. */
+export const CHANNEL_HISTORY_LIMIT = 10;
 
 export type ChannelInfo = {
   /** Full release tag, e.g. v2.8.8-fh.with-fh.3 */
@@ -17,12 +21,9 @@ export type LiveChannels = {
   nightly: ChannelInfo | null;
 };
 
-type GhRelease = {
-  tag_name: string;
-  name: string;
-  html_url: string;
-  published_at: string;
-  assets: { name: string; browser_download_url: string }[];
+export type LiveChannelHistory = {
+  stable: ChannelRelease[];
+  nightly: ChannelRelease[];
 };
 
 // Upstream star counts, cached for a day. Null per-entry on failure so
@@ -34,7 +35,7 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
       try {
         const res = await fetch(`https://api.github.com/repos/${e.upstreamRepo}`, {
           next: { revalidate: 86400 },
-          headers: { Accept: "application/vnd.github+json" },
+          headers: githubHeaders(),
         });
         if (!res.ok) {
           out[e.slug] = null;
@@ -63,16 +64,51 @@ function ownerOf(r: GhRelease): "t3" | "natively" | null {
   return null;
 }
 
-function toChannel(r: GhRelease): ChannelInfo {
-  const appImage = r.assets.find((a) => a.name.endsWith(".AppImage")) ?? null;
-  const tgz = r.assets.find((a) => a.name.endsWith(".tgz")) ?? null;
-  return {
-    version: r.tag_name,
-    publishedAt: r.published_at,
-    releaseUrl: r.html_url,
-    appImageUrl: appImage?.browser_download_url ?? null,
-    tgzUrl: tgz?.browser_download_url ?? null,
-  };
+type GhApiAsset = { name: string; browser_download_url: string; size?: number };
+
+type PageFetcher = (
+  url: string,
+  init?: RequestInit & { next?: { revalidate?: number } },
+) => Promise<Response>;
+
+function githubHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  // Authenticated requests get 5,000/hr instead of 60 — set GITHUB_TOKEN
+  // (server-only; never NEXT_PUBLIC_) so shared egress IPs don't starve.
+  const token = process.env.GITHUB_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+/** Exported for unit tests (stub the fetcher to avoid network). */
+export async function fetchCatalogReleases(
+  fetchImpl: PageFetcher = fetch as PageFetcher,
+): Promise<GhRelease[]> {
+  // Paginate (up to 3 pages): nightlies publish daily, so a single page can
+  // push older stable releases out of view. Cached 1h per page URL, so this
+  // costs ~3 calls/hour — well within even the unauthenticated quota.
+  const out: GhRelease[] = [];
+  for (let page = 1; page <= 3; page++) {
+    const res = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
+      next: { revalidate: 3600 },
+      headers: githubHeaders(),
+    });
+    if (!res.ok) break;
+    const batch = (await res.json()) as (GhRelease & { assets: GhApiAsset[] })[];
+    if (batch.length === 0) break;
+    out.push(
+      ...batch.map((r) => ({
+        ...r,
+        assets: (r.assets ?? []).map((a) => ({
+          name: a.name,
+          browser_download_url: a.browser_download_url,
+          size: typeof a.size === "number" ? a.size : undefined,
+        })),
+      })),
+    );
+    if (batch.length < 100) break;
+  }
+  return out;
 }
 
 const SLUG_OWNER: Record<string, "t3" | "natively"> = {
@@ -84,24 +120,45 @@ const SLUG_OWNER: Record<string, "t3" | "natively"> = {
 // GitHub releases (newest first). Cached for an hour — nightlies publish
 // daily, so a day-long cache would serve yesterday's build as "current".
 export async function getChannelsFor(slug: string): Promise<LiveChannels> {
-  const out: LiveChannels = { stable: null, nightly: null };
+  const history = await getChannelReleases(slug, 1);
+  const first = (list: ChannelRelease[]): ChannelInfo | null => {
+    const rel = list[0];
+    if (!rel) return null;
+    const appImage = rel.assets.find((a) => a.format === "AppImage") ?? null;
+    return {
+      version: rel.version,
+      publishedAt: rel.publishedAt,
+      releaseUrl: rel.releaseUrl,
+      appImageUrl: appImage?.url ?? null,
+      tgzUrl: null,
+    };
+  };
+  return { stable: first(history.stable), nightly: first(history.nightly) };
+}
+
+/**
+ * Recent releases per channel (newest first) for the version picker and
+ * per-platform asset cards. Empty lists render the "not published yet"
+ * states — never throws, so pages degrade to static content offline.
+ */
+export async function getChannelReleases(
+  slug: string,
+  limitPerChannel = CHANNEL_HISTORY_LIMIT,
+): Promise<LiveChannelHistory> {
+  const out: LiveChannelHistory = { stable: [], nightly: [] };
   const owner = SLUG_OWNER[slug];
   if (!owner) return out;
   try {
-    const res = await fetch(CATALOG_RELEASES_URL, {
-      next: { revalidate: 3600 },
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!res.ok) return out;
-    const releases = (await res.json()) as GhRelease[];
-    for (const r of releases) {
-      if (ownerOf(r) !== owner) continue;
-      const channel = /nightly/i.test(r.tag_name) ? "nightly" : "stable";
-      if (!out[channel]) out[channel] = toChannel(r);
-      if (out.stable && out.nightly) break;
-    }
+    const releases = await fetchCatalogReleases(fetch as PageFetcher);
+    const { stable, nightly } = channelHistory(
+      releases,
+      (r) => ownerOf(r) === owner,
+      limitPerChannel,
+    );
+    out.stable = stable;
+    out.nightly = nightly;
   } catch {
-    // fall through with nulls; pages render "not published yet" states
+    // fall through with empties; pages render "not published yet" states
   }
   return out;
 }
