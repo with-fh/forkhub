@@ -72,7 +72,12 @@ type PageFetcher = (
 ) => Promise<Response>;
 
 function githubHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    // GitHub requires a UA; Workers fetch sends none by default, and
+    // datacenter egress without one is treated as abusive (HTTP 403).
+    "User-Agent": "forkhub-web (+https://forkhub.imbios.dev)",
+  };
   // Authenticated requests get 5,000/hr instead of 60 — set GITHUB_TOKEN
   // (server-only; never NEXT_PUBLIC_) so shared egress IPs don't starve.
   const token = process.env.GITHUB_TOKEN;
@@ -103,7 +108,13 @@ export async function fetchCatalogReleases(
     }
     apiStatus = res.status;
     if (!res.ok) {
-      console.warn(`[download] catalog API HTTP ${res.status} (page ${page})`);
+      let detail = "";
+      try {
+        detail = ` — ${(await res.text()).slice(0, 160)}`;
+      } catch {
+        // ignore body read failures
+      }
+      console.warn(`[download] catalog API HTTP ${res.status} (page ${page})${detail}`);
       break;
     }
     apiOk = true;
