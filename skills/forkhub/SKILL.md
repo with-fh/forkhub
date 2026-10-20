@@ -269,8 +269,9 @@ forkhub <command>
 | Command                                                     | Purpose                                                       |
 | ----------------------------------------------------------- | ------------------------------------------------------------- |
 | `init [--target <repo>]`                                    | Set up .forkhub repo (auto-detects fork vs single-remote)     |
-| `draft "<intent>"`                                          | Create draft branch                                           |
-| `satisfied [--skip-port]`                                   | Finalize intent, port, tag                                    |
+| `draft "<intent>" [--depends-on <a,b@>=2>]`                 | Create draft branch (stacked on deps when given)              |
+| `satisfied [--skip-port] [--depends-on <a>]`                | Finalize intent, port, tag (blocks on unsatisfied deps)       |
+| `deps [<patch-id>] [--fix-order] [--enable/--disable <id>]` | Inspect/fix deps, version reqs, conflicts, install order      |
 | `pr [--draft] [--base <branch>]`                            | Push current branch to fork + open PR to upstream (fork only) |
 | `link-pr <patch\|branch> <pr#\|url>`                        | Link an existing upstream PR to a patch                       |
 | `search [--target <repo>] [--author <user>] [--sort stars]` | Find published patches (★ = popularity)                       |

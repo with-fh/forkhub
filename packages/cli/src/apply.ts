@@ -81,6 +81,71 @@ export async function runApply(
     return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
   }
 
+  // npm-style dependency gate: deps must be enabled + applied + version-satisfied,
+  // and no enabled conflicting patch may be present.
+  {
+    const forkhubDirProbe = options.forkhubDir ?? join(process.cwd(), "..", ".forkhub");
+    const { readdirSync: rd, statSync: st } = await import("node:fs");
+    const findManifest = (dir: string): string | null => {
+      if (!existsSync(dir)) return null;
+      for (const e of rd(dir)) {
+        const full = join(dir, e);
+        if (!st(full).isDirectory()) continue;
+        if (e === patchId) return join(full, "..", "..", "manifest.json");
+        const sub = findManifest(full);
+        if (sub) return sub;
+      }
+      return null;
+    };
+    const manifestPathProbe = findManifest(join(forkhubDirProbe, "repos"));
+    if (manifestPathProbe && existsSync(manifestPathProbe)) {
+      const { validateManifest, resolveDepId, parseDepSpec, parseDepList, isEnabled } =
+        await import("./deps");
+      const manifestProbe = JSON.parse(readFileSync(manifestPathProbe, "utf-8"));
+      const entry = manifestProbe.patches?.[patchId];
+      if (entry && isEnabled(entry)) {
+        const depErrors: string[] = [];
+        for (const spec of parseDepList(entry.depends_on ?? [])) {
+          try {
+            const parsed = parseDepSpec(spec);
+            const targetKey = resolveDepId(manifestProbe, parsed.id);
+            if (!targetKey) {
+              depErrors.push(`missing dependency "${spec}" — import it first`);
+              continue;
+            }
+            const target = manifestProbe.patches[targetKey];
+            if (!isEnabled(target)) {
+              depErrors.push(
+                `dependency "${targetKey}" is disabled — enable it (fh deps --enable ${targetKey})`,
+              );
+              continue;
+            }
+            if (target.status !== "applied") {
+              depErrors.push(
+                `dependency "${targetKey}" is "${target.status ?? "unknown"}" — apply it before ${patchId}`,
+              );
+            }
+          } catch (err) {
+            depErrors.push(`bad dep spec "${spec}" (${err instanceof Error ? err.message : err})`);
+          }
+        }
+        const manifestCheck = validateManifest(manifestProbe);
+        for (const e of manifestCheck.errors) {
+          if (
+            e.patchId === patchId &&
+            (e.kind === "conflict" || e.kind === "version-mismatch" || e.kind === "cycle")
+          ) {
+            depErrors.push(`[${e.kind}] ${e.message}`);
+          }
+        }
+        if (depErrors.length > 0) {
+          errors.push(`Unsatisfied dependencies for ${patchId}:\n  - ${depErrors.join("\n  - ")}`);
+          return { bundlePath, patchId, diffApplied, testsPass, tag, errors };
+        }
+      }
+    }
+  }
+
   const previousBranch = await gitOrThrow(["rev-parse", "--abbrev-ref", "HEAD"]);
   await checkout("forkhub/main");
 
@@ -147,7 +212,7 @@ export async function runApply(
         ? fhTagsResult.stdout.split("\n").filter(Boolean).length
         : 0;
       tag = `${upstreamTag}-fh${fhCount + 1}`;
-      await gitOrThrow(["tag", tag]);
+      await gitOrThrow(["tag", "-m", tag, tag]);
     }
   } finally {
     await checkout(previousBranch);

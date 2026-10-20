@@ -1,11 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  isGitRepo,
-  gitOrThrow,
-  gitExec,
-  shortSha,
-} from "./git";
+import { isGitRepo, gitOrThrow, gitExec, shortSha } from "./git";
 
 export type DriftCheckOptions = {
   forkhubDir?: string;
@@ -14,12 +9,15 @@ export type DriftCheckOptions = {
 export type PatchDriftStatus = {
   patchId: string;
   title?: string | null;
-  status: "current" | "drifted" | "unknown" | "upstreamed";
+  status: "current" | "drifted" | "unknown" | "upstreamed" | "disabled";
   lastRealizedSha: string;
   targetArea: string[];
   upstreamChanged: boolean;
   targetAreaChanged: boolean;
   filesChangedInTargetArea: string[];
+  /** Required deps that are themselves drifted/unknown/broken — re-derive these first. */
+  blockedBy: string[];
+  dependsOn: string[];
   appliedUpstreamPr?: {
     number: number;
     url: string;
@@ -35,11 +33,17 @@ export type DriftCheckResult = {
   lastKnownSha: string;
   upstreamAdvanced: boolean;
   patches: PatchDriftStatus[];
+  depErrors: string[];
+  depWarnings: string[];
+  /** Topological install order (deps first). */
+  depOrder: string[];
   summary: {
     total: number;
     current: number;
     drifted: number;
     wouldSkip: number;
+    blocked: number;
+    disabled: number;
   };
 };
 
@@ -59,7 +63,10 @@ function readUpstreamConfig(repoDir: string): any {
   return JSON.parse(readFileSync(upstreamJsonPath, "utf-8"));
 }
 
-function readIntentMeta(repoDir: string, patchId: string): { title: string | null; targetArea: string[] } {
+function readIntentMeta(
+  repoDir: string,
+  patchId: string,
+): { title: string | null; targetArea: string[] } {
   const intentPath = join(repoDir, "patches", patchId, "INTENT.md");
   if (!existsSync(intentPath)) return { title: null, targetArea: [] };
   const content = readFileSync(intentPath, "utf-8");
@@ -72,6 +79,30 @@ function readIntentMeta(repoDir: string, patchId: string): { title: string | nul
         .filter(Boolean)
     : [];
   return { title: titleMatch?.[1]?.trim().replace(/["']/g, "") ?? null, targetArea };
+}
+
+function overlapWarnings(patches: PatchDriftStatus[], manifest: any): string[] {
+  const warnings: string[] = [];
+  const enabled = patches.filter((p) => p.status !== "disabled" && p.status !== "upstreamed");
+  for (let i = 0; i < enabled.length; i++) {
+    for (let j = i + 1; j < enabled.length; j++) {
+      const a = enabled[i]!;
+      const b = enabled[j]!;
+      const shared = a.targetArea.filter((f) => b.targetArea.includes(f));
+      if (shared.length === 0) continue;
+      const aDeps: string[] = manifest.patches?.[a.patchId]?.depends_on ?? [];
+      const bDeps: string[] = manifest.patches?.[b.patchId]?.depends_on ?? [];
+      const related =
+        aDeps.some((d) => String(d).startsWith(b.patchId)) ||
+        bDeps.some((d) => String(d).startsWith(a.patchId));
+      if (!related) {
+        warnings.push(
+          `${a.patchId} ↔ ${b.patchId} share target_area [${shared.join(", ")}] with no depends_on relationship — declare one with fh deps (or conflicts_with if incompatible).`,
+        );
+      }
+    }
+  }
+  return warnings;
 }
 
 async function findTargetRepo(forkhubDir: string, forkCwd: string): Promise<string> {
@@ -119,13 +150,13 @@ async function checkUpstreamPrState(
   prNumber: number,
 ): Promise<{ state: "open" | "merged" | "closed"; mergeCommit?: string } | null> {
   // Use gh CLI (not git) to query PR state
-  const proc = Bun.spawn(["gh", "pr", "view", String(prNumber),
-    "--repo", targetRepo,
-    "--json", "state,mergeCommit",
-  ], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  const proc = Bun.spawn(
+    ["gh", "pr", "view", String(prNumber), "--repo", targetRepo, "--json", "state,mergeCommit"],
+    {
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
   const [stdout] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
@@ -181,8 +212,35 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
   const patchStatuses: PatchDriftStatus[] = [];
   let manifestDirty = false;
 
-  for (const patchId of patchIds) {
+  const { validateManifest, parseDepList, resolveDepId, isEnabled } = await import("./deps");
+  const depCheck = validateManifest(manifest);
+  const depOrder = depCheck.order;
+  const orderRank = new Map(depOrder.map((id, i) => [id, i] as const));
+  const orderedPatchIds = [...patchIds].sort(
+    (a, b) =>
+      (orderRank.get(a) ?? Number.MAX_SAFE_INTEGER) -
+        (orderRank.get(b) ?? Number.MAX_SAFE_INTEGER) || (a < b ? -1 : 1),
+  );
+
+  for (const patchId of orderedPatchIds) {
     const patchInfo = manifest.patches[patchId];
+    if (!isEnabled(patchInfo)) {
+      const intentMetaDisabled = readIntentMeta(repoDir, patchId);
+      patchStatuses.push({
+        patchId,
+        title: intentMetaDisabled.title,
+        status: "disabled",
+        lastRealizedSha: patchInfo.last_realized_against_commit ?? "",
+        targetArea: intentMetaDisabled.targetArea,
+        upstreamChanged: false,
+        targetAreaChanged: false,
+        filesChangedInTargetArea: [],
+        blockedBy: [],
+        dependsOn: parseDepList(patchInfo.depends_on ?? []),
+        appliedUpstreamPr: null,
+      });
+      continue;
+    }
     const lastRealizedSha = patchInfo.last_realized_against_commit;
     const intentMeta = readIntentMeta(repoDir, patchId);
     const targetArea = intentMeta.targetArea;
@@ -212,9 +270,8 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
           // silently corrupt drift tracking.
           const mergeOnTracked =
             !!prState.mergeCommit &&
-            (
-              await gitExec(["merge-base", "--is-ancestor", prState.mergeCommit, upstreamSha])
-            ).exitCode === 0;
+            (await gitExec(["merge-base", "--is-ancestor", prState.mergeCommit, upstreamSha]))
+              .exitCode === 0;
           if (mergeOnTracked) {
             status = "upstreamed";
             // Advance last_realized to the merge commit so the next drift
@@ -241,7 +298,10 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
         if (targetArea.length > 0) {
           const areaArgs = targetArea.flatMap((a) => ["--", a]);
           const diffResult = await gitExec([
-            "diff", "--name-only", `${lastRealizedSha}..${upstreamSha}`, ...areaArgs,
+            "diff",
+            "--name-only",
+            `${lastRealizedSha}..${upstreamSha}`,
+            ...areaArgs,
           ]);
           filesChangedInTargetArea = diffResult.stdout
             ? diffResult.stdout.split("\n").filter(Boolean)
@@ -269,8 +329,45 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
       upstreamChanged,
       targetAreaChanged,
       filesChangedInTargetArea,
+      blockedBy: [],
+      dependsOn: parseDepList(patchInfo.depends_on ?? []),
       appliedUpstreamPr: prInfo,
     });
+  }
+
+  // Second pass: blocked-by-dependencies (npm-style — re-derive deps first).
+  // A patch is blocked when any required dep is drifted/unknown, disabled,
+  // missing, or version-mismatched.
+  {
+    const byId = new Map(patchStatuses.map((p) => [p.patchId, p] as const));
+    const { parseDepSpec } = await import("./deps");
+    for (const p of patchStatuses) {
+      if (p.status === "disabled" || p.status === "upstreamed") continue;
+      const info = manifest.patches?.[p.patchId];
+      if (!info) continue;
+      for (const spec of parseDepList(info.depends_on ?? [])) {
+        let depId = spec;
+        try {
+          depId = resolveDepId(manifest, parseDepSpec(spec).id) ?? parseDepSpec(spec).id;
+        } catch {
+          p.blockedBy.push(spec);
+          continue;
+        }
+        const depStatus = byId.get(depId);
+        if (!depStatus || depStatus.status === "disabled") {
+          if (!p.blockedBy.includes(depId)) p.blockedBy.push(depId);
+        } else if (depStatus.status === "drifted" || depStatus.status === "unknown") {
+          if (!p.blockedBy.includes(depId)) p.blockedBy.push(depId);
+        }
+      }
+      // Surface hard dep errors (missing/version/conflict/cycle) as blockers too.
+      for (const e of depCheck.errors) {
+        if (e.patchId === p.patchId && e.dep && !p.blockedBy.includes(e.dep)) {
+          const resolved = resolveDepId(manifest, e.dep) ?? e.dep;
+          if (!p.blockedBy.includes(resolved)) p.blockedBy.push(resolved);
+        }
+      }
+    }
   }
 
   // Persist manifest updates (e.g. advanced last_realized on UPSTREAMED)
@@ -279,11 +376,19 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
     writeFileSync(join(repoDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
   }
 
+  const depErrors = depCheck.errors.map((e) => `[${e.kind}] ${e.message}`);
+  const depWarnings = [
+    ...depCheck.warnings.map((w) => `[${w.kind}] ${w.message}`),
+    ...overlapWarnings(patchStatuses, manifest),
+  ];
+
   const summary = {
     total: patchStatuses.length,
     current: patchStatuses.filter((p) => p.status === "current").length,
     drifted: patchStatuses.filter((p) => p.status === "drifted").length,
     wouldSkip: patchStatuses.filter((p) => p.status === "current" && p.upstreamChanged).length,
+    blocked: patchStatuses.filter((p) => p.blockedBy.length > 0).length,
+    disabled: patchStatuses.filter((p) => p.status === "disabled").length,
   };
 
   return {
@@ -291,6 +396,9 @@ export async function runDriftCheck(options: DriftCheckOptions = {}): Promise<Dr
     lastKnownSha,
     upstreamAdvanced,
     patches: patchStatuses,
+    depErrors,
+    depWarnings,
+    depOrder,
     summary,
   };
 }
@@ -319,6 +427,8 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
   const upstreamed = result.patches.filter((p) => p.status === "upstreamed");
   const unknown = result.patches.filter((p) => p.status === "unknown");
   const currentCount = result.summary.current;
+  const blockedCount = result.summary.blocked ?? 0;
+  const disabledCount = result.summary.disabled ?? 0;
 
   const labelOf = (p: PatchDriftStatus): string => {
     if (p.title) return `“${truncate(sanitize(p.title), 80)}”`;
@@ -328,7 +438,9 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
 
   lines.push(
     `Upstream: ${shortSha(result.upstreamSha)} ${
-      result.upstreamAdvanced ? `(advanced from ${shortSha(result.lastKnownSha)})` : "(unchanged since last check)"
+      result.upstreamAdvanced
+        ? `(advanced from ${shortSha(result.lastKnownSha)})`
+        : "(unchanged since last check)"
     }`,
   );
 
@@ -339,9 +451,18 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
   }
 
   lines.push(
-    `${result.summary.total} intent ${result.summary.total === 1 ? "patch" : "patches"}: ${drifted.length} need re-derivation · ${upstreamed.length} upstreamed · ${unknown.length} unclear · ${currentCount} current`,
+    `${result.summary.total} intent ${result.summary.total === 1 ? "patch" : "patches"}: ${drifted.length} need re-derivation · ${upstreamed.length} upstreamed · ${unknown.length} unclear · ${currentCount} current${blockedCount > 0 ? ` · ${blockedCount} blocked by deps` : ""}${disabledCount > 0 ? ` · ${disabledCount} disabled` : ""}`,
   );
+  if (result.depOrder.length > 0) {
+    lines.push(`Install order: ${result.depOrder.join(" → ")}`);
+  }
   lines.push("");
+
+  if (result.depErrors.length > 0) {
+    lines.push("Dependency errors — fix before re-deriving:");
+    for (const e of result.depErrors) lines.push(`  ✗ ${sanitize(e)}`);
+    lines.push("");
+  }
 
   if (drifted.length > 0) {
     lines.push("Needs re-derivation — upstream changed files these patches cover:");
@@ -349,6 +470,14 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
     for (const [i, patch] of drifted.entries()) {
       lines.push(`  ${i + 1}. ${labelOf(patch)}`);
       lines.push(`      patch:    ${pidOf(patch)}`);
+      if (patch.dependsOn.length > 0) {
+        lines.push(`      needs:    ${patch.dependsOn.map((d) => sanitize(d)).join(", ")}`);
+      }
+      if (patch.blockedBy.length > 0) {
+        lines.push(
+          `      blocked:  re-derive ${patch.blockedBy.map((d) => sanitize(d)).join(", ")} first`,
+        );
+      }
       if (!patch.lastRealizedSha) {
         lines.push("      reason:   imported but never realized against upstream yet");
       } else if (patch.filesChangedInTargetArea.length > 0) {
@@ -357,14 +486,18 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
         );
         lines.push(`                ${summarizeFiles(patch.filesChangedInTargetArea)}`);
       } else {
-        lines.push("      reason:   target_area not declared — cannot prove it's still safe, treat as drifted");
+        lines.push(
+          "      reason:   target_area not declared — cannot prove it's still safe, treat as drifted",
+        );
       }
       if (patch.appliedUpstreamPr?.state === "open") {
         lines.push(
           `      upstream: PR #${patch.appliedUpstreamPr.number} still open — once merged, this patch becomes obsolete`,
         );
       } else if (patch.appliedUpstreamPr?.state === "closed") {
-        lines.push(`      upstream: PR #${patch.appliedUpstreamPr.number} was closed without merging`);
+        lines.push(
+          `      upstream: PR #${patch.appliedUpstreamPr.number} was closed without merging`,
+        );
       } else if (
         patch.appliedUpstreamPr?.state === "merged" &&
         patch.appliedUpstreamPr.mergeOnTrackedBranch === false
@@ -400,9 +533,20 @@ export function formatDriftCheckResult(result: DriftCheckResult): string {
     lines.push("");
   }
 
+  if (result.depWarnings.length > 0) {
+    lines.push("Dependency warnings:");
+    for (const w of result.depWarnings.slice(0, 10)) lines.push(`  ⚠ ${sanitize(w)}`);
+    if (result.depWarnings.length > 10) {
+      lines.push(`  … +${result.depWarnings.length - 10} more (fh deps --json)`);
+    }
+    lines.push("");
+  }
+
   if (drifted.length > 0) {
     lines.push("What to do next:");
-    lines.push("  1. fh re-derive <patch-id>          regenerate the context bundle for each drifted patch");
+    lines.push(
+      "  1. fh re-derive <patch-id>          regenerate the context bundle for each drifted patch (deps first — see blocked: above)",
+    );
     lines.push("  2. point your AI agent at prompt.md in the bundle and let it fill");
     lines.push("     REALIZATION/realization.diff (fh watch --agent can automate this)");
     lines.push("  3. fh apply <bundle-path>           apply + tag when tests pass");

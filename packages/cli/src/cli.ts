@@ -15,6 +15,16 @@ import { runPublish } from "./publish";
 import { runLinkPr } from "./link-pr";
 import { runReuse } from "./reuse";
 import { runRun } from "./run";
+import { runDeps, formatDepsResult } from "./deps-cmd";
+
+function splitDepOpt(value: string | boolean | undefined): string[] | undefined {
+  if (typeof value !== "string") return undefined;
+  const list = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return list.length > 0 ? list : [];
+}
 
 async function printVersion(): Promise<void> {
   try {
@@ -30,8 +40,13 @@ const HELP = `fh (forkhub) — keep up-to-date upstream + your custom patches
 
 Usage:
   fh init [--target <repo>]              Set up .forkhub repo
-  fh draft "<intent>"                    Create a draft branch for a new patch
-  fh satisfied [--skip-port]             Finalize intent, port to forkhub/main
+  fh draft "<intent>" [--depends-on <a,b@>=2>] [--conflicts-with <c>] [--optional-depends-on <d>]
+                                         Create a draft branch for a new patch (stacked on deps when given)
+  fh satisfied [--skip-port] [--depends-on <a,b>] [--conflicts-with <c>] [--optional-depends-on <d>]
+                                         Finalize intent, port to forkhub/main
+  fh deps [<patch-id>] [--depends-on <list>] [--conflicts-with <list>] [--optional-depends-on <list>]
+          [--enable <id>] [--disable <id>] [--fix-order] [--json]
+                                         Inspect/fix patch dependencies (npm-style)
   fh pr [--draft] [--base <branch>]      Push current branch + open PR to upstream
   fh link-pr <patch-id|branch> <pr#|url> Link an existing upstream PR to a patch
   fh publish [--message <msg>] [--allow-missing-pr]  Push .forkhub repo (requires open issue+PR by default)
@@ -160,11 +175,18 @@ async function main() {
       }
 
       case "draft": {
+        // `fh draft "<intent>" -- <intent continued>` is not needed; but flags
+        // like --depends-on must not become part of the intent. positional
+        // already excludes flags, so join what's left as the intent.
         const intent = positional.join(" ");
         if (!intent) {
           throw new Error('Intent description required. Usage: fh draft "<intent>"');
         }
-        const result = await runDraft(intent);
+        const result = await runDraft(intent, {
+          dependsOn: splitDepOpt(opts["depends-on"]),
+          optionalDependsOn: splitDepOpt(opts["optional-depends-on"]),
+          conflictsWith: splitDepOpt(opts["conflicts-with"]),
+        });
         console.log(`Branch:    ${result.branch}`);
         console.log(`Slug:      ${result.slug}`);
         console.log(`Base:      ${result.baseSha.slice(0, 7)}`);
@@ -175,8 +197,19 @@ async function main() {
       }
 
       case "satisfied": {
-        const satisfiedOpts: { skipPort?: boolean } = {};
+        const satisfiedOpts: {
+          skipPort?: boolean;
+          dependsOn?: string[];
+          optionalDependsOn?: string[];
+          conflictsWith?: string[];
+        } = {};
         if (opts["skip-port"] === true) satisfiedOpts.skipPort = true;
+        const dep = splitDepOpt(opts["depends-on"]);
+        const optDep = splitDepOpt(opts["optional-depends-on"]);
+        const conf = splitDepOpt(opts["conflicts-with"]);
+        if (dep) satisfiedOpts.dependsOn = dep;
+        if (optDep) satisfiedOpts.optionalDependsOn = optDep;
+        if (conf) satisfiedOpts.conflictsWith = conf;
 
         const result = await runSatisfied(satisfiedOpts);
         console.log(`Patch ID:       ${result.patchId}`);
@@ -253,6 +286,32 @@ async function main() {
         } else {
           console.log(formatDriftCheckResult(result));
         }
+        break;
+      }
+
+      case "deps": {
+        const patchId = positional[0];
+        const result = await runDeps({
+          patchId,
+          dependsOn: typeof opts["depends-on"] === "string" ? opts["depends-on"] : undefined,
+          optionalDependsOn:
+            typeof opts["optional-depends-on"] === "string"
+              ? opts["optional-depends-on"]
+              : undefined,
+          conflictsWith:
+            typeof opts["conflicts-with"] === "string" ? opts["conflicts-with"] : undefined,
+          enable: opts.enable as string | boolean | undefined,
+          disable: opts.disable as string | boolean | undefined,
+          fixOrder: opts["fix-order"] === true,
+          json: opts.json === true,
+        });
+        if (opts.json === true) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatDepsResult(result));
+          if (result.orderFixed) console.log(`\napply_order rewritten to topological order.`);
+        }
+        if (!result.valid) process.exitCode = 1;
         break;
       }
 

@@ -92,27 +92,28 @@ Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
 
 ## Commands
 
-| Command                                                     | Purpose                                                                                                 |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `init`                                                      | Set up `.forkhub` repo + config                                                                         |
-| `draft "<intent>"`                                          | Create a `*` branch + draft INTENT.md                                                                   |
-| `satisfied`                                                 | Finalize intent, capture diff, port to `forkhub/main`, tag                                              |
-| `pr [--draft] [--base <branch>]`                            | Push branch to your fork + open PR upstream (defaults `--base` to the detected upstream default branch) |
-| `link-pr <patch-id\|branch> <pr#\|url>`                     | Link an existing upstream PR to a patch (if you opened it outside `fh pr`)                              |
-| `publish`                                                   | Push your `.forkhub` intent repo public so others can import                                            |
-| `import <url>`                                              | Import a patch intent from another user's `.forkhub`                                                    |
-| `reuse <url> [--agent <name>]`                              | Import + build re-derivation bundle in one step                                                         |
-| `search [--target <repo>] [--author <user>] [--sort stars]` | Find published patches (★ = publisher repo stars)                                                       |
-| `popular [--target <repo>]`                                 | Most-starred patches first (merge-priority signal)                                                      |
-| `re-derive <patch-id>`                                      | Generate context bundle for AI re-derivation                                                            |
-| `apply <bundle-path>`                                       | Apply realization from bundle (with verify gate)                                                        |
-| `drift-check`                                               | Detect which patches drifted from upstream                                                              |
-| `watch [--once] [--interval <sec>]`                         | Daemon: auto-detect drift + regenerate + apply                                                          |
-| `update [--tag]`                                            | Consumer: advance to latest tag                                                                         |
-| `rollback`                                                  | Consumer: roll back to previous tag                                                                     |
-| `run <pkg> <owner> [-c|--channel] [-v|--version] [-- args]` | Run a published ForkHub package (e.g. `fh run t3 ImBIOS -- --version`) |
-| `status`                                                    | Inspect current state                                                                                   |
-| `--version` / `--help`                                      | Version / help                                                                                          |
+| Command                                                                                                     | Purpose                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------------- |
+| `init`                                                                                                      | Set up `.forkhub` repo + config                                                                         |
+| `draft "<intent>" [--depends-on <a,b@>=2>] [--conflicts-with <c>]`                                          | Create a `*` branch + draft INTENT.md (stacked on `forkhub/main` when deps given)                       |
+| `satisfied [--skip-port] [--depends-on <a>] [--conflicts-with <c>]`                                         | Finalize intent, capture diff, port to `forkhub/main`, tag (blocks on unsatisfied deps)                 |
+| `deps [<patch-id>] [--depends-on <list>] [--conflicts-with <list>] [--enable/--disable <id>] [--fix-order]` | Inspect/fix patch dependencies (npm-style: version reqs, conflicts, topo order)                         |
+| `pr [--draft] [--base <branch>]`                                                                            | Push branch to your fork + open PR upstream (defaults `--base` to the detected upstream default branch) |
+| `link-pr <patch-id\|branch> <pr#\|url>`                                                                     | Link an existing upstream PR to a patch (if you opened it outside `fh pr`)                              |
+| `publish`                                                                                                   | Push your `.forkhub` intent repo public so others can import                                            |
+| `import <url>`                                                                                              | Import a patch intent from another user's `.forkhub`                                                    |
+| `reuse <url> [--agent <name>]`                                                                              | Import + build re-derivation bundle in one step                                                         |
+| `search [--target <repo>] [--author <user>] [--sort stars]`                                                 | Find published patches (★ = publisher repo stars)                                                       |
+| `popular [--target <repo>]`                                                                                 | Most-starred patches first (merge-priority signal)                                                      |
+| `re-derive <patch-id>`                                                                                      | Generate context bundle for AI re-derivation                                                            |
+| `apply <bundle-path>`                                                                                       | Apply realization from bundle (with verify gate)                                                        |
+| `drift-check`                                                                                               | Detect which patches drifted from upstream                                                              |
+| `watch [--once] [--interval <sec>]`                                                                         | Daemon: auto-detect drift + regenerate + apply                                                          |
+| `update [--tag]`                                                                                            | Consumer: advance to latest tag                                                                         |
+| `rollback`                                                                                                  | Consumer: roll back to previous tag                                                                     |
+| `run <pkg> <owner> [-c                                                                                      | --channel] [-v                                                                                          | --version] [-- args]` | Run a published ForkHub package (e.g. `fh run t3 ImBIOS -- --version`) |
+| `status`                                                                                                    | Inspect current state                                                                                   |
+| `--version` / `--help`                                                                                      | Version / help                                                                                          |
 
 ## How it works
 
@@ -144,6 +145,7 @@ The core invariant: **intent is truth, diffs are evidence.** When upstream relea
 - **Drift detection is cheap.** `git log <last_realized>..<upstream> -- <target_area>` tells you if the relevant area changed. Most releases touch nothing important.
 - **Verification is mandatory.** Each patch has a runnable `verify.sh`. Failed verification = no auto-promote.
 - **Sibling awareness.** When re-deriving patch B, the agent sees patch A's realization in the context bundle and preserves it.
+- **Declared dependencies.** Patches can state `depends_on` (with version reqs like `patch@>=2`), `optional_depends_on`, and `conflicts_with` — validated like a package manager (`fh deps`), ordered topologically, and enforced by `satisfied`/`apply`/`watch`. `fh drift-check` reports blocked patches and target_area overlaps missing a declared relationship.
 
 ## Real-world example
 

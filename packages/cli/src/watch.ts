@@ -147,7 +147,16 @@ export async function runWatch(options: WatchOptions = {}): Promise<void> {
 
     const state = await loadWatchState(forkhubDir);
 
-    const driftedPatches = driftResult.patches.filter((p) => p.status === "drifted");
+    // Deps-first (npm install order): drift-check already returns patches in
+    // topological order, but re-sort defensively by depOrder.
+    const depRank = new Map((driftResult.depOrder ?? []).map((id, i) => [id, i] as const));
+    const driftedPatches = driftResult.patches
+      .filter((p) => p.status === "drifted")
+      .sort(
+        (a, b) =>
+          (depRank.get(a.patchId) ?? Number.MAX_SAFE_INTEGER) -
+          (depRank.get(b.patchId) ?? Number.MAX_SAFE_INTEGER),
+      );
 
     if (driftedPatches.length === 0 && state.bundles.length === 0) {
       console.log(`\n✓ All patches current. Nothing to do.`);
@@ -160,6 +169,11 @@ export async function runWatch(options: WatchOptions = {}): Promise<void> {
           (b) => b.patchId === patch.patchId && b.status === "pending",
         );
         if (alreadyPending) continue;
+        if (patch.blockedBy.length > 0) {
+          console.log(
+            `\n⏳ ${patch.patchId} blocked by ${patch.blockedBy.join(", ")} — re-deriving deps first.`,
+          );
+        }
 
         try {
           const { runReDerive } = await import("./re-derive");

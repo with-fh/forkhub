@@ -21,6 +21,9 @@ type IntentFrontmatter = {
   title?: string;
   target_repo?: string;
   target_area?: string[];
+  depends_on?: string;
+  optional_depends_on?: string;
+  conflicts_with?: string;
   author?: string;
   license?: string;
   version?: string;
@@ -199,15 +202,34 @@ export async function runImport(
 
   const manifestPath = join(repoDir, "manifest.json");
   const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+  const { parseDepList, validateManifest } = await import("./deps");
+  const dependsOn = parseDepList((frontmatter as Record<string, unknown>).depends_on ?? "[]");
+  const optionalDependsOn = parseDepList(
+    (frontmatter as Record<string, unknown>).optional_depends_on ?? "[]",
+  );
+  const conflictsWith = parseDepList(
+    (frontmatter as Record<string, unknown>).conflicts_with ?? "[]",
+  );
   manifest.patches[patchId] = {
     status: "imported",
-    version: parseInt(frontmatter.version ?? "1"),
+    version: parseInt(frontmatter.version ?? "1", 10),
     author,
     last_modified_by: author,
     last_realized_against_commit: null,
+    depends_on: dependsOn,
+    optional_depends_on: optionalDependsOn,
+    conflicts_with: conflictsWith,
+    enabled: true,
   };
   if (!manifest.apply_order.includes(patchId)) {
     manifest.apply_order.push(patchId);
+  }
+  // Repair install order (npm-style topological) but don't block the import:
+  // missing transitive deps are reported via drift-check / deps, and the
+  // re-derivation bundle carries sibling context for the agent.
+  {
+    const check = validateManifest(manifest);
+    if (!check.orderOk) manifest.apply_order = check.fixedOrder;
   }
   await Bun.write(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 

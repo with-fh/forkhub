@@ -17,6 +17,9 @@ export type SatisfiedOptions = {
   forkhubDir?: string;
   targetRepo?: string;
   skipPort?: boolean;
+  dependsOn?: string[];
+  optionalDependsOn?: string[];
+  conflictsWith?: string[];
 };
 
 export type SatisfiedResult = {
@@ -29,7 +32,14 @@ export type SatisfiedResult = {
 
 const DRAFT_FILE = ".forkhub-draft.md";
 
-function parseDraft(content: string): { slug: string; intent: string; baseSha: string } {
+function parseDraft(content: string): {
+  slug: string;
+  intent: string;
+  baseSha: string;
+  dependsOn: string[];
+  optionalDependsOn: string[];
+  conflictsWith: string[];
+} {
   const slugMatch = content.match(/^slug:\s*(.+)$/m);
   const intentMatch = content.match(/^intent:\s*(.+)$/m);
   const baseShaMatch = content.match(/^base_sha:\s*(.+)$/m);
@@ -40,10 +50,25 @@ function parseDraft(content: string): { slug: string; intent: string; baseSha: s
     throw new Error("Invalid draft file. Missing slug or intent in frontmatter.");
   }
 
+  const listOf = (field: string): string[] => {
+    const m = content.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
+    if (!m?.[1]) return [];
+    const raw = m[1].trim();
+    if (!raw || raw === "[]" || raw.toLowerCase() === "null") return [];
+    const inner = raw.startsWith("[") && raw.endsWith("]") ? raw.slice(1, -1) : raw;
+    return inner
+      .split(",")
+      .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+  };
+
   return {
     slug: slugStr.trim(),
     intent: intentStr.trim(),
     baseSha: baseShaMatch?.[1]?.trim() ?? "",
+    dependsOn: listOf("depends_on"),
+    optionalDependsOn: listOf("optional_depends_on"),
+    conflictsWith: listOf("conflicts_with"),
   };
 }
 
@@ -107,8 +132,22 @@ export async function runSatisfied(options: SatisfiedOptions = {}): Promise<Sati
   }
 
   const draftContent = await Bun.file(draftPath).text();
-  const { slug, intent } = parseDraft(draftContent);
+  const {
+    slug,
+    intent,
+    dependsOn: draftDeps,
+    optionalDependsOn: draftOptDeps,
+    conflictsWith: draftConflicts,
+  } = parseDraft(draftContent);
   const patchId = `${slug}-${generateULID8()}`;
+
+  const { parseDepSpec, formatDepList, validateManifest } = await import("./deps");
+  const uniq = (xs: string[]) => [...new Set(xs.map((s) => s.trim()).filter(Boolean))];
+  const dependsOn = uniq([...draftDeps, ...(options.dependsOn ?? [])]);
+  const optionalDependsOn = uniq([...draftOptDeps, ...(options.optionalDependsOn ?? [])]);
+  const conflictsWith = uniq([...draftConflicts, ...(options.conflictsWith ?? [])]);
+  // Fail fast on malformed specs (npm-style: `id[@req][?]`).
+  for (const spec of [...dependsOn, ...optionalDependsOn, ...conflictsWith]) parseDepSpec(spec);
 
   const targetRepo = options.targetRepo ?? (await findTargetRepo(forkhubDir, process.cwd()));
   const repoDir = join(forkhubDir, "repos", targetRepo);
@@ -158,6 +197,9 @@ id: ${patchId}
 title: ${intent}
 target_repo: ${targetRepo}
 target_area: [${filesChanged.join(", ")}]
+depends_on: ${formatDepList(dependsOn)}
+optional_depends_on: ${formatDepList(optionalDependsOn)}
+conflicts_with: ${formatDepList(conflictsWith)}
 status: applied
 applied_upstream_pr: none
 version: 1
@@ -239,8 +281,33 @@ bun test
     last_modified_by: username,
     branch,
     last_realized_against_commit: shortSha(upstreamSha),
+    depends_on: dependsOn,
+    optional_depends_on: optionalDependsOn,
+    conflicts_with: conflictsWith,
+    enabled: true,
   };
   if (!manifest.apply_order.includes(patchId)) manifest.apply_order.push(patchId);
+  // Keep install order topological (npm-style); then reject unresolved deps.
+  {
+    const check = validateManifest(manifest);
+    if (!check.orderOk) manifest.apply_order = check.fixedOrder;
+    const recheck = validateManifest(manifest);
+    const blocking = recheck.errors.filter(
+      (e) =>
+        e.kind === "missing" ||
+        e.kind === "cycle" ||
+        e.kind === "conflict" ||
+        e.kind === "version-mismatch" ||
+        e.kind === "disabled",
+    );
+    if (blocking.length > 0) {
+      throw new Error(
+        `Unsatisfied patch dependencies:\n` +
+          blocking.map((e) => `  - [${e.kind}] ${e.message}`).join("\n") +
+          `\nFix with --depends-on/--conflicts-with, or import the missing patch first.`,
+      );
+    }
+  }
   await Bun.write(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
 
   let forkhubMainUpdated = false;
@@ -262,7 +329,9 @@ bun test
       const fhTagsResult = await gitExec(["tag", "--list", `${upstreamTag}-fh*`]);
       const fhCount = fhTagsResult.stdout ? fhTagsResult.stdout.split("\n").length : 0;
       tag = `${upstreamTag}-fh${fhCount + 1}`;
-      await gitOrThrow(["tag", tag]);
+      // -m keeps this working when users set tag.gpgsign=true (signed tags
+      // require a message; lightweight tags would otherwise open $EDITOR).
+      await gitOrThrow(["tag", "-m", tag, tag]);
     } catch (err) {
       await gitExec(["cherry-pick", "--abort"]);
       throw new Error(

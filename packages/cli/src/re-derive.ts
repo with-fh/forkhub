@@ -165,16 +165,39 @@ export async function runReDerive(
 
   const siblingDir = join(bundlePath, "siblings");
   ensureDir(siblingDir);
-  for (const [siblingId, siblingInfo] of Object.entries(manifest.patches) as [string, any][]) {
+  const {
+    topoSort: topoSortFn,
+    parseDepList: parseDeps,
+    isEnabled: isPatchEnabled,
+  } = await import("./deps");
+  const topo = topoSortFn(manifest);
+  const topoRank = new Map(topo.order.map((id, i) => [id, i] as const));
+  const siblingEntries = (Object.entries(manifest.patches) as [string, any][]).sort(
+    ([a], [b]) =>
+      (topoRank.get(a) ?? Number.MAX_SAFE_INTEGER) - (topoRank.get(b) ?? Number.MAX_SAFE_INTEGER) ||
+      (a < b ? -1 : 1),
+  );
+  const patchDeps: string[] = parseDeps(patchInfo.depends_on ?? []);
+  const patchConflicts: string[] = parseDeps(patchInfo.conflicts_with ?? []);
+  for (const [siblingId, siblingInfo] of siblingEntries) {
     if (siblingId === patchId) continue;
+    if (!isPatchEnabled(siblingInfo)) continue;
     if (siblingInfo.status !== "applied" && siblingInfo.status !== "imported") continue;
     const siblingPatchDir = join(repoDir, "patches", siblingId);
+    if (!existsSync(join(siblingPatchDir, "INTENT.md"))) continue;
     const siblingIntent = readFileSync(join(siblingPatchDir, "INTENT.md"), "utf-8");
     const siblingTitle = siblingIntent.match(/^title:\s*(.+)$/m)?.[1]?.trim() ?? siblingId;
     const siblingDiff = existsSync(join(siblingPatchDir, "reference.diff"))
       ? readFileSync(join(siblingPatchDir, "reference.diff"), "utf-8")
       : "(no reference.diff)";
-    const siblingMd = `# Sibling: ${siblingId}\n\n**Title**: ${siblingTitle}\n\n**Status**: ${siblingInfo.status}\n\n**Reference diff**:\n\n\`\`\`diff\n${siblingDiff}\n\`\`\`\n`;
+    const relation =
+      patchDeps.some((d) => d === siblingId || d.startsWith(`${siblingId}@`)) ||
+      patchDeps.some((d) => siblingId.startsWith(d.split("@")[0]!))
+        ? "DIRECT DEPENDENCY — this patch requires it; build on top of it"
+        : patchConflicts.some((d) => d === siblingId)
+          ? "DECLARED CONFLICT — avoid overlapping behavior"
+          : "sibling";
+    const siblingMd = `# Sibling: ${siblingId}\n\n**Title**: ${siblingTitle}\n\n**Status**: ${siblingInfo.status}\n\n**Relation**: ${relation}\n\n**Reference diff**:\n\n\`\`\`diff\n${siblingDiff}\n\`\`\`\n`;
     await Bun.write(join(siblingDir, `${siblingId}.md`), siblingMd);
     filesInBundle.push(`siblings/${siblingId}.md`);
   }
@@ -251,6 +274,9 @@ ${diffFull || "(no diff)"}
 **Patch**: \`${patchId}\`
 **Generated**: ${new Date().toISOString()}
 **Upstream**: ${shortSha(lastRealizedSha ?? "unknown")} → ${shortSha(upstreamSha)}
+**Depends on**: ${patchDeps.length > 0 ? patchDeps.join(", ") : "(none)"}
+**Conflicts with**: ${patchConflicts.length > 0 ? patchConflicts.join(", ") : "(none)"}
+**Install order**: ${topo.order.join(" → ") || "(single patch)"}
 
 ## What this is
 
@@ -265,7 +291,7 @@ saved to \`REALIZATION/\`.
 - \`reference.diff\` — previous realization (HINT only, do NOT apply mechanically)
 - \`attempts.jsonl\` — past attempt history (learn from failures)
 - \`drift-summary.txt\` — what changed in upstream's target_area
-- \`siblings/\` — other patches already applied (preserve their code)
+- \`siblings/\` — other patches already applied (preserve their code; DIRECT DEPENDENCY entries first in install order)
 - \`upstream/\` — clean upstream code (no patches)
 - \`fork/\` — current fork state (upstream + siblings)
 - \`REALIZATION/\` — YOUR OUTPUT GOES HERE
@@ -287,7 +313,8 @@ saved to \`REALIZATION/\`.
 
 - DO NOT modify files the INTENT says are off-limits
 - DO NOT apply reference.diff mechanically — re-derive from intent
-- DO preserve sibling patches' code verbatim
+- DO preserve sibling patches' code verbatim (dependencies first — never break them)
+- DO NOT reimplement what a DIRECT DEPENDENCY sibling already provides — build on it
 - DO write a clean unified diff (only the lines that change)
 - The realization must be a valid \`git diff\` that can be applied with \`git apply\`
 
@@ -301,6 +328,7 @@ Run \`forkhub apply ${bundlePath}\` to validate and finalize.
   const prompt = `# Re-derivation Task
 
 You are re-deriving the patch \`${patchId}\` against new upstream code.
+Dependencies: ${patchDeps.length > 0 ? patchDeps.join(", ") : "(none)"} — these siblings must keep working.
 
 ## Your task
 
@@ -319,7 +347,8 @@ You are re-deriving the patch \`${patchId}\` against new upstream code.
 
 - DO NOT modify files the INTENT says are off-limits
 - DO NOT apply reference.diff mechanically — re-derive from intent
-- DO preserve sibling patches' code verbatim
+- DO preserve sibling patches' code verbatim (dependencies first — never break them)
+- DO NOT reimplement what a DIRECT DEPENDENCY sibling already provides — build on it
 - DO write a clean unified diff (only the lines that change)
 
 ## Output

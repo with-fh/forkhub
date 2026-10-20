@@ -19,9 +19,9 @@ AND your feature. **Now you can have both.**
 upstream/main    ─────●─────●─────●─────►  (v1.0.0, v1.1.0, v2.0.0, v2.1.0)
                                │
                                └─ your patch: --cheat flag (rejected PR)
-                                  
+
 your fork       ─────●─────●─────●─────►  (frozen at v2.0.0 + your patch)
-                                  
+
 gap: v2.1.0 features you don't have
 ```
 
@@ -87,19 +87,20 @@ forkhub watch     # daemon-side: auto-detect drift, generate bundles, apply
 
 ## Commands
 
-| Command | Purpose |
-|---|---|
-| `init` | Set up `.forkhub` repo + config |
-| `draft "<intent>"` | Create a `*` branch + draft INTENT.md |
-| `satisfied` | Finalize intent, capture diff, port to `forkhub/main`, tag |
-| `import <github-url>` | Import a patch from another user's `.forkhub` |
-| `re-derive <patch-id>` | Generate context bundle for AI re-derivation |
-| `apply <bundle-path>` | Apply realization from bundle (with verify gate) |
-| `drift-check` | Detect drift (with target_area skip for cost optimization) |
-| `watch [--once] [--interval N]` | Daemon: auto-detect drift + generate bundles + apply |
-| `update [--tag <tag>]` | Consumer: advance to latest tag |
-| `rollback` | Consumer: roll back to previous tag |
-| `status` | Show current state |
+| Command                                                                                                              | Purpose                                                    |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `init`                                                                                                               | Set up `.forkhub` repo + config                            |
+| `draft "<intent>" [--depends-on <a,b@>=2>] [--conflicts-with <c>]`                                                   | Create a `*` branch + draft INTENT.md (stacked on deps)    |
+| `satisfied [--skip-port] [--depends-on <a>] [--conflicts-with <c>]`                                                  | Finalize intent, capture diff, port to `forkhub/main`, tag |
+| `deps [<patch-id>] [--depends-on <list>] [--conflicts-with <list>] [--enable/--disable <id>] [--fix-order] [--json]` | Inspect/fix patch dependencies                             |
+| `import <github-url>`                                                                                                | Import a patch from another user's `.forkhub`              |
+| `re-derive <patch-id>`                                                                                               | Generate context bundle for AI re-derivation               |
+| `apply <bundle-path>`                                                                                                | Apply realization from bundle (with verify gate)           |
+| `drift-check`                                                                                                        | Detect drift (with target_area skip for cost optimization) |
+| `watch [--once] [--interval N]`                                                                                      | Daemon: auto-detect drift + generate bundles + apply       |
+| `update [--tag <tag>]`                                                                                               | Consumer: advance to latest tag                            |
+| `rollback`                                                                                                           | Consumer: roll back to previous tag                        |
+| `status`                                                                                                             | Show current state                                         |
 
 ## How it works
 
@@ -136,7 +137,9 @@ re-realizes against new upstream. Same intent, fresh implementation.
 - **Verification is mandatory.** Each patch has a `verify.sh` runnable on apply.
   Failed verification = no auto-promote.
 - **Sibling awareness.** When re-deriving patch B, the AI sees patch A's realization
-  in the bundle and preserves it.
+  in the bundle and preserves it. Declared `depends_on`/`conflicts_with` order
+  siblings topologically and are enforced by `satisfied`/`apply`/`watch`
+  (`fh deps` inspects, `fh drift-check` reports blocked patches).
 
 ## Re-using patches
 
@@ -158,6 +161,7 @@ forkhub watch --interval 300  # check every 5 minutes
 ```
 
 Loops:
+
 1. Detect drift (per-patch target_area check, skip if untouched)
 2. Generate context bundle for drifted patches
 3. Wait for AI to produce REALIZATION/realization.diff

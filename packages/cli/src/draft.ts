@@ -14,6 +14,9 @@ import { slugify } from "./patch-id";
 export type DraftOptions = {
   forkhubDir?: string;
   upstreamBranch?: string;
+  dependsOn?: string[];
+  optionalDependsOn?: string[];
+  conflictsWith?: string[];
 };
 
 export type DraftResult = {
@@ -85,9 +88,29 @@ export async function runDraft(intent: string, options: DraftOptions = {}): Prom
     );
   }
 
-  await createBranch(branchName, await resolveBaseRef(upstreamBranch));
+  const { parseDepSpec, formatDepList } = await import("./deps");
+  const dependsOn = [...new Set((options.dependsOn ?? []).map((s) => s.trim()).filter(Boolean))];
+  const optionalDependsOn = [
+    ...new Set((options.optionalDependsOn ?? []).map((s) => s.trim()).filter(Boolean)),
+  ];
+  const conflictsWith = [
+    ...new Set((options.conflictsWith ?? []).map((s) => s.trim()).filter(Boolean)),
+  ];
+  for (const spec of [...dependsOn, ...optionalDependsOn, ...conflictsWith]) parseDepSpec(spec);
 
-  const baseSha = await gitOrThrow(["rev-parse", await resolveBaseRef(upstreamBranch)]);
+  // Stacked drafts: when the new patch declares deps, base the branch on
+  // forkhub/main (which already contains realized deps) instead of bare
+  // upstream — npm installs deps first, we branch onto them.
+  let baseRef = await resolveBaseRef(upstreamBranch);
+  if (dependsOn.length > 0) {
+    const { gitExec } = await import("./git");
+    const fhMain = await gitExec(["rev-parse", "--verify", "forkhub/main"]);
+    if (fhMain.exitCode === 0) baseRef = "forkhub/main";
+  }
+
+  await createBranch(branchName, baseRef);
+
+  const baseSha = await gitOrThrow(["rev-parse", baseRef]);
   const draftPath = join(process.cwd(), DRAFT_FILE);
 
   const draftContent = `---
@@ -95,6 +118,9 @@ slug: ${slug}
 intent: ${intent}
 base_branch: ${upstreamBranch}
 base_sha: ${shortSha(baseSha)}
+depends_on: ${formatDepList(dependsOn)}
+optional_depends_on: ${formatDepList(optionalDependsOn)}
+conflicts_with: ${formatDepList(conflictsWith)}
 created: ${new Date().toISOString()}
 status: drafting
 ---
