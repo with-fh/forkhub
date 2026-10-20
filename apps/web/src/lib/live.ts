@@ -35,7 +35,7 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
       try {
         const res = await fetch(`https://api.github.com/repos/${e.upstreamRepo}`, {
           next: { revalidate: 86400 },
-          headers: { Accept: "application/vnd.github+json" },
+          headers: githubHeaders(),
         });
         if (!res.ok) {
           out[e.slug] = null;
@@ -66,14 +66,32 @@ function ownerOf(r: GhRelease): "t3" | "natively" | null {
 
 type GhApiAsset = { name: string; browser_download_url: string; size?: number };
 
-async function fetchCatalogReleases(): Promise<GhRelease[]> {
+type PageFetcher = (
+  url: string,
+  init?: RequestInit & { next?: { revalidate?: number } },
+) => Promise<Response>;
+
+function githubHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  // Authenticated requests get 5,000/hr instead of 60 — set GITHUB_TOKEN
+  // (server-only; never NEXT_PUBLIC_) so shared egress IPs don't starve.
+  const token = process.env.GITHUB_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+/** Exported for unit tests (stub the fetcher to avoid network). */
+export async function fetchCatalogReleases(
+  fetchImpl: PageFetcher = fetch as PageFetcher,
+): Promise<GhRelease[]> {
   // Paginate (up to 3 pages): nightlies publish daily, so a single page can
-  // push older stable releases out of view. Cached 1h per page URL.
+  // push older stable releases out of view. Cached 1h per page URL, so this
+  // costs ~3 calls/hour — well within even the unauthenticated quota.
   const out: GhRelease[] = [];
   for (let page = 1; page <= 3; page++) {
-    const res = await fetch(`${CATALOG_RELEASES_URL}&page=${page}`, {
+    const res = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
       next: { revalidate: 3600 },
-      headers: { Accept: "application/vnd.github+json" },
+      headers: githubHeaders(),
     });
     if (!res.ok) break;
     const batch = (await res.json()) as (GhRelease & { assets: GhApiAsset[] })[];
@@ -131,7 +149,7 @@ export async function getChannelReleases(
   const owner = SLUG_OWNER[slug];
   if (!owner) return out;
   try {
-    const releases = await fetchCatalogReleases();
+    const releases = await fetchCatalogReleases(fetch as PageFetcher);
     const { stable, nightly } = channelHistory(
       releases,
       (r) => ownerOf(r) === owner,

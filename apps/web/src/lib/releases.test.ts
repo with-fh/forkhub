@@ -10,6 +10,7 @@ import {
   newestShaUrl,
   type GhRelease,
 } from "./releases";
+import { fetchCatalogReleases } from "./live";
 
 const asset = (name: string, size = 1024) => ({
   name,
@@ -187,5 +188,56 @@ describe("formatBytes", () => {
     expect(formatBytes(512)).toBe("512 B");
     expect(formatBytes(120_000_000)).toBe("114 MB");
     expect(formatBytes(90_000_000)).toBe("85.8 MB");
+  });
+});
+
+describe("fetchCatalogReleases", () => {
+  const rel = (tag: string): GhRelease => ({
+    tag_name: tag,
+    name: tag,
+    html_url: "https://github.com/r/x",
+    published_at: "2026-10-20T00:00:00Z",
+    assets: [],
+  });
+
+  const stubPages = (pages: GhRelease[][], seen: { urls: string[]; auth: (string | null)[] }) => {
+    return (async (url: string, init?: { headers?: Record<string, string> }) => {
+      seen.urls.push(url);
+      seen.auth.push(init?.headers?.Authorization ?? null);
+      const page = Number(new URL(url).searchParams.get("page") ?? "1");
+      const batch = pages[page - 1] ?? [];
+      return new Response(JSON.stringify(batch), { status: 200 });
+    }) as unknown as Parameters<typeof fetchCatalogReleases>[0];
+  };
+
+  test("paginates full pages and stops on short page", async () => {
+    const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+    const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
+    const pages = [full(100), [rel("v0.8-fh1-t3code")]];
+    const out = await fetchCatalogReleases(stubPages(pages, seen));
+    expect(seen.urls).toHaveLength(2);
+    expect(seen.urls[1]).toContain("page=2");
+    expect(out).toHaveLength(101);
+  });
+
+  test("stops after 3 pages max", async () => {
+    const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+    const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
+    const pages = [full(100), full(100), full(100), full(100)];
+    await fetchCatalogReleases(stubPages(pages, seen));
+    expect(seen.urls).toHaveLength(3);
+  });
+
+  test("sends GITHUB_TOKEN when set", async () => {
+    const prev = process.env.GITHUB_TOKEN;
+    process.env.GITHUB_TOKEN = "test-token-123";
+    try {
+      const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+      await fetchCatalogReleases(stubPages([[]], seen));
+      expect(seen.auth[0]).toBe("Bearer test-token-123");
+    } finally {
+      if (prev == null) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = prev;
+    }
   });
 });
