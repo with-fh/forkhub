@@ -273,6 +273,35 @@ When unsure, bias to ONE patch: a slightly large patch that verifies
 in one run is cheaper over its lifetime than two patches that drift,
 re-derive, and rebuild separately forever.
 
+## Patch Versioning (semver)
+
+Every patch carries `version: "MAJOR.MINOR.PATCH"` (manifest + INTENT
+frontmatter — always a quoted string, never a bare number):
+
+- **PATCH** (x.y.Z+1): re-derivation against a new upstream with NO
+  intent change — reference refresh, doc fixes, typo fixes. This is the
+  ONLY bump unattended automation ever makes (the reimplement router
+  increments PATCH on every green PROMOTE).
+- **MINOR** (x.Y+1.0): backward-compatible intent extension — new
+  behavior, new files, same guarantees. Human/agent-authored, with the
+  INTENT updated to describe the addition.
+- **MAJOR** (X+1.0.0): incompatible intent change — new/changed
+  non-negotiables, changed target_area contract, changed feed or
+  artifact URLs. Dependents MUST re-validate; never bump MAJOR
+  silently inside a re-derivation.
+
+`attempts.jsonl` records each promotion with `"semver"` (resulting
+version) and `"change": "patch|minor|major"`.
+
+Depending on another catalog's patch: pin it in the manifest —
+`depends_on: [{repo, patch, ref, version}]` where `ref` is the
+dependency catalog's commit SHA (reproducible) and `version` is a
+range like `">=1.0.0 <2.0.0"`. Resolve at build time: fetch the dep
+manifest at `ref`, fail fast with a clear message when the range is
+unsatisfied (a human decides — never auto-reimplement across a MAJOR).
+Migration note: legacy integer versions `N` mean `N.0.0`; the next
+bot run bumps them to `N.0.1` automatically.
+
 ## CLI Location
 
 The forkhub CLI is at the project root:
