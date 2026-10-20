@@ -214,18 +214,32 @@ describe("fetchCatalogReleases", () => {
     const seen = { urls: [] as string[], auth: [] as (string | null)[] };
     const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
     const pages = [full(100), [rel("v0.8-fh1-t3code")]];
-    const out = await fetchCatalogReleases(stubPages(pages, seen));
+    const { releases, apiOk, apiStatus } = await fetchCatalogReleases(stubPages(pages, seen));
     expect(seen.urls).toHaveLength(2);
     expect(seen.urls[1]).toContain("page=2");
-    expect(out).toHaveLength(101);
+    expect(releases).toHaveLength(101);
+    expect(apiOk).toBe(true);
+    expect(apiStatus).toBe(200);
   });
 
   test("stops after 3 pages max", async () => {
     const seen = { urls: [] as string[], auth: [] as (string | null)[] };
     const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
     const pages = [full(100), full(100), full(100), full(100)];
-    await fetchCatalogReleases(stubPages(pages, seen));
+    const { releases } = await fetchCatalogReleases(stubPages(pages, seen));
     expect(seen.urls).toHaveLength(3);
+    expect(releases).toHaveLength(300);
+  });
+
+  test("reports API failure instead of throwing", async () => {
+    const failing = (async () =>
+      new Response("rate limited", { status: 403 })) as unknown as Parameters<
+      typeof fetchCatalogReleases
+    >[0];
+    const { releases, apiOk, apiStatus } = await fetchCatalogReleases(failing);
+    expect(releases).toEqual([]);
+    expect(apiOk).toBe(false);
+    expect(apiStatus).toBe(403);
   });
 
   test("sends GITHUB_TOKEN when set", async () => {

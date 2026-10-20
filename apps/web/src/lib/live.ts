@@ -72,7 +72,12 @@ type PageFetcher = (
 ) => Promise<Response>;
 
 function githubHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    // GitHub requires a UA; Workers fetch sends none by default, and
+    // datacenter egress without one is treated as abusive (HTTP 403).
+    "User-Agent": "forkhub-web (+https://forkhub.imbios.dev)",
+  };
   // Authenticated requests get 5,000/hr instead of 60 — set GITHUB_TOKEN
   // (server-only; never NEXT_PUBLIC_) so shared egress IPs don't starve.
   const token = process.env.GITHUB_TOKEN;
@@ -83,17 +88,36 @@ function githubHeaders(): Record<string, string> {
 /** Exported for unit tests (stub the fetcher to avoid network). */
 export async function fetchCatalogReleases(
   fetchImpl: PageFetcher = fetch as PageFetcher,
-): Promise<GhRelease[]> {
+): Promise<{ releases: GhRelease[]; apiOk: boolean; apiStatus: number | null }> {
   // Paginate (up to 3 pages): nightlies publish daily, so a single page can
   // push older stable releases out of view. Cached 1h per page URL, so this
   // costs ~3 calls/hour — well within even the unauthenticated quota.
   const out: GhRelease[] = [];
+  let apiOk = false;
+  let apiStatus: number | null = null;
   for (let page = 1; page <= 3; page++) {
-    const res = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
-      next: { revalidate: 3600 },
-      headers: githubHeaders(),
-    });
-    if (!res.ok) break;
+    let res: Response;
+    try {
+      res = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
+        next: { revalidate: 3600 },
+        headers: githubHeaders(),
+      });
+    } catch (err) {
+      console.warn(`[download] catalog fetch failed: ${err instanceof Error ? err.message : err}`);
+      break;
+    }
+    apiStatus = res.status;
+    if (!res.ok) {
+      let detail = "";
+      try {
+        detail = ` — ${(await res.text()).slice(0, 160)}`;
+      } catch {
+        // ignore body read failures
+      }
+      console.warn(`[download] catalog API HTTP ${res.status} (page ${page})${detail}`);
+      break;
+    }
+    apiOk = true;
     const batch = (await res.json()) as (GhRelease & { assets: GhApiAsset[] })[];
     if (batch.length === 0) break;
     out.push(
@@ -108,7 +132,7 @@ export async function fetchCatalogReleases(
     );
     if (batch.length < 100) break;
   }
-  return out;
+  return { releases: out, apiOk, apiStatus };
 }
 
 const SLUG_OWNER: Record<string, "t3" | "natively"> = {
@@ -144,12 +168,19 @@ export async function getChannelsFor(slug: string): Promise<LiveChannels> {
 export async function getChannelReleases(
   slug: string,
   limitPerChannel = CHANNEL_HISTORY_LIMIT,
-): Promise<LiveChannelHistory> {
-  const out: LiveChannelHistory = { stable: [], nightly: [] };
+): Promise<LiveChannelHistory & { apiOk: boolean; apiStatus: number | null }> {
+  const out: LiveChannelHistory & { apiOk: boolean; apiStatus: number | null } = {
+    stable: [],
+    nightly: [],
+    apiOk: false,
+    apiStatus: null,
+  };
   const owner = SLUG_OWNER[slug];
   if (!owner) return out;
   try {
-    const releases = await fetchCatalogReleases(fetch as PageFetcher);
+    const { releases, apiOk, apiStatus } = await fetchCatalogReleases(fetch as PageFetcher);
+    out.apiOk = apiOk;
+    out.apiStatus = apiStatus;
     const { stable, nightly } = channelHistory(
       releases,
       (r) => ownerOf(r) === owner,
