@@ -3,100 +3,11 @@ import { notFound } from "next/navigation";
 import { MAINTAINER_LABEL, OSS_CATALOG, getOss } from "@forkhub/api/oss/data";
 
 import { formatStars } from "@/components/oss-card";
-import { getChannelsFor, getStarsMap, type ChannelInfo } from "@/lib/live";
+import { getChannelReleases, getStarsMap } from "@/lib/live";
+import DownloadPanel from "./download-panel";
 
 export function generateStaticParams() {
   return OSS_CATALOG.map((e) => ({ slug: e.slug }));
-}
-
-function shortDate(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10);
-}
-
-function ChannelCard({
-  channel,
-  info,
-  installCmd,
-  entryName,
-}: {
-  channel: "Stable" | "Nightly";
-  info: ChannelInfo | null;
-  installCmd: string | null;
-  entryName: string;
-}) {
-  if (!info) {
-    return (
-      <div
-        className="fh-tile"
-        style={{ borderStyle: "dashed", opacity: 0.75, padding: 20 }}
-      >
-        <h3 style={{ fontSize: 16, fontWeight: 600 }}>{channel}</h3>
-        <p style={{ fontSize: 13, color: "var(--t3-fg-muted)", marginTop: 8, lineHeight: 1.6 }}>
-          No {channel.toLowerCase()} build published yet for {entryName}. Watch the{" "}
-          <a
-            href="https://github.com/with-fh/.forkhub/releases"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "var(--t3-fg)", textDecoration: "underline", textUnderlineOffset: 4 }}
-          >
-            catalog releases
-          </a>
-          .
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="fh-tile" style={{ padding: 20 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600 }}>{channel}</h3>
-        <code
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            color: "var(--t3-accent)",
-            wordBreak: "break-all",
-          }}
-        >
-          {info.version}
-        </code>
-      </div>
-      <p
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          color: "var(--t3-fg-dim)",
-          marginTop: 4,
-        }}
-      >
-        published {shortDate(info.publishedAt)}
-      </p>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
-        {info.appImageUrl && (
-          <a href={info.appImageUrl} className="fh-btn fh-btn-primary fh-btn-sm">
-            Download AppImage
-          </a>
-        )}
-        <a
-          href={info.releaseUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="fh-btn fh-btn-ghost fh-btn-sm"
-        >
-          Release notes
-        </a>
-      </div>
-      {installCmd && (
-        <pre
-          className="fh-term-body"
-          style={{ margin: "14px 0 0", padding: "12px 14px", fontSize: 12 }}
-        >
-          <span className="prompt">$</span>
-          {installCmd}
-        </pre>
-      )}
-    </div>
-  );
 }
 
 export default async function OssDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -104,14 +15,17 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
   const e = getOss(slug);
   if (!e) notFound();
 
-  const [starsMap, channels] = await Promise.all([getStarsMap(), getChannelsFor(slug)]);
+  const [starsMap, history] = await Promise.all([getStarsMap(), getChannelReleases(slug)]);
   const stars = starsMap[slug] ?? e.stars;
   // Only entries with a registry package support managed `fh run` installs.
-  const runCmd =
+  const runCmds =
     slug === "t3code"
-      ? (channel: "stable" | "nightly") =>
-          `fh run t3 with-fh${channel === "stable" ? " -c stable" : ""} -- --version`
-      : null;
+      ? (["stable", "nightly"] as const).map((channel) => ({
+          channel,
+          label: `fh run (${channel})`,
+          command: `fh run t3 with-fh${channel === "stable" ? " -c stable" : ""} -- --version`,
+        }))
+      : [];
   const reuseCmd = e.install.find((c) => c.startsWith("fh reuse")) ?? null;
 
   return (
@@ -133,7 +47,12 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
           <img
             src={e.mark}
             alt={`${e.name} logo`}
-            style={{ width: 56, height: 56, borderRadius: 14, border: "1px solid var(--t3-border)" }}
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: 14,
+              border: "1px solid var(--t3-border)",
+            }}
           />
           <div>
             <h1 className="fh-display" style={{ fontSize: "clamp(36px, 5vw, 56px)" }}>
@@ -158,28 +77,16 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
           Download
         </h2>
         <p style={{ color: "var(--t3-fg-muted)", fontSize: 14, marginBottom: 16 }}>
-          Pick a channel. Stable tracks tested releases, nightly tracks the latest upstream with
-          patches re-derived daily.
+          Pick a channel, then a version. Stable tracks tested releases, nightly tracks the latest
+          upstream with patches re-derived daily. Every button downloads directly — no GitHub
+          hunting.
         </p>
-        <div className="fh-grid-2">
-          <ChannelCard
-            channel="Stable"
-            info={channels.stable}
-            installCmd={runCmd?.("stable") ?? null}
-            entryName={e.name}
-          />
-          <ChannelCard
-            channel="Nightly"
-            info={channels.nightly}
-            installCmd={runCmd?.("nightly") ?? null}
-            entryName={e.name}
-          />
-        </div>
+        <DownloadPanel slug={slug} entryName={e.name} history={history} curlCommands={runCmds} />
 
         <div className="fh-tile" style={{ marginTop: 16, padding: 20 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600 }}>Other platforms</h3>
           <p style={{ fontSize: 13, color: "var(--t3-fg-muted)", marginTop: 8, lineHeight: 1.6 }}>
-            Published builds are Linux (x86_64 AppImage). On macOS or Windows, run from the{" "}
+            Outside Linux, macOS, and Windows builds above, run from the{" "}
             <a
               href={e.upstreamUrl}
               target="_blank"
@@ -231,7 +138,13 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
                 {p.id}
               </p>
               <div
-                style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 12,
+                  alignItems: "center",
+                }}
               >
                 <span className="fh-badge">{p.status}</span>
                 <span className="fh-badge">rev {p.version}</span>
