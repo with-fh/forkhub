@@ -323,6 +323,31 @@ unsatisfied (a human decides — never auto-reimplement across a MAJOR).
 Migration note: legacy integer versions `N` mean `N.0.0`; the next
 bot run bumps them to `N.0.1` automatically.
 
+## Catalog Naming Convention
+
+Every publisher gets a predictable catalog address:
+
+- `<owner>/.forkhub` — the **public** catalog (shared support patches
+  like per-OSS ForkHub support, plus personal upstream-bound patches).
+  `fh search --author X` resolves `X/.forkhub`; `fh import` URLs point
+  here. Always public.
+- `<owner>/.forkhub-private` — the **private** catalog (embargoed
+  fixes, private forks, pre-disclosure work). Never searched publicly,
+  never linked from public PR comments or release notes.
+
+Rules:
+
+- One repo object per address. Renames/transfers leave permanent
+  redirects that occupy the old name — **verify identity by repo id**
+  (`gh api repos/{owner}/{repo} --jq .id`) before assuming two
+  addresses are different repos. A name that redirects can never be
+  re-created; pick the nearest available name and document the
+  deviation (e.g. a personal catalog at `ImBIOS/forkhub-personal`
+  when `ImBIOS/.forkhub` is a transfer redirect).
+- Shared catalogs carry exactly one ForkHub-support patch per OSS;
+  personal catalogs carry upstream-bound patches (each with a
+  retirement path) that `depends_on` pinned shared patches.
+
 ## CLI Location
 
 The forkhub CLI is at the project root:
