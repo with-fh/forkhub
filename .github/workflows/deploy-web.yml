@@ -91,15 +91,19 @@ jobs:
         run: pnpm exec wrangler versions deploy ${{ steps.upload.outputs.version }} --percentage 100 --name forkhub-web
         working-directory: apps/web
       - name: Smoke test production
-        # GitHub runner egress is sometimes challenged at the edge and traffic
-        # needs a few seconds to converge: retry with a real UA and dump the
-        # body snippet on failure so the cause is visible, not just a code.
+        # NOTE: forkhub.imbios.dev sits behind Cloudflare bot challenge, which
+        # blocks GitHub-runner curl with a "Just a moment..." 403. Real
+        # browsers pass it (verified manually), so content assertions run
+        # against the workers.dev URL (same worker, no challenge), while the
+        # custom domain gets a route-alive check (200/307, or the challenge
+        # page itself proving zone routing works).
         run: |
           set -e
           UA="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+          DEV="https://forkhub-web.imbios.workers.dev"
           code=""
           for i in 1 2 3 4 5 6; do
-            code=$(curl -s -A "$UA" -o /tmp/latest-head -w '%{http_code}' --max-time 60 'https://forkhub.imbios.dev/download/natively/latest?channel=stable')
+            code=$(curl -s -A "$UA" -o /tmp/latest-head -w '%{http_code}' --max-time 60 "$DEV/download/natively/latest?channel=stable")
             if [ "$code" = "307" ]; then break; fi
             echo "attempt $i: /latest HTTP $code — $(head -c 200 /tmp/latest-head)"
             sleep 20
@@ -107,10 +111,22 @@ jobs:
           if [ "$code" != "307" ]; then echo "::error::/latest returned $code, want 307"; exit 1; fi
           for slug in natively t3code; do
             tries=0
-            until curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/$slug" | grep -q 'aria-label="Version"'; do
+            until curl -s -A "$UA" --max-time 60 "$DEV/download/$slug" | grep -q 'aria-label="Version"'; do
               tries=$((tries + 1))
               if [ "$tries" -ge 6 ]; then echo "::error::version picker missing on $slug page"; exit 1; fi
               sleep 20
             done
+          done
+          # Custom domain: route-alive (challenge page counts — it proves
+          # zone routing; browsers pass it, verified manually with screenshots).
+          for slug in natively t3code; do
+            body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/$slug")
+            if echo "$body" | grep -q 'aria-label="Version"'; then
+              echo "$slug: live with new UI"
+            elif echo "$body" | grep -q 'Just a moment'; then
+              echo "$slug: route alive (edge challenge for runner egress, browsers pass)"
+            else
+              echo "::error::$slug page unexpected content"; exit 1;
+            fi
           done
           echo "Production smoke test passed."
