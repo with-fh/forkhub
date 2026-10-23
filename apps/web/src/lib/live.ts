@@ -33,10 +33,18 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
   await Promise.all(
     OSS_CATALOG.map(async (e) => {
       try {
-        const res = await fetch(`https://api.github.com/repos/${e.upstreamRepo}`, {
-          next: { revalidate: 86400 },
-          headers: githubHeaders(),
-        });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12_000);
+        let res: Response;
+        try {
+          res = await fetch(`https://api.github.com/repos/${e.upstreamRepo}`, {
+            next: { revalidate: 86400 },
+            headers: githubHeaders(),
+            signal: ctrl.signal,
+          });
+        } finally {
+          clearTimeout(timer);
+        }
         if (!res.ok) {
           out[e.slug] = null;
           return;
@@ -66,6 +74,8 @@ function ownerOf(r: GhRelease): "t3" | "natively" | null {
 
 type GhApiAsset = { name: string; browser_download_url: string; size?: number };
 
+type GhApiRelease = Omit<GhRelease, "assets"> & { assets: GhApiAsset[] };
+
 type PageFetcher = (
   url: string,
   init?: RequestInit & { next?: { revalidate?: number } },
@@ -92,39 +102,61 @@ export async function fetchCatalogReleases(
   // Paginate (up to 3 pages): nightlies publish daily, so a single page can
   // push older stable releases out of view. Cached 1h per page URL, so this
   // costs ~3 calls/hour — well within even the unauthenticated quota.
+  // Pages fetch CONCURRENTLY with a per-page timeout: sequential fetches
+  // would stack worst-case hangs (3 × timeout), hanging the whole page.
   const out: GhRelease[] = [];
   let apiOk = false;
   let apiStatus: number | null = null;
-  for (let page = 1; page <= 3; page++) {
-    let res: Response;
-    try {
-      res = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
-        next: { revalidate: 3600 },
-        headers: githubHeaders(),
-      });
-    } catch (err) {
-      console.warn(`[download] catalog fetch failed: ${err instanceof Error ? err.message : err}`);
-      break;
-    }
-    apiStatus = res.status;
-    if (!res.ok) {
-      let detail = "";
+  type PageResult = { page: number; ok: boolean; status: number | null; batch: GhApiRelease[] };
+  const settled: PageResult[] = await Promise.all(
+    [1, 2, 3].map(async (page): Promise<PageResult> => {
       try {
-        detail = ` — ${(await res.text()).slice(0, 160)}`;
-      } catch {
-        // ignore body read failures
+        // Bound the wait: a hung upstream fetch must degrade to the
+        // "not published yet" empty state, never hang the page.
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 12_000);
+        try {
+          const res: Response = await fetchImpl(`${CATALOG_RELEASES_URL}&page=${page}`, {
+            next: { revalidate: 3600 },
+            headers: githubHeaders(),
+            signal: ctrl.signal,
+          });
+          if (!res.ok) {
+            let detail = "";
+            try {
+              detail = ` — ${(await res.text()).slice(0, 160)}`;
+            } catch {
+              // ignore body read failures
+            }
+            console.warn(`[download] catalog API HTTP ${res.status} (page ${page})${detail}`);
+            return { page, ok: false, status: res.status, batch: [] };
+          }
+          const batch = (await res.json()) as GhApiRelease[];
+          return { page, ok: true, status: res.status, batch };
+        } finally {
+          clearTimeout(timer);
+        }
+      } catch (err) {
+        console.warn(
+          `[download] catalog fetch failed (page ${page}): ${err instanceof Error ? err.message : err}`,
+        );
+        return { page, ok: false, status: null, batch: [] };
       }
-      console.warn(`[download] catalog API HTTP ${res.status} (page ${page})${detail}`);
+    }),
+  );
+  // In page order: stop at the first short/failed page so pagination stays
+  // a prefix (page 2+ only matter when page 1 was full).
+  for (const { batch, ok, status } of settled.sort((a, b) => a.page - b.page)) {
+    if (!ok) {
+      apiStatus = status;
       break;
     }
-    apiOk = true;
-    const batch = (await res.json()) as (GhRelease & { assets: GhApiAsset[] })[];
+    apiStatus = status;
     if (batch.length === 0) break;
+    apiOk = true;
     out.push(
       ...batch.map((r) => ({
         ...r,
-        name: r.name,
-        body: typeof (r as { body?: unknown }).body === "string" ? (r as { body: string }).body : null,
         assets: (r.assets ?? []).map((a) => ({
           name: a.name,
           browser_download_url: a.browser_download_url,

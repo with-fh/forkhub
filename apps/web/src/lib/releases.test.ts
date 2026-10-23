@@ -201,6 +201,7 @@ describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
     expect(
       isTryBuild("Natively PR #661 (full) @ v2.9.2", "Try-build for upstream PR #661 (full flavor). Not for general use."),
     ).toBe(true);
+    expect(isTryBuild("v2.9.2-fh.with-fh.6-pr661", "PR try-build")).toBe(true);
     expect(isTryBuild("Natively ForkHub v2.9.2-fh.with-fh.5", "Stable release")).toBe(false);
   });
 
@@ -257,19 +258,18 @@ describe("fetchCatalogReleases", () => {
     }) as unknown as Parameters<typeof fetchCatalogReleases>[0];
   };
 
-  test("paginates full pages and stops on short page", async () => {
+  test("fetches pages concurrently and stops at the first short page", async () => {
     const seen = { urls: [] as string[], auth: [] as (string | null)[] };
     const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
     const pages = [full(100), [rel("v0.8-fh1-t3code")]];
     const { releases, apiOk, apiStatus } = await fetchCatalogReleases(stubPages(pages, seen));
-    expect(seen.urls).toHaveLength(2);
-    expect(seen.urls[1]).toContain("page=2");
+    expect(seen.urls).toHaveLength(3);
     expect(releases).toHaveLength(101);
     expect(apiOk).toBe(true);
     expect(apiStatus).toBe(200);
   });
 
-  test("stops after 3 pages max", async () => {
+  test("caps at 3 pages", async () => {
     const seen = { urls: [] as string[], auth: [] as (string | null)[] };
     const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
     const pages = [full(100), full(100), full(100), full(100)];
