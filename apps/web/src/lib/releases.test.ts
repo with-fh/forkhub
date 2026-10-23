@@ -6,8 +6,12 @@ import {
   classifyAsset,
   formatBytes,
   isMetaAsset,
+  isTryBuild,
+  isUnifiedRelease,
   mergePlatformBuilds,
   newestShaUrl,
+  pickLatest,
+  type ChannelRelease,
   type GhRelease,
 } from "./releases";
 import { fetchCatalogReleases } from "./live";
@@ -179,6 +183,49 @@ describe("channelHistory + mergePlatformBuilds", () => {
     expect(nightly).toHaveLength(1);
     expect(nightly[0]?.assets.map((a) => a.format).sort()).toEqual([".deb", "AppImage"]);
     expect(newestShaUrl(nightly)).toBe("https://github.com/dl/SHA256SUMS");
+  });
+});
+
+describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
+  const rel = (version: string, publishedAt: string, name = version, body: string | null = null): ChannelRelease => ({
+    version,
+    name,
+    publishedAt,
+    releaseUrl: `https://github.com/r/${version}`,
+    assets: [],
+    shaUrl: null,
+    tryBuild: isTryBuild(name, body),
+  });
+
+  test("detects PR try-builds by notes", () => {
+    expect(
+      isTryBuild("Natively PR #661 (full) @ v2.9.2", "Try-build for upstream PR #661 (full flavor). Not for general use."),
+    ).toBe(true);
+    expect(isTryBuild("Natively ForkHub v2.9.2-fh.with-fh.5", "Stable release")).toBe(false);
+  });
+
+  test("unified releases are v<up>-fh.<owner>.<n>", () => {
+    expect(isUnifiedRelease("v2.9.2-fh.with-fh.5")).toBe(true);
+    expect(isUnifiedRelease("v2.9.2-fh.imbios.1")).toBe(true);
+    expect(isUnifiedRelease("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh24")).toBe(false);
+    expect(isUnifiedRelease("pingdotgg-t3code--v0.1.0-fh1")).toBe(false);
+  });
+
+  test("Latest prefers canonical unified over newer splits and try-builds", () => {
+    const history = [
+      rel("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26", "2026-10-22T20:39:10Z"),
+      rel("v2.9.2-fh.with-fh.5", "2026-10-21T20:42:23Z", "Natively ForkHub v2.9.2-fh.with-fh.5"),
+      rel("v2.9.2-fh.imbios.1", "2026-10-17T10:49:49Z", "Natively PR #661 (full) @ v2.9.2", "Try-build. Not for general use."),
+    ];
+    // Newest raw tag is the fh26 split; Latest must be the unified with-fh.5.
+    expect(pickLatest(history)?.version).toBe("v2.9.2-fh.with-fh.5");
+    // Without any unified release, newest non-try-build wins.
+    expect(pickLatest([history[0]!, history[2]!])?.version).toBe(
+      "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26",
+    );
+    // All try-builds: still returns something rather than nothing.
+    expect(pickLatest([history[2]!])?.version).toBe("v2.9.2-fh.imbios.1");
+    expect(pickLatest([])).toBeNull();
   });
 });
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getOss } from "@forkhub/api/oss/data";
 
 import { getChannelReleases } from "@/lib/live";
-import { mergePlatformBuilds, type Arch, type Platform } from "@/lib/releases";
+import { mergePlatformBuilds, pickLatest, type Arch, type Platform } from "@/lib/releases";
 
 /**
  * Stable always-latest download URLs — no GitHub navigation required.
@@ -50,12 +50,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   if (version) {
     const rel = list.find((r) => r.version === version);
     if (!rel) {
-      return new Response(`Version ${version} not found in ${channel} for ${slug}.`, {
+      return new Response(`Version ${version} not found in ${channel} for ${slug}.${apiNote}`, {
         status: 404,
         headers: { "content-type": "text/plain; charset=utf-8" },
       });
     }
     list = [rel];
+  } else {
+    // Same "Latest" as the page: canonical unified release first, never a
+    // try-build when a real release exists.
+    const latest = pickLatest(list);
+    if (latest) list = [latest, ...list.filter((r) => r !== latest)];
   }
 
   const normArch: Arch | null =
@@ -71,7 +76,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
         ? "mac"
         : platformRaw === "windows" || platformRaw === "win"
           ? "windows"
-          : null;
+          : platformRaw === "source" || platformRaw === "src"
+            ? "source"
+            : null;
   const normFormat = format?.replace(/^\./, "") ?? null;
 
   const builds = mergePlatformBuilds(list).filter(

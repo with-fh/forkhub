@@ -6,6 +6,7 @@ import {
   formatBytes,
   mergePlatformBuilds,
   newestShaUrl,
+  pickLatest,
   type ChannelRelease,
   type Platform,
   type PlatformBuild,
@@ -140,6 +141,10 @@ export default function DownloadPanel({
     return releases.find((r) => r.version === version) ?? null;
   }, [version, releases]);
 
+  // "Latest" is the canonical newest build, not just the newest tag:
+  // try-builds and single-platform splits never become the default.
+  const latest = useMemo(() => pickLatest(releases), [releases]);
+
   const builds: PlatformBuild[] = useMemo(() => {
     if (selected) {
       return selected.assets.map((a) => ({
@@ -151,8 +156,7 @@ export default function DownloadPanel({
     return mergePlatformBuilds(releases);
   }, [selected, releases]);
 
-  const grouped = useMemo(() => {
-    const out = new Map<Platform, PlatformBuild[]>();
+  const grouped = useMemo(() => {    const out = new Map<Platform, PlatformBuild[]>();
     for (const b of builds) {
       const list = out.get(b.platform) ?? [];
       list.push(b);
@@ -165,7 +169,8 @@ export default function DownloadPanel({
 
   const shaUrl = selected?.shaUrl ?? newestShaUrl(releases);
   const latestRoute = (extra = "") => `/download/${slug}/latest?channel=${activeChannel}${extra}`;
-  const shownVersion = selected?.version ?? releases[0]?.version ?? null;
+  const shownVersion = selected?.version ?? latest?.version ?? null;
+  const shownRelease = selected ?? latest ?? releases[0] ?? null;
 
   if (channels.length === 0) {
     return (
@@ -229,10 +234,11 @@ export default function DownloadPanel({
             value={selected?.version ?? "latest"}
             onChange={(e) => setVersion(e.target.value)}
           >
-            <option value="latest">Latest{releases[0] ? ` (${releases[0].version})` : ""}</option>
+            <option value="latest">Latest{latest ? ` (${latest.version})` : ""}</option>
             {releases.map((r) => (
               <option key={r.version} value={r.version}>
                 {r.version} · {shortDate(r.publishedAt)}
+                {r.tryBuild ? " · try-build" : ""}
               </option>
             ))}
           </select>
@@ -250,9 +256,9 @@ export default function DownloadPanel({
         >
           {selected ? "Showing" : "Latest"} {activeChannel}:{" "}
           <code style={{ color: "var(--t3-accent)", wordBreak: "break-all" }}>{shownVersion}</code>{" "}
-          · published {shortDate((selected ?? releases[0])!.publishedAt)} ·{" "}
+          · published {shortDate(shownRelease!.publishedAt)} ·{" "}
           <a
-            href={(selected ?? releases[0])!.releaseUrl}
+            href={shownRelease!.releaseUrl}
             target="_blank"
             rel="noreferrer"
             style={{ color: "var(--t3-fg)", textDecoration: "underline", textUnderlineOffset: 4 }}
@@ -278,6 +284,18 @@ export default function DownloadPanel({
         </p>
       )}
 
+      {shownRelease?.tryBuild && (
+        <div
+          className="fh-tile"
+          style={{ borderStyle: "dashed", padding: 16, marginTop: 12 }}
+        >
+          <p style={{ fontSize: 13, color: "var(--t3-fg-muted)", lineHeight: 1.6 }}>
+            ⚠ This is a PR try-build ({shownRelease.version}), not a general release —
+            pick Latest above unless you know you need exactly this one.
+          </p>
+        </div>
+      )}
+
       {grouped.length === 0 ? (
         <div
           className="fh-tile"
@@ -287,7 +305,7 @@ export default function DownloadPanel({
             This release carries no desktop downloads
             {selected ? ` (${selected.version})` : ""}. Pick another version above, or read the{" "}
             <a
-              href={(selected ?? releases[0])?.releaseUrl}
+              href={shownRelease?.releaseUrl}
               target="_blank"
               rel="noreferrer"
               style={{ color: "var(--t3-fg)", textDecoration: "underline", textUnderlineOffset: 4 }}
@@ -308,7 +326,7 @@ export default function DownloadPanel({
                 <AssetCard
                   key={`${b.platform}/${b.arch}/${b.format}/${b.name}`}
                   build={b}
-                  showFrom={!selected && b.fromVersion !== releases[0]?.version}
+                  showFrom={!selected && b.fromVersion !== latest?.version}
                 />
               ))}
             </div>
