@@ -123,6 +123,8 @@ export async function fetchCatalogReleases(
     out.push(
       ...batch.map((r) => ({
         ...r,
+        name: r.name,
+        body: typeof (r as { body?: unknown }).body === "string" ? (r as { body: string }).body : null,
         assets: (r.assets ?? []).map((a) => ({
           name: a.name,
           browser_download_url: a.browser_download_url,

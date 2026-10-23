@@ -23,6 +23,8 @@ export type GhRelease = {
   html_url: string;
   published_at: string;
   assets: GhAsset[];
+  /** Release notes body (used for try-build detection); optional in tests. */
+  body?: string | null;
 };
 
 export type Platform = "linux" | "mac" | "windows" | "source";
@@ -48,6 +50,8 @@ export type ChannelRelease = {
   assets: DownloadAsset[];
   /** Direct URL of a SHA256SUMS file in this release, when present. */
   shaUrl: string | null;
+  /** PR try-build ("not for general use"): never the default Latest. */
+  tryBuild: boolean;
 };
 
 export type PlatformBuild = DownloadAsset & {
@@ -196,6 +200,41 @@ function shaOf(r: GhRelease): string | null {
   return hit?.browser_download_url ?? null;
 }
 
+/**
+ * PR try-builds ship on normal-looking tags (e.g. v2.9.2-fh.imbios.1) but
+ * their notes say so explicitly ("Try-build ... Not for general use").
+ * They must never become the default Latest download.
+ */
+export function isTryBuild(name: string, body?: string | null): boolean {
+  return /try.build|not for general use|do not use/i.test(`${name}\n${body ?? ""}`);
+}
+
+/**
+ * Unified catalog releases look like v<upstream>-fh.<owner>.<build>
+ * (e.g. v2.9.2-fh.with-fh.5); legacy per-platform splits carry a `--`
+ * publisher prefix (e.g. ...--v2.9.2-fh23) and only hold one OS.
+ */
+export function isUnifiedRelease(tag: string): boolean {
+  return !tag.includes("--") && /[-.]fh\.[a-z0-9-]+\.\d+$/i.test(tag);
+}
+
+/**
+ * What "Latest" means: newest unified, non-try-build release; falling back
+ * to newest non-try-build, then to newest overall. Never a try-build when
+ * a real release exists — newest-published_at alone would happily crown a
+ * PR try-build or a single-platform split as the default download.
+ */
+export function pickLatest(list: ChannelRelease[]): ChannelRelease | null {
+  if (list.length === 0) return null;
+  const byDate = [...list].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return (
+    byDate.find((r) => !r.tryBuild && isUnifiedRelease(r.version)) ??
+    byDate.find((r) => !r.tryBuild) ??
+    byDate[0] ??
+    null
+  );
+}
+
 export function toChannelRelease(r: GhRelease): ChannelRelease {
   const assets: DownloadAsset[] = [];
   for (const a of r.assets) {
@@ -209,6 +248,7 @@ export function toChannelRelease(r: GhRelease): ChannelRelease {
     releaseUrl: r.html_url,
     assets,
     shaUrl: shaOf(r),
+    tryBuild: isTryBuild(r.name, r.body),
   };
 }
 
