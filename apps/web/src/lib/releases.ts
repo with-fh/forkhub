@@ -202,11 +202,13 @@ function shaOf(r: GhRelease): string | null {
 
 /**
  * PR try-builds ship on normal-looking tags (e.g. v2.9.2-fh.imbios.1) but
- * their notes say so explicitly ("Try-build ... Not for general use").
+ * their notes say so explicitly ("Try-build ... Not for general use"). The
+ * same `*-pr.*` marker that publish.sh refuses to ship is honored here, so
+ * `v2.9.2-fh.with-fh.6-pr661` style tags are try-builds by construction.
  * They must never become the default Latest download.
  */
 export function isTryBuild(name: string, body?: string | null): boolean {
-  return /try.build|not for general use|do not use/i.test(`${name}\n${body ?? ""}`);
+  return /try.build|not for general use|do not use|-pr\.\d+/i.test(`${name}\n${body ?? ""}`);
 }
 
 /**
