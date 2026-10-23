@@ -70,12 +70,11 @@ fh --version
 Canary builds are published automatically on every push to the `canary` branch:
 
 ```bash
-# pnpm (recommended)
-pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"
+# bun (recommended)
+bun install -g "github:ImBIOS/forkhub#canary&path:packages/cli"
 fh --help
 
-# or via dlx without global install
-pnpm dlx "github:ImBIOS/forkhub#canary&path:packages/cli" fh --help
+# or via bunx without global install
 bunx --bun "github:ImBIOS/forkhub#canary&path:packages/cli" fh --help
 ```
 
@@ -193,8 +192,8 @@ Only if you publish them (`fh publish` pushes your `.forkhub` git repo to a GitH
 ## Development
 
 ```bash
-pnpm install
-pnpm run dev          # web + server
+bun install
+bun run dev          # web + server
 bun run packages/cli/src/cli.ts status
 ```
 

@@ -5,7 +5,7 @@ Thanks for your interest in forkhub!
 ## Development setup
 
 ```bash
-pnpm install
+bun install
 bun run src/cli.ts status  # smoke test
 ```
 

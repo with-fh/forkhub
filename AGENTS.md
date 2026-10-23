@@ -2,14 +2,14 @@
 
 ## Bun & PNPM
 
-Default to using Bun instead of Node.js, and PNPM for package management.
+Default to using Bun for everything — package manager and runtime.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `pnpm install` instead of `npm install` or `yarn install` or `bun install`
+- Use `bun install` instead of `npm install`, `yarn install`, or `pnpm install`
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `pnpx <package> <command>` instead of `npx <package> <command>` for not locally-installedp package, and `pnpm <package> <command>` instead of `npm <package> <command>` for locally-installed package.
+- Use `bunx <package> <command>` instead of `npx <package> <command>` for not locally-installed package, and `bun run <command>` instead of `npm run <command>` for locally-installed package.
 - Bun automatically loads .env, so don't use dotenv.
 
 ### APIs
@@ -121,7 +121,7 @@ Two channels only. Never mix artifacts between them.
 
 Every PR (`opened`/`synchronize`/`reopened`) is handled by `.github/workflows/pr-preview.yml`, which keeps **exactly ONE** rolling comment authored as **forkhub-bot** on the PR (identified by marker `<!-- forkhub-bot:intent-patch-preview -->`; it is edited in place on every push — never post duplicate preview comments). The comment always contains:
 
-1. **Try this PR with `fh`**: install commands pinned to the PR head — `pnpm dlx "github:ImBIOS/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
+1. **Try this PR with `fh`**: install commands pinned to the PR head — `bunx --bun "github:ImBIOS/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
 2. **Intent-patch reuse info**: lists any `INTENT.md` files carried by the PR with grab commands, plus the `fh draft` / `fh satisfied` / `fh publish` capture workflow and `fh import` / `fh search --target github.com/ImBIOS/forkhub` reuse path.
 3. **Usage metrics**: commits, files touched, ±lines, CI check rollup.
 
