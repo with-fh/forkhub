@@ -1,17 +1,17 @@
 FROM node:24-slim AS builder
-RUN npm install -g pnpm@11.22.0
+COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 ENV SKIP_ENV_VALIDATION=1
 ENV DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 ENV CORS_ORIGIN=https://example.com
 
 COPY . .
-RUN --mount=type=cache,target=/pnpm-store pnpm install --store-dir /pnpm-store
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile
 
 ARG NEXT_PUBLIC_SERVER_URL
 ENV NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL}
 ENV NODE_ENV=production
-RUN cd apps/web && pnpm run build
+RUN cd apps/web && bun run build
 # standalone output excludes public/; ensure it exists so the runner copy never fails
 RUN mkdir -p apps/web/public
 

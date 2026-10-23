@@ -49,7 +49,7 @@ jobs:
         run: |
           echo "### Canary published 🚀" >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo 'pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"' >> "$GITHUB_STEP_SUMMARY"
+          echo 'bun install -g forkhub@canary' >> "$GITHUB_STEP_SUMMARY"
           echo '# or, once the canary dist-tag propagates:' >> "$GITHUB_STEP_SUMMARY"
           echo 'npm i -g forkhub@canary' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -62,19 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: pnpm/action-setup@v6
-        with:
-          cache: true
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
       - name: Typecheck CLI
-        run: pnpm exec tsc --noEmit
+        run: bunx tsc --noEmit
         working-directory: packages/cli
       - name: Unit + integration tests
         run: bun test
@@ -89,18 +83,16 @@ jobs:
       id-token: write # Required for OIDC trusted publishing
     steps:
       - uses: actions/checkout@v6
-
-      - uses: pnpm/action-setup@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          cache: true
-
+          bun-version: latest
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Compute canary version
         id: ver
@@ -192,7 +184,7 @@ jobs:
             echo
             echo '```bash'
             echo '# CLI via git ref'
-            echo 'pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"'
+            echo 'bun install -g forkhub@canary'
             echo
             echo '# or standalone binary (pick your platform asset)'
             echo 'curl -fsSL -o fh https://github.com/ImBIOS/forkhub/releases/download/canary/forkhub-linux-x64 && chmod +x fh'
@@ -225,24 +217,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v6
+      - uses: oven-sh/setup-bun@v2
         with:
-          cache: true
+          bun-version: latest
 
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Typecheck
-        run: pnpm exec tsc --noEmit
+        run: bunx tsc --noEmit
         working-directory: packages/cli
 
       - name: Unit + integration tests

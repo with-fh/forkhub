@@ -11,22 +11,22 @@
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.2",
-    "@orpc/openapi": "catalog:",
-    "@orpc/server": "catalog:",
-    "@orpc/zod": "catalog:",
+    "@orpc/openapi": "^1.14.6",
+    "@orpc/server": "^1.14.6",
+    "@orpc/zod": "^1.14.6",
     "@forkhub/api": "workspace:*",
     "@forkhub/db": "workspace:*",
     "@forkhub/env": "workspace:*",
     "@sinclair/typebox": "^0.34.49",
-    "dotenv": "catalog:",
-    "elysia": "catalog:",
-    "evlog": "catalog:",
-    "zod": "catalog:"
+    "dotenv": "^17.4.2",
+    "elysia": "^1.4.29",
+    "evlog": "^2.22.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@forkhub/config": "workspace:*",
-    "@types/bun": "catalog:",
+    "@types/bun": "^1.3.14",
     "tsdown": "^0.22.3",
-    "typescript": "catalog:"
+    "typescript": "^6.0.3"
   }
 }
