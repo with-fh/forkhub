@@ -4,7 +4,7 @@ description: Manage patches for forked repos using intent-based re-derivation. U
 license: MIT
 metadata:
   version: "0.3.0"
-  homepage: https://github.com/ImBIOS/forkhub
+  homepage: https://github.com/with-fh/forkhub
 ---
 
 # forkhub

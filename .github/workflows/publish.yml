@@ -49,11 +49,11 @@ jobs:
         run: |
           echo "### Canary published 🚀" >> "$GITHUB_STEP_SUMMARY"
           echo '```bash' >> "$GITHUB_STEP_SUMMARY"
-          echo 'pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"' >> "$GITHUB_STEP_SUMMARY"
+          echo 'pnpm add -g "github:with-fh/forkhub#canary&path:packages/cli"' >> "$GITHUB_STEP_SUMMARY"
           echo '# or, once the canary dist-tag propagates:' >> "$GITHUB_STEP_SUMMARY"
           echo 'npm i -g forkhub@canary' >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo 'GitHub rolling release: https://github.com/ImBIOS/forkhub/releases/tag/canary' >> "$GITHUB_STEP_SUMMARY"
+          echo 'GitHub rolling release: https://github.com/with-fh/forkhub/releases/tag/canary' >> "$GITHUB_STEP_SUMMARY"
 
   # ────────────────────────── canary channel: npm ────────────────────────
 
@@ -192,13 +192,13 @@ jobs:
             echo
             echo '```bash'
             echo '# CLI via git ref'
-            echo 'pnpm add -g "github:ImBIOS/forkhub#canary&path:packages/cli"'
+            echo 'pnpm add -g "github:with-fh/forkhub#canary&path:packages/cli"'
             echo
             echo '# or standalone binary (pick your platform asset)'
-            echo 'curl -fsSL -o fh https://github.com/ImBIOS/forkhub/releases/download/canary/forkhub-linux-x64 && chmod +x fh'
+            echo 'curl -fsSL -o fh https://github.com/with-fh/forkhub/releases/download/canary/forkhub-linux-x64 && chmod +x fh'
             echo '```'
             echo
-            echo '> Pre-release channel — expect breakage. Stable: [latest release](https://github.com/ImBIOS/forkhub/releases/latest).'
+            echo '> Pre-release channel — expect breakage. Stable: [latest release](https://github.com/with-fh/forkhub/releases/latest).'
           } > notes.md
 
           git config user.name "github-actions[bot]"
@@ -354,28 +354,28 @@ jobs:
 
           class Forkhub < Formula
             desc "Keep up-to-date upstream + your custom patches. Patches are intent, not diffs."
-            homepage "https://github.com/ImBIOS/forkhub"
+            homepage "https://github.com/with-fh/forkhub"
             version "${VERSION#v}"
             license "MIT"
 
             on_macos do
               on_intel do
-                url "https://github.com/ImBIOS/forkhub/releases/download/${VERSION}/forkhub-darwin-x64"
+                url "https://github.com/with-fh/forkhub/releases/download/${VERSION}/forkhub-darwin-x64"
                 sha256 "${DARWIN_X64}"
               end
               on_arm do
-                url "https://github.com/ImBIOS/forkhub/releases/download/${VERSION}/forkhub-darwin-arm64"
+                url "https://github.com/with-fh/forkhub/releases/download/${VERSION}/forkhub-darwin-arm64"
                 sha256 "${DARWIN_ARM64}"
               end
             end
 
             on_linux do
               on_intel do
-                url "https://github.com/ImBIOS/forkhub/releases/download/${VERSION}/forkhub-linux-x64"
+                url "https://github.com/with-fh/forkhub/releases/download/${VERSION}/forkhub-linux-x64"
                 sha256 "${LINUX_X64}"
               end
               on_arm do
-                url "https://github.com/ImBIOS/forkhub/releases/download/${VERSION}/forkhub-linux-arm64"
+                url "https://github.com/with-fh/forkhub/releases/download/${VERSION}/forkhub-linux-arm64"
                 sha256 "${LINUX_ARM64}"
               end
             end

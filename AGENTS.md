@@ -112,17 +112,17 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 Two channels only. Never mix artifacts between them.
 
-| Channel             | Trigger                                                                                               | Version format                                                               | Published to                                                                                                                                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **canary**          | EVERY push to the `canary` branch (CI: `.github/workflows/publish.yml`, canary jobs)                  | `<dev-version>-canary.<YYYYMMDDHHmm>.<sha7>` — CI-generated, never hand-edit | npm dist-tag `canary` **and** rolling GitHub Release tagged `canary` (4 platform binaries + `SHA256SUMS`, prerelease, never `latest`); also installable via `github:ImBIOS/forkhub#canary&path:packages/cli` |
-| **latest (stable)** | pushing a `vX.Y.Z` tag whose commit is on `canary` (CI: `.github/workflows/publish.yml`, stable jobs) | exact `X.Y.Z`                                                                | npm dist-tag `latest` + GitHub Release (**mandatory, always**)                                                                                                                                               |
+| Channel             | Trigger                                                                                               | Version format                                                               | Published to                                                                                                                                                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **canary**          | EVERY push to the `canary` branch (CI: `.github/workflows/publish.yml`, canary jobs)                  | `<dev-version>-canary.<YYYYMMDDHHmm>.<sha7>` — CI-generated, never hand-edit | npm dist-tag `canary` **and** rolling GitHub Release tagged `canary` (4 platform binaries + `SHA256SUMS`, prerelease, never `latest`); also installable via `github:with-fh/forkhub#canary&path:packages/cli` |
+| **latest (stable)** | pushing a `vX.Y.Z` tag whose commit is on `canary` (CI: `.github/workflows/publish.yml`, stable jobs) | exact `X.Y.Z`                                                                | npm dist-tag `latest` + GitHub Release (**mandatory, always**)                                                                                                                                                |
 
 ### PR previews & forkhub-bot comment
 
 Every PR (`opened`/`synchronize`/`reopened`) is handled by `.github/workflows/pr-preview.yml`, which keeps **exactly ONE** rolling comment authored as **forkhub-bot** on the PR (identified by marker `<!-- forkhub-bot:intent-patch-preview -->`; it is edited in place on every push — never post duplicate preview comments). The comment always contains:
 
-1. **Try this PR with `fh`**: install commands pinned to the PR head — `pnpm dlx "github:ImBIOS/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
-2. **Intent-patch reuse info**: lists any `INTENT.md` files carried by the PR with grab commands, plus the `fh draft` / `fh satisfied` / `fh publish` capture workflow and `fh import` / `fh search --target github.com/ImBIOS/forkhub` reuse path.
+1. **Try this PR with `fh`**: install commands pinned to the PR head — `pnpm dlx "github:with-fh/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
+2. **Intent-patch reuse info**: lists any `INTENT.md` files carried by the PR with grab commands, plus the `fh draft` / `fh satisfied` / `fh publish` capture workflow and `fh import` / `fh search --target github.com/with-fh/forkhub` reuse path.
 3. **Usage metrics**: commits, files touched, ±lines, CI check rollup.
 
 Implementation notes: the workflow uses `pull_request_target` so fork PRs get comments too, and it NEVER executes PR code (API queries + comment authoring only) — keep it that way.
@@ -132,7 +132,7 @@ Implementation notes: the workflow uses `pull_request_target` so fork PRs get co
 - Canonical source is `skills/forkhub/SKILL.md`. It MUST start with valid YAML frontmatter: `name: forkhub` (matches the dir name), `description` (what it does + when to use it), `license: MIT`. The `skills` CLI (Vercel) ignores skills without frontmatter.
 - `.agents/skills/forkhub/SKILL.md` is a synced discovery copy — after editing the canonical file, copy it over. The two files must stay byte-identical; no CI checks this, you do.
 - The skill ships inside the `forkhub` npm package: `packages/cli/scripts/sync-skill.mjs` (runs in `prepack`) bundles the canonical file into `.agents/skills/forkhub/` in the tarball, which is the preferred discovery path for `npx skills experimental_sync` scanning `node_modules`. Never commit that generated dir (gitignored) — it is pack-time output.
-- Install paths that must keep working: `npx skills add ImBIOS/forkhub --skill forkhub` (git) and npm-bundled sync. After ANY CLI workflow change (new command, changed flags, new flows), update the skill in the SAME commit — a stale skill is a bug.
+- Install paths that must keep working: `npx skills add with-fh/forkhub --skill forkhub` (git) and npm-bundled sync. After ANY CLI workflow change (new command, changed flags, new flows), update the skill in the SAME commit — a stale skill is a bug.
 - Verify after touching the skill: frontmatter parses as YAML with `name`+`description`, and a scratch `npx skills add <this-repo> --skill forkhub` discovers exactly one skill.
 
 Rules:
