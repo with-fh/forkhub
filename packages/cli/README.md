@@ -35,7 +35,7 @@ The pain: every upstream release, manually re-apply, re-fix, re-test.
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap ImBIOS/tap https://github.com/with-fh/forkhub
+brew tap ImBIOS/tap https://github.com/ImBIOS/forkhub
 brew install forkhub
 ```
 
@@ -52,7 +52,7 @@ npx forkhub init
 ### Standalone binary
 
 ```bash
-curl -fsSL https://github.com/with-fh/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o forkhub
+curl -fsSL https://github.com/ImBIOS/forkhub/releases/latest/download/forkhub-$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/') -o forkhub
 chmod +x forkhub
 sudo mv forkhub /usr/local/bin/
 ```
@@ -60,7 +60,7 @@ sudo mv forkhub /usr/local/bin/
 ### From source
 
 ```bash
-git clone https://github.com/with-fh/forkhub
+git clone https://github.com/ImBIOS/forkhub
 cd forkhub
 bun install
 bun run build:binaries  # → ./dist/forkhub-*
@@ -73,7 +73,7 @@ Requires [Bun](https://bun.sh) ≥ 1.3 and `git`.
 Teach your coding agent the ForkHub workflow (draft → satisfied → update, drift-check, reuse):
 
 ```bash
-npx skills add with-fh/forkhub --skill forkhub
+npx skills add ImBIOS/forkhub --skill forkhub
 ```
 
 The skill ships inside the npm package too (`forkhub` ≥ 0.3.0 bundles it under
