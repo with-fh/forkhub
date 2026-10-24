@@ -1,5 +1,5 @@
-export const FORKHUB_REPO_URL = "https://github.com/ImBIOS/forkhub";
-export const FORKHUB_REPO_API_ID = "ImBIOS/forkhub";
+export const FORKHUB_REPO_URL = "https://github.com/with-fh/forkhub";
+export const FORKHUB_REPO_API_ID = "with-fh/forkhub";
 export const FORKHUB_SITE_URL = "https://forkhub.imbios.dev";
 export const CATALOG_REPO_URL = "https://github.com/with-fh/.forkhub";
 export const CATALOG_DIR = "with-fh/.forkhub";

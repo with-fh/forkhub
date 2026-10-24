@@ -83,7 +83,7 @@ For provenance to work from CI, you need to set up **npm trusted publishing**:
 2. Go to https://www.npmjs.com/package/forkhub → Settings → Trusted publishing
 3. Add a trusted publisher:
    - Provider: GitHub Actions
-   - Repository: `ImBIOS/forkhub`
+   - Repository: `with-fh/forkhub`
    - Workflow filename: `publish.yml`
 4. Future releases will publish from CI with provenance automatically
 
