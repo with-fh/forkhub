@@ -98,16 +98,16 @@ export const OSS_CATALOG: OssEntry[] = [
     trains: ["nightly"],
     updated: "2026-09-27",
     install: [
-      "fh reuse https://github.com/with-fh/.forkhub/blob/main/repos/github.com/natively-ai-assistant/natively-cluely-ai-assistant/patches/natively-forkhub-update-track-53ac9810/INTENT.md",
+      "fh reuse https://github.com/with-fh/.forkhub/blob/main/repos/github.com/natively-ai-assistant/natively-cluely-ai-assistant/patches/natively-forkhub-support-f276ae13/INTENT.md",
     ],
     patches: [
       {
-        id: "natively-forkhub-update-track-53ac9810",
-        title: "ForkHub update track + stable hardware ID without premium submodule",
+        id: "natively-forkhub-support-f276ae13",
+        title: "Natively ForkHub support (catalog update feed + publisher input + calendar + dock)",
         status: "draft",
-        version: 2,
+        version: 1,
         intentUrl:
-          "https://github.com/with-fh/.forkhub/blob/main/repos/github.com/natively-ai-assistant/natively-cluely-ai-assistant/patches/natively-forkhub-update-track-53ac9810/INTENT.md",
+          "https://github.com/with-fh/.forkhub/blob/main/repos/github.com/natively-ai-assistant/natively-cluely-ai-assistant/patches/natively-forkhub-support-f276ae13/INTENT.md",
       },
     ],
   },

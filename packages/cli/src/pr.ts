@@ -146,13 +146,13 @@ export async function runPr(options: PrOptions = {}): Promise<PrResult> {
         if (sections.length > 0) {
           prBody =
             sections.join("\n\n") +
-            "\n\n---\n\nManaged via [forkhub](https://github.com/with-fh/forkhub).";
+            "\n\n---\n\nManaged via [forkhub](https://github.com/ImBIOS/forkhub).";
         }
       }
     }
   }
   if (!prTitle) prTitle = branch;
-  if (!prBody) prBody = "Managed via [forkhub](https://github.com/with-fh/forkhub).";
+  if (!prBody) prBody = "Managed via [forkhub](https://github.com/ImBIOS/forkhub).";
 
   const base =
     options.base ??
