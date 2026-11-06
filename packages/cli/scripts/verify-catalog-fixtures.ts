@@ -74,11 +74,13 @@ type Entry = {
   pkg: string;
   owner: string;
   json: {
+    target?: string;
+    bin: string;
     asset: string;
     assets?: Record<string, string>;
     binPaths?: Record<string, string>;
     binPath?: string;
-    extract?: string;
+    extract?: "tar" | "none";
     platforms?: string[];
     channels: Record<string, { tagMatch: string }>;
     defaultChannel: string;

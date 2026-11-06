@@ -7,6 +7,7 @@ import {
   findChecksum,
   pickReleaseTags,
   resolveCacheDir,
+  validateRegistryEntry,
 } from "../src/run";
 
 test("compareSemver orders nightly trains by date then build", () => {
@@ -111,8 +112,6 @@ test("assetTemplateForPlatform prefers the per-platform override", () => {
 });
 
 test("pickReleaseTags matches with-fh unified updater tags, skips namespaced bundles", () => {
-  // Live with-fh/.forkhub tag shapes: unified `v<base>-fh.<owner>.<n>` (the
-  // updater feed) vs namespaced `<target>--v<base>-fh<N>` bundles (not semver).
   const releases = [
     { tag_name: "natively-ai-assistant-natively-cluely-ai-assistant--v3.1.0-fh7", draft: false },
     { tag_name: "v3.1.0-fh.with-fh.1", draft: false },
@@ -122,4 +121,38 @@ test("pickReleaseTags matches with-fh unified updater tags, skips namespaced bun
   expect(
     pickReleaseTags(releases, { channel: "stable", tagMatch: "^v[0-9]+\\.[0-9]+\\.[0-9]+-fh\\." }),
   ).toEqual(["v3.1.0-fh.with-fh.1", "v3.0.0-fh.with-fh.3"]);
+});
+
+test("validateRegistryEntry rejects bad regexes, bad extract modes, and substring {asset}", () => {
+  const base = {
+    target: "github.com/x/y",
+    bin: "natively",
+    defaultChannel: "stable",
+    asset: "Natively-Setup-{version}.exe",
+    extract: "none" as const,
+    platforms: ["win32-x64"],
+    channels: { stable: { tagMatch: "^v[0-9]+\\.[0-9]+\\.[0-9]+-fh\\." } },
+  };
+  // Valid entry passes.
+  validateRegistryEntry("natively", base, "win32-x64");
+  // Bad tagMatch regex throws before any network.
+  expect(() =>
+    validateRegistryEntry("natively", {
+      ...base,
+      channels: { stable: { tagMatch: "^(unclosed" } },
+    }),
+  ).toThrow("Invalid tagMatch");
+  // Unknown extract mode throws.
+  expect(() =>
+    validateRegistryEntry("natively", { ...base, extract: "zip" as "tar" }, "win32-x64"),
+  ).toThrow("Invalid extract mode");
+  // Substring {asset} throws; exact {asset} passes.
+  expect(() =>
+    validateRegistryEntry(
+      "natively",
+      { ...base, binPaths: { "win32-x64": "bin/{asset}" } },
+      "win32-x64",
+    ),
+  ).toThrow("must be the whole value");
+  validateRegistryEntry("natively", { ...base, binPaths: { "win32-x64": "{asset}" } }, "win32-x64");
 });

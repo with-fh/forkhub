@@ -10,6 +10,7 @@ export type RunOptions = {
   channel?: string;
   version?: string;
   args?: string[];
+  requireChecksum?: boolean;
 };
 
 export type RegistryPlatformKey = string;
@@ -47,6 +48,7 @@ export type ResolvedPackage = {
   binPath: string;
   cacheDir: string;
   extract: "tar" | "none";
+  requireChecksum: boolean;
 };
 
 /** This machine as an `<os>-<arch>` key, matching release platform naming. */
@@ -139,6 +141,76 @@ type ReleaseRow = {
   assets?: Array<{ name?: unknown; browser_download_url?: unknown }> | unknown;
 };
 
+/** Fail-fast entry validation (runs before any network): bad tagMatch regexes,
+ * unknown extract modes, and non-exact `{asset}` placeholders throw here
+ * instead of mid-resolve. Pure — unit-testable without fetch. */
+export function validateRegistryEntry(
+  pkg: string,
+  entry: RegistryPackage,
+  platform?: string,
+): void {
+  for (const [channel, def] of Object.entries(entry.channels)) {
+    try {
+      // biome-ignore lint: intentional — validate the catalog regex compiles
+      new RegExp(def.tagMatch);
+    } catch {
+      throw new Error(
+        `Invalid tagMatch for '${pkg}' channel '${channel}': '${def.tagMatch}' is not a valid regex.`,
+      );
+    }
+  }
+  if (entry.extract !== undefined && entry.extract !== "tar" && entry.extract !== "none") {
+    throw new Error(
+      `Invalid extract mode for '${pkg}': '${entry.extract}' (expected 'tar' or 'none').`,
+    );
+  }
+  const key = platform ?? currentPlatformKey();
+  const rawBinPath =
+    entry.binPaths?.[key] ?? entry.binPath ?? (entry.extract === "none" ? "{asset}" : undefined);
+  if (rawBinPath !== undefined && rawBinPath.includes("{asset}") && rawBinPath !== "{asset}") {
+    throw new Error(
+      `Invalid binPaths for '${pkg}' platform '${key}': '{asset}' must be the whole value (got '${rawBinPath}').`,
+    );
+  }
+}
+
+async function listCatalogReleases(owner: string): Promise<ReleaseRow[]> {
+  let url: string | null = `/repos/${owner}/.forkhub/releases?per_page=100`;
+  const out: ReleaseRow[] = [];
+  for (let page = 0; page < 10 && url; page++) {
+    const response = await githubApiRaw(url);
+    out.push(...((await response.json()) as ReleaseRow[]));
+    url = nextPageUrl(response.headers.get("link"));
+  }
+  return out;
+}
+
+function nextPageUrl(link: string | null): string | null {
+  if (!link) return null;
+  for (const part of link.split(",")) {
+    const m = /<([^>]+)>;\s*rel="next"/.exec(part);
+    if (m?.[1]) {
+      const u = new URL(m[1]);
+      return `${u.pathname}${u.search}`;
+    }
+  }
+  return null;
+}
+
+async function githubApiRaw(path: string): Promise<Response> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "forkhub-cli",
+  };
+  const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetchWithRetry(`https://api.github.com${path}`, { headers });
+  if (!response.ok) {
+    throw new Error(`GitHub API error ${response.status} for ${path}.`);
+  }
+  return response;
+}
+
 /**
  * Candidate release tags, newest semver first: the exact version when
  * pinned, else every channel-matching tag. Callers walk the list because a
@@ -230,9 +302,8 @@ export async function resolvePackage(
       `Channel '${channel}' is not published for '${options.package}'. Known: ${Object.keys(entry.channels).join(", ")}.`,
     );
   }
-  const releases = (await githubApi(
-    `/repos/${options.owner}/.forkhub/releases?per_page=100`,
-  )) as ReleaseRow[];
+  validateRegistryEntry(options.package, entry, platform);
+  const releases = await listCatalogReleases(options.owner);
   const candidates = pickReleaseTags(releases, {
     channel,
     tagMatch: channelDef.tagMatch,
@@ -297,6 +368,7 @@ export async function resolvePackage(
     cacheDir: resolveCacheDir(options.owner, options.package, version),
     downloadUrl: assetUrl,
     extract: entry.extract ?? "tar",
+    requireChecksum: options.requireChecksum ?? false,
   };
 }
 
@@ -373,6 +445,11 @@ export async function runRun(options: RunOptions): Promise<void> {
         `warning: could not fetch SHA256SUMS for ${resolved.tag} — installing ${resolved.assetName} unverified.`,
       );
       expected = null;
+    }
+    if (!expected && resolved.requireChecksum) {
+      throw new Error(
+        `Refusing to install ${resolved.assetName}: no verified SHA256SUMS entry (release ${resolved.tag}). Re-run without --require-checksum to accept a best-effort install.`,
+      );
     }
     const tmpPath = join(
       process.env.XDG_CACHE_HOME ?? join(process.env.HOME ?? tmpdir(), ".cache"),
