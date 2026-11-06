@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -270,6 +270,14 @@ export async function resolvePackage(
     entry.binPaths?.[platform] ??
     entry.binPath ??
     (entry.extract === "none" ? "{asset}" : `package/${entry.bin}`);
+  // "{asset}" is exact-match only: the downloaded file IS the binary
+  // (AppImage / portable exe). Anything else is a template with
+  // {owner}/{version}/{platform}/{os}/{arch} (+ {bin} in binPaths).
+  if (rawBinPath.includes("{asset}") && rawBinPath !== "{asset}") {
+    throw new Error(
+      `Invalid binPaths for platform '${platform}': '{asset}' must be the whole value (got '${rawBinPath}').`,
+    );
+  }
   const binPath =
     rawBinPath === "{asset}"
       ? assetName
@@ -342,14 +350,28 @@ export async function runRun(options: RunOptions): Promise<void> {
     );
     // Best-effort SHA check against the release SHA256SUMS (same trust
     // domain as the asset; guards transport corruption, not supply chain).
+    // Unified updater releases may not publish SHA256SUMS at all — say so
+    // loudly instead of installing silently unverified.
     let expected: string | null = null;
     try {
       const sumsUrl = `https://github.com/${resolved.owner}/.forkhub/releases/download/${resolved.tag}/SHA256SUMS`;
       const sumsResponse = await fetchWithRetry(sumsUrl);
       if (sumsResponse.ok) {
         expected = findChecksum(await sumsResponse.text(), resolved.assetName);
+        if (!expected) {
+          console.error(
+            `warning: release ${resolved.tag} publishes SHA256SUMS but it has no entry for ${resolved.assetName} — installing unverified.`,
+          );
+        }
+      } else {
+        console.error(
+          `warning: release ${resolved.tag} publishes no SHA256SUMS — installing ${resolved.assetName} unverified.`,
+        );
       }
     } catch {
+      console.error(
+        `warning: could not fetch SHA256SUMS for ${resolved.tag} — installing ${resolved.assetName} unverified.`,
+      );
       expected = null;
     }
     const tmpPath = join(
@@ -379,7 +401,6 @@ export async function runRun(options: RunOptions): Promise<void> {
       );
       await Bun.write(dest, Bun.file(tmpPath));
       rmSync(tmpPath, { force: true });
-      const { chmodSync } = await import("node:fs");
       chmodSync(dest, 0o755);
     } else {
       await runTar(["-xzf", tmpPath, "-C", resolved.cacheDir], resolved.cacheDir);

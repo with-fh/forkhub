@@ -86,28 +86,38 @@ type Entry = {
 };
 
 async function loadEntries(): Promise<Entry[]> {
-  // Catalog checkouts live beside this repo; the fixture only reads the
-  // registry.json files this change proposes (paths overridable via env).
-  const withFh = process.env.WITH_FH_DIR ?? "/tmp/opencode/catalogs/with-fh";
-  const imbios = process.env.IMBIOS_DIR ?? "/tmp/opencode/catalogs/imbios";
-  const files = [
-    { file: join(withFh, "registry.json"), owner: "with-fh", pkgs: ["natively"] },
-    {
-      file: join(imbios, "registry.json"),
-      owner: "ImBIOS",
-      pkgs: ["natively-linux"],
-    },
-  ];
+  // Default (CI): vendored entry fixtures under tests/fixtures, recorded
+  // 2026-11-06. Pass WITH_FH_DIR / IMBIOS_DIR to check live catalog
+  // checkouts instead (e.g. the with-fh + ImBIOS catalog PRs).
+  const withFh = process.env.WITH_FH_DIR;
+  const imbios = process.env.IMBIOS_DIR;
+  const files: Array<{ file: string; owner: string; pkgs: string[] }> = withFh
+    ? [
+        { file: join(withFh, "registry.json"), owner: "with-fh", pkgs: ["natively"] },
+        {
+          file: join(imbios ?? "/tmp/opencode/catalogs/imbios", "registry.json"),
+          owner: "ImBIOS",
+          pkgs: ["natively-linux"],
+        },
+      ]
+    : ((["with-fh-natively", "imbios-natively-linux"] as const).map((name) => ({
+        file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
+        owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
+        pkgs: [name === "with-fh-natively" ? "natively" : "natively-linux"],
+        single: true,
+      })) as Array<{ file: string; owner: string; pkgs: string[] }>);
   const out: Entry[] = [];
   for (const { file, owner, pkgs } of files) {
     if (!existsSync(file)) {
       throw new Error(`missing fixture input (PR not checked out?): ${file}`);
     }
-    const data = JSON.parse(await Bun.file(file).text()) as {
-      packages: Record<string, Entry["json"]>;
-    };
+    const raw = JSON.parse(await Bun.file(file).text()) as
+      | { packages: Record<string, Entry["json"]> }
+      | Entry["json"];
+    const data =
+      "packages" in raw ? (raw as { packages: Record<string, Entry["json"]> }).packages : null;
     for (const pkg of pkgs) {
-      const json = data.packages[pkg];
+      const json = data ? data[pkg] : (raw as Entry["json"]);
       if (!json) throw new Error(`${owner} registry.json has no '${pkg}' entry`);
       out.push({ file, pkg, owner, json });
     }

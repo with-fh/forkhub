@@ -1,0 +1,20 @@
+{
+  "target": "github.com/Natively-AI-assistant/natively-cluely-ai-assistant",
+  "description": "Natively x ForkHub update channel for Windows (Linux served by the ImBIOS catalog; macOS via the in-app updater for now)",
+  "bin": "Natively",
+  "defaultChannel": "stable",
+  "asset": "Natively-Setup-{version}.exe",
+  "assets": {
+    "win32-x64": "Natively-Setup-{version}.exe"
+  },
+  "binPaths": {
+    "win32-x64": "{asset}"
+  },
+  "extract": "none",
+  "platforms": ["win32-x64"],
+  "channels": {
+    "stable": {
+      "tagMatch": "^v[0-9]+\\.[0-9]+\\.[0-9]+-fh\\."
+    }
+  }
+}
