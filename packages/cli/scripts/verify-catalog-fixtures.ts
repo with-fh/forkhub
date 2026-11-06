@@ -1,7 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
-import { assetTemplateForPlatform, fillAssetTemplate, pickReleaseTags } from "../src/run";
+import {
+  assetTemplateForPlatform,
+  fillAssetTemplate,
+  pickReleaseTags,
+  validateRegistryEntry,
+} from "../src/run";
 
 /**
  * Fixture check: registry entries proposed for the catalog PRs resolve
@@ -76,6 +81,7 @@ type Entry = {
   json: {
     target?: string;
     bin: string;
+    description?: string;
     asset: string;
     assets?: Record<string, string>;
     binPaths?: Record<string, string>;
@@ -142,6 +148,19 @@ const fail = (msg: string) => {
 async function main(): Promise<void> {
   for (const { pkg, owner, json } of await loadEntries()) {
     const releases = owner === "with-fh" ? WITH_FH_RELEASES : IMBIOS_RELEASES;
+    // Same fail-fast path as production resolvePackage (bad regex /
+    // extract / {asset} throws before any tag walk).
+    for (const platform of json.platforms ?? []) {
+      try {
+        validateRegistryEntry(pkg, json, platform);
+      } catch (err) {
+        fail(`${owner}/${pkg} [${platform}]: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+    if (!json.channels[json.defaultChannel]) {
+      fail(`${owner}/${pkg}: defaultChannel '${json.defaultChannel}' not in channels`);
+      continue;
+    }
     const channel = json.defaultChannel;
     const tagMatch = json.channels[channel]?.tagMatch;
     if (!tagMatch) {
@@ -173,13 +192,13 @@ async function main(): Promise<void> {
         );
       } else {
         console.log(`ok ${owner}/${pkg} [${platform}]: ${hit}`);
-      }
-    }
-    // binPaths {asset} entries are exempt (the downloaded file is the binary)
-    if (json.extract === "none" && !json.binPaths && !json.binPath?.startsWith(".")) {
-      // direct-execute entries must not claim a tarball tree path
-      if ((json.binPath ?? "").startsWith("package/")) {
-        fail(`${owner}/${pkg}: extract=none with tarball-style binPath '${json.binPath}'`);
+        // Regression guard: the win32 entry must be the portable exe, not
+        // the NSIS Setup installer (installer wizards don't spawn as the app).
+        if (platform === "win32-x64" && hit.includes("Setup")) {
+          fail(
+            `${owner}/${pkg} [${platform}]: resolved installer '${hit}' — must be the portable exe`,
+          );
+        }
       }
     }
   }

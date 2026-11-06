@@ -261,25 +261,7 @@ export async function fetchRegistry(owner: string): Promise<Record<string, Regis
   return (data as { packages: Record<string, RegistryPackage> }).packages;
 }
 
-type ReleaseAsset = { name: string; url: string };
-
-async function githubApi(path: string): Promise<any> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "forkhub-cli",
-  };
-  const token = process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const response = await fetchWithRetry(`https://api.github.com${path}`, { headers });
-  if (!response.ok) {
-    throw new Error(`GitHub API error ${response.status} for ${path}.`);
-  }
-  return await response.json();
-}
-
-export async function resolvePackage(
-  options: RunOptions,
-): Promise<ResolvedPackage & { downloadUrl: string }> {
+export async function resolvePackage(options: RunOptions): Promise<ResolvedPackage> {
   const packages = await fetchRegistry(options.owner);
   const entry = packages[options.package];
   if (!entry) {
@@ -337,18 +319,12 @@ export async function resolvePackage(
       `No ${channel} release of '${options.package}' carries ${fillAssetTemplate(assetTemplateForPlatform(entry, platform), { owner: options.owner, version: "<version>", platform })} for ${platform}.`,
     );
   }
+  // Validated above (fail-fast): "{asset}" is exact-match only, so the
+  // downloaded file IS the binary; anything else is a template.
   const rawBinPath =
     entry.binPaths?.[platform] ??
     entry.binPath ??
     (entry.extract === "none" ? "{asset}" : `package/${entry.bin}`);
-  // "{asset}" is exact-match only: the downloaded file IS the binary
-  // (AppImage / portable exe). Anything else is a template with
-  // {owner}/{version}/{platform}/{os}/{arch} (+ {bin} in binPaths).
-  if (rawBinPath.includes("{asset}") && rawBinPath !== "{asset}") {
-    throw new Error(
-      `Invalid binPaths for platform '${platform}': '{asset}' must be the whole value (got '${rawBinPath}').`,
-    );
-  }
   const binPath =
     rawBinPath === "{asset}"
       ? assetName
@@ -363,10 +339,9 @@ export async function resolvePackage(
     version,
     tag,
     assetName,
-    assetUrl,
     binPath,
     cacheDir: resolveCacheDir(options.owner, options.package, version),
-    downloadUrl: assetUrl,
+    assetUrl,
     extract: entry.extract ?? "tar",
     requireChecksum: options.requireChecksum ?? false,
   };
@@ -457,7 +432,7 @@ export async function runRun(options: RunOptions): Promise<void> {
       `download-${Date.now()}.tgz`,
     );
     mkdirSync(resolved.cacheDir, { recursive: true });
-    await downloadAsset(resolved.downloadUrl, tmpPath);
+    await downloadAsset(resolved.assetUrl, tmpPath);
     if (expected) {
       const actual = await sha256File(tmpPath);
       if (actual !== expected) {

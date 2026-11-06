@@ -85,12 +85,12 @@ test("fillAssetTemplate substitutes platform/os/arch for Electron artifacts", ()
     }),
   ).toBe("Natively-3.1.0-fh.with-fh.1.AppImage");
   expect(
-    fillAssetTemplate("Natively-Setup-{version}.exe", {
+    fillAssetTemplate("Natively.{version}.exe", {
       owner: "with-fh",
       version: "3.1.0-fh.with-fh.1",
       platform: "win32-x64",
     }),
-  ).toBe("Natively-Setup-3.1.0-fh.with-fh.1.exe");
+  ).toBe("Natively.3.1.0-fh.with-fh.1.exe");
   // Legacy templates without platform placeholders are untouched.
   expect(
     fillAssetTemplate("{owner}-fh-t3-{version}.tgz", { owner: "ImBIOS", version: "1.0.0" }),
@@ -103,11 +103,11 @@ test("assetTemplateForPlatform prefers the per-platform override", () => {
     defaultChannel: "stable",
     asset: "Natively-{version}.AppImage",
     assets: {
-      "win32-x64": "Natively-Setup-{version}.exe",
+      "win32-x64": "Natively.{version}.exe",
     },
     channels: { stable: { tagMatch: "^v" } },
   };
-  expect(assetTemplateForPlatform(entry, "win32-x64")).toBe("Natively-Setup-{version}.exe");
+  expect(assetTemplateForPlatform(entry, "win32-x64")).toBe("Natively.{version}.exe");
   expect(assetTemplateForPlatform(entry, "linux-x64")).toBe("Natively-{version}.AppImage");
 });
 
@@ -128,7 +128,7 @@ test("validateRegistryEntry rejects bad regexes, bad extract modes, and substrin
     target: "github.com/x/y",
     bin: "natively",
     defaultChannel: "stable",
-    asset: "Natively-Setup-{version}.exe",
+    asset: "Natively.{version}.exe",
     extract: "none" as const,
     platforms: ["win32-x64"],
     channels: { stable: { tagMatch: "^v[0-9]+\\.[0-9]+\\.[0-9]+-fh\\." } },
