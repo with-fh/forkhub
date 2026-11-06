@@ -12,15 +12,28 @@ export type RunOptions = {
   args?: string[];
 };
 
+export type RegistryPlatformKey = string;
+
+export type RegistryChannelDef = {
+  tagMatch: string;
+};
+
 export type RegistryPackage = {
   target?: string;
   description?: string;
   bin: string;
   binPath?: string;
+  /** Per-platform install path. "{asset}" = the downloaded file itself (AppImage / portable exe). */
+  binPaths?: Record<RegistryPlatformKey, string>;
   defaultChannel: string;
+  /** Legacy single-asset template. `{owner}`/`{version}` always; `{platform}`/`{os}`/`{arch}` optional. */
   asset: string;
+  /** Per-platform asset override. Keys are `<os>-<arch>` (see currentPlatformKey). */
+  assets?: Record<RegistryPlatformKey, string>;
+  /** Direct-execute install: skip tar extraction, chmod +x the downloaded asset (AppImage / portable exe). */
+  extract?: "tar" | "none";
   platforms?: string[];
-  channels: Record<string, { tagMatch: string }>;
+  channels: Record<string, RegistryChannelDef>;
 };
 
 export type ResolvedPackage = {
@@ -33,6 +46,7 @@ export type ResolvedPackage = {
   assetUrl: string;
   binPath: string;
   cacheDir: string;
+  extract: "tar" | "none";
 };
 
 /** This machine as an `<os>-<arch>` key, matching release platform naming. */
@@ -87,15 +101,36 @@ export function compareSemver(a: string, b: string): number {
   return 0;
 }
 
+/** Platform part of a `<os>-<arch>` key (linux-x64 -> linux). */
+export function platformOs(key: string): string {
+  return key.split("-")[0] ?? key;
+}
+
+/** Arch part of a `<os>-<arch>` key (linux-x64 -> x64). */
+export function platformArch(key: string): string {
+  const parts = key.split("-");
+  return parts.slice(1).join("-") || key;
+}
+
 export function fillAssetTemplate(
   template: string,
-  input: { owner: string; version: string },
+  input: { owner: string; version: string; platform?: string },
 ): string {
   // Release asset filenames use the lowercased owner (build.sh normalizes
   // it; tags and URLs stay case-preserving).
+  const platform = input.platform ?? currentPlatformKey();
   return template
     .replaceAll("{owner}", input.owner.toLowerCase())
-    .replaceAll("{version}", input.version);
+    .replaceAll("{version}", input.version)
+    .replaceAll("{platform}", platform)
+    .replaceAll("{os}", platformOs(platform))
+    .replaceAll("{arch}", platformArch(platform));
+}
+
+/** Asset template for this platform: per-platform override wins, else the shared template. */
+export function assetTemplateForPlatform(entry: RegistryPackage, platform?: string): string {
+  const key = platform ?? currentPlatformKey();
+  return entry.assets?.[key] ?? entry.asset;
 }
 
 type ReleaseRow = {
@@ -121,9 +156,7 @@ export function pickReleaseTags(
     const wanted = [input.version, `v${input.version}`];
     const hit = usable.find((row) => wanted.includes(row.tag_name));
     if (!hit) {
-      throw new Error(
-        `No ${input.channel} release found for version '${input.version}'.`,
-      );
+      throw new Error(`No ${input.channel} release found for version '${input.version}'.`);
     }
     return [hit.tag_name];
   }
@@ -144,9 +177,7 @@ export async function fetchRegistry(owner: string): Promise<Record<string, Regis
   const url = `https://raw.githubusercontent.com/${owner}/.forkhub/main/registry.json`;
   const response = await fetchWithRetry(url);
   if (response.status === 404) {
-    throw new Error(
-      `${owner}/.forkhub has no registry.json on main yet — nothing to run.`,
-    );
+    throw new Error(`${owner}/.forkhub has no registry.json on main yet — nothing to run.`);
   }
   if (!response.ok) {
     throw new Error(`Could not read the ${owner}/.forkhub registry (HTTP ${response.status}).`);
@@ -216,7 +247,11 @@ export async function resolvePackage(
       | { assets?: Array<{ name?: unknown; browser_download_url?: unknown }> }
       | undefined;
     version = candidate.replace(/^v/, "");
-    assetName = fillAssetTemplate(entry.asset, { owner: options.owner, version });
+    assetName = fillAssetTemplate(assetTemplateForPlatform(entry, platform), {
+      owner: options.owner,
+      version,
+      platform,
+    });
     const asset = (Array.isArray(release?.assets) ? release?.assets : []).find(
       (row) => row?.name === assetName,
     );
@@ -228,10 +263,20 @@ export async function resolvePackage(
   }
   if (!tag || !assetUrl) {
     throw new Error(
-      `No ${channel} release of '${options.package}' carries ${fillAssetTemplate(entry.asset, { owner: options.owner, version: "<version>" })}.`,
+      `No ${channel} release of '${options.package}' carries ${fillAssetTemplate(assetTemplateForPlatform(entry, platform), { owner: options.owner, version: "<version>", platform })} for ${platform}.`,
     );
   }
-  const binPath = (entry.binPath ?? `package/${entry.bin}`).replaceAll("{bin}", entry.bin);
+  const rawBinPath =
+    entry.binPaths?.[platform] ??
+    entry.binPath ??
+    (entry.extract === "none" ? "{asset}" : `package/${entry.bin}`);
+  const binPath =
+    rawBinPath === "{asset}"
+      ? assetName
+      : fillAssetTemplate(rawBinPath, { owner: options.owner, version, platform }).replaceAll(
+          "{bin}",
+          entry.bin,
+        );
   return {
     package: options.package,
     owner: options.owner,
@@ -243,6 +288,7 @@ export async function resolvePackage(
     binPath,
     cacheDir: resolveCacheDir(options.owner, options.package, version),
     downloadUrl: assetUrl,
+    extract: entry.extract ?? "tar",
   };
 }
 
@@ -291,7 +337,9 @@ export async function runRun(options: RunOptions): Promise<void> {
   const markerPath = join(resolved.cacheDir, ".forkhub-ready");
 
   if (!existsSync(markerPath)) {
-    console.error(`Resolving ${resolved.package} ${resolved.version} from ${resolved.owner}/.forkhub…`);
+    console.error(
+      `Resolving ${resolved.package} ${resolved.version} from ${resolved.owner}/.forkhub…`,
+    );
     // Best-effort SHA check against the release SHA256SUMS (same trust
     // domain as the asset; guards transport corruption, not supply chain).
     let expected: string | null = null;
@@ -319,8 +367,24 @@ export async function runRun(options: RunOptions): Promise<void> {
         );
       }
     }
-    await runTar(["-xzf", tmpPath, "-C", resolved.cacheDir], resolved.cacheDir);
-    rmSync(tmpPath, { force: true });
+    if (resolved.extract === "none") {
+      // Direct-execute artifact (AppImage / portable exe): the asset IS
+      // the binary. Move it to binPath and mark executable.
+      const dest = join(resolved.cacheDir, resolved.binPath);
+      mkdirSync(
+        join(resolved.cacheDir, resolved.binPath.split("/").slice(0, -1).join("/") || "."),
+        {
+          recursive: true,
+        },
+      );
+      await Bun.write(dest, Bun.file(tmpPath));
+      rmSync(tmpPath, { force: true });
+      const { chmodSync } = await import("node:fs");
+      chmodSync(dest, 0o755);
+    } else {
+      await runTar(["-xzf", tmpPath, "-C", resolved.cacheDir], resolved.cacheDir);
+      rmSync(tmpPath, { force: true });
+    }
     if (!existsSync(binPath)) {
       throw new Error(`Installed tree has no executable at ${resolved.binPath}.`);
     }
