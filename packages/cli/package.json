@@ -61,6 +61,7 @@
     "update": "bun run src/cli.ts update",
     "rollback": "bun run src/cli.ts rollback",
     "status": "bun run src/cli.ts status",
+    "verify:catalog-fixtures": "bun run scripts/verify-catalog-fixtures.ts",
     "prepublishOnly": "tsc --noEmit"
   },
   "devDependencies": {
