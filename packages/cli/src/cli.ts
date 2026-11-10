@@ -48,9 +48,10 @@ Usage:
                                          Daemon: auto-detect drift + generate bundles
   fh update [--tag <tag>] [--dry-run]    Update to latest (or specified) tag
   fh rollback                            Roll back to the previous tag
-  fh run <package> <owner> [-c|--channel <name>] [-v|--version <ver>] [-- <args...>]
+  fh run <package> <owner> [-c|--channel <name>] [-v|--version <ver>] [--require-checksum] [-- <args...>]
                                          Run a published ForkHub package
-                                         (e.g. fh run t3 ImBIOS -- --version)
+                                         (e.g. fh run t3 with-fh -- --version)
+                                         --require-checksum refuses unverified installs
   fh status                              Show current state
   fh --version                           Show version
   fh --help                              Show this help
@@ -348,7 +349,14 @@ async function main() {
             : typeof opts.v === "string"
               ? opts.v
               : undefined;
-        await runRun({ package: pkg, owner, channel, version, args: positional.slice(2) });
+        await runRun({
+          package: pkg,
+          owner,
+          channel,
+          version,
+          args: positional.slice(2),
+          requireChecksum: opts["require-checksum"] === true,
+        });
         break;
       }
 
