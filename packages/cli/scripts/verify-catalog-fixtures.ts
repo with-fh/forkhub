@@ -62,6 +62,23 @@ const WITH_FH_RELEASES: Release[] = [
       browser_download_url: url(name),
     })),
   },
+  {
+    // FORECAST (not yet published): first with-fh dsh unified-updater
+    // release. Upstream cuts dsh-v0.2.2-rc.1 (prerelease, zero assets);
+    // the fork channel publishes v0.2.2-fh.with-fh.1 with per-OS installers
+    // + both updater manifests per platform (same layout as Natively).
+    tag_name: "v0.2.2-fh.with-fh.1",
+    draft: false,
+    assets: [
+      "fh-mac.yml",
+      "fh.yml",
+      "latest-mac.yml",
+      "latest.yml",
+      "dsh-0.2.2-fh.with-fh.1-arm64.dmg",
+      "dsh-0.2.2-fh.with-fh.1-x64.dmg",
+      "dsh-0.2.2-fh.with-fh.1.exe",
+    ].map((name) => ({ name, browser_download_url: url(name) })),
+  },
 ];
 
 const IMBIOS_RELEASES: Release[] = [
@@ -71,6 +88,16 @@ const IMBIOS_RELEASES: Release[] = [
     assets: ["latest-linux.yml", "Natively-3.1.0-fh.imbios.1.AppImage", "SHA256SUMS"].map(
       (name) => ({ name, browser_download_url: url(name) }),
     ),
+  },
+  {
+    // FORECAST (not yet published): first ImBIOS dsh-linux release,
+    // after the with-fh dsh channel realizes and dsh-linux-support lands.
+    tag_name: "v0.2.2-fh.imbios.1",
+    draft: false,
+    assets: ["latest-linux.yml", "dsh-0.2.2-fh.imbios.1.AppImage", "SHA256SUMS"].map((name) => ({
+      name,
+      browser_download_url: url(name),
+    })),
   },
 ];
 
@@ -101,19 +128,35 @@ async function loadEntries(): Promise<Entry[]> {
   const imbios = process.env.IMBIOS_DIR;
   const files: Array<{ file: string; owner: string; pkgs: string[] }> = withFh
     ? [
-        { file: join(withFh, "registry.json"), owner: "with-fh", pkgs: ["natively"] },
+        {
+          file: join(withFh, "registry.json"),
+          owner: "with-fh",
+          pkgs: ["natively", "dsh"],
+        },
         {
           file: join(imbios ?? "/tmp/opencode/catalogs/imbios", "registry.json"),
           owner: "ImBIOS",
-          pkgs: ["natively-linux"],
+          pkgs: ["natively-linux", "dsh-linux"],
         },
       ]
-    : ((["with-fh-natively", "imbios-natively-linux"] as const).map((name) => ({
-        file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
-        owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
-        pkgs: [name === "with-fh-natively" ? "natively" : "natively-linux"],
-        single: true,
-      })) as Array<{ file: string; owner: string; pkgs: string[] }>);
+    : (
+        (["with-fh-natively", "with-fh-dsh", "imbios-natively-linux", "imbios-dsh-linux"] as const).map(
+          (name) => ({
+            file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
+            owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
+            pkgs: [
+              name === "with-fh-natively"
+                ? "natively"
+                : name === "with-fh-dsh"
+                  ? "dsh"
+                  : name === "imbios-natively-linux"
+                    ? "natively-linux"
+                    : "dsh-linux",
+            ],
+            single: true,
+          }),
+        )
+      ) as Array<{ file: string; owner: string; pkgs: string[] }>;
   const out: Entry[] = [];
   for (const { file, owner, pkgs } of files) {
     if (!existsSync(file)) {

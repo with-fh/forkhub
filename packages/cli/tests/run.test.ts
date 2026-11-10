@@ -123,6 +123,21 @@ test("pickReleaseTags matches with-fh unified updater tags, skips namespaced bun
   ).toEqual(["v3.1.0-fh.with-fh.1", "v3.0.0-fh.with-fh.3"]);
 });
 
+test("pickReleaseTags ignores upstream dsh-v prereleases, picks fork updater tags", () => {
+  // deepseek-ai/deepseek-harness tags desktop cuts as dsh-vX.Y.Z-* prereleases
+  // with zero assets; the with-fh channel tags are unified-updater
+  // v<base>-fh.<owner>.<n> (never collides — see DSH BUILD.md tagMatch discipline).
+  const releases = [
+    { tag_name: "dsh-v0.2.2-rc.1", draft: false },
+    { tag_name: "dsh-v0.2.2-alpha.3", draft: false },
+    { tag_name: "v0.2.2-fh.with-fh.1", draft: false },
+    { tag_name: "deepseek-ai-deepseek-harness--v0.2.2-fh3", draft: false },
+  ];
+  expect(
+    pickReleaseTags(releases, { channel: "stable", tagMatch: "^v[0-9]+\\.[0-9]+\\.[0-9]+-fh\\." }),
+  ).toEqual(["v0.2.2-fh.with-fh.1"]);
+});
+
 test("validateRegistryEntry rejects bad regexes, bad extract modes, and substring {asset}", () => {
   const base = {
     target: "github.com/x/y",
