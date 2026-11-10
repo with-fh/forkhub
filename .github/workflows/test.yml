@@ -31,6 +31,9 @@ jobs:
       - name: Unit + integration tests
         run: bun test
         working-directory: packages/cli
+      - name: Catalog registry fixtures (no network)
+        run: bun run verify:catalog-fixtures
+        working-directory: packages/cli
 
   docker-orchestrator:
     runs-on: ubuntu-latest
