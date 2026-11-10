@@ -177,7 +177,7 @@ export async function runInit(options: InitOptions = {}): Promise<InitResult> {
       : "";
     await Bun.write(
       readmePath,
-      `# .forkhub\n\nPatch intents managed by [forkhub](https://github.com/ImBIOS/forkhub) for ${targetRepo}.${forkNote}\n`,
+      `# .forkhub\n\nPatch intents managed by [forkhub](https://github.com/with-fh/forkhub) for ${targetRepo}.${forkNote}\n`,
     );
   }
 

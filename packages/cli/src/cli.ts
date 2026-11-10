@@ -334,7 +334,7 @@ async function main() {
         }
         if (positional.length > 2 && !process.argv.includes("--")) {
           throw new Error(
-            "Target arguments must follow `--` (e.g. fh run t3 ImBIOS -- --version).",
+            "Target arguments must follow `--` (e.g. fh run t3 with-fh -- --version).",
           );
         }
         const channel =
