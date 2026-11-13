@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 const MARKS = [
   { key: "t3code", src: "/marks/t3code.webp", alt: "T3 Code", cls: "hf-1" },
   { key: "natively", src: "/marks/natively.png", alt: "Natively", cls: "hf-3" },
+  { key: "deepseek-harness", src: "/marks/deepseek-harness.svg", alt: "DeepSeek Harness", cls: "hf-2" },
 ] as const;
 
 // Floating app-icon cards around the hero (t3.codes .hero-float):

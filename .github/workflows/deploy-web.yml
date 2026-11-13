@@ -109,7 +109,7 @@ jobs:
             sleep 20
           done
           if [ "$code" != "307" ]; then echo "::error::/latest returned $code, want 307"; exit 1; fi
-          for slug in natively t3code; do
+          for slug in natively t3code deepseek-harness; do
             tries=0
             until curl -s -A "$UA" --max-time 60 "$DEV/download/$slug" | grep -q 'aria-label="Version"'; do
               tries=$((tries + 1))
@@ -119,7 +119,7 @@ jobs:
           done
           # Custom domain: route-alive (challenge page counts — it proves
           # zone routing; browsers pass it, verified manually with screenshots).
-          for slug in natively t3code; do
+          for slug in natively t3code deepseek-harness; do
             body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/$slug")
             if echo "$body" | grep -q 'aria-label="Version"'; then
               echo "$slug: live with new UI"

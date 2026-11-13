@@ -25,7 +25,13 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
           label: `fh run (${channel})`,
           command: `fh run t3 with-fh${channel === "stable" ? " -c stable" : ""} -- --version`,
         }))
-      : [];
+      : slug === "deepseek-harness"
+        ? (["stable"] as const).map((channel) => ({
+            channel,
+            label: "fh run (stable)",
+            command: "fh run dsh with-fh -- --version",
+          }))
+        : [];
   const reuseCmd = e.install.find((c) => c.startsWith("fh reuse")) ?? null;
 
   return (
@@ -82,6 +88,91 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
           hunting.
         </p>
         <DownloadPanel slug={slug} entryName={e.name} history={history} curlCommands={runCmds} />
+
+        {slug === "deepseek-harness" && (
+          <div className="fh-tile" style={{ marginTop: 16, padding: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 600 }}>Stock builds from upstream</h3>
+            <p style={{ fontSize: 13, color: "var(--t3-fg-muted)", marginTop: 8, lineHeight: 1.6 }}>
+              The same layout as the{" "}
+              <a
+                href="https://www.deepseek.com/en/download/"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: "var(--t3-fg)",
+                  textDecoration: "underline",
+                  textUnderlineOffset: 4,
+                }}
+              >
+                upstream download page
+              </a>
+              : stock desktop installers plus the mobile apps. Prefer these only if you want
+              the unpatched build — the ForkHub track above is the one that self-updates from
+              the patch catalog.
+            </p>
+            <div className="fh-grid-2" style={{ marginTop: 12 }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>macOS</p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
+                  Apple silicon, macOS 13 or later
+                </p>
+                <a
+                  href="https://download.deepseek.com/desktop/dsh-latest-macos-arm64.dmg"
+                  className="fh-btn fh-btn-ghost fh-btn-sm"
+                  style={{ marginTop: 8 }}
+                >
+                  dsh-latest-macos-arm64.dmg
+                </a>
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>Windows</p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
+                  Windows 10 or later, x64
+                </p>
+                <a
+                  href="https://download.deepseek.com/desktop/dsh-latest-windows-x64.exe"
+                  className="fh-btn fh-btn-ghost fh-btn-sm"
+                  style={{ marginTop: 8 }}
+                >
+                  dsh-latest-windows-x64.exe
+                </a>
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>iOS</p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
+                  App Store
+                </p>
+                <a
+                  href="https://apps.apple.com/cn/app/deepseek/id6737597349"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="fh-btn fh-btn-ghost fh-btn-sm"
+                  style={{ marginTop: 8 }}
+                >
+                  App Store →
+                </a>
+              </div>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600 }}>Android</p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
+                  Direct APK
+                </p>
+                <a
+                  href="https://download.deepseek.com/apk/deepseek.apk"
+                  className="fh-btn fh-btn-ghost fh-btn-sm"
+                  style={{ marginTop: 8 }}
+                >
+                  deepseek.apk
+                </a>
+              </div>
+            </div>
+            <p style={{ fontSize: 11, color: "var(--t3-fg-dim)", marginTop: 12, lineHeight: 1.6 }}>
+              Stock installers update from the upstream feed, not the ForkHub catalog. Linux has
+              no stock desktop build — the ForkHub track above (ImBIOS AppImage) is the Linux
+              download.
+            </p>
+          </div>
+        )}
 
         <div className="fh-tile" style={{ marginTop: 16, padding: 20 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600 }}>Other platforms</h3>

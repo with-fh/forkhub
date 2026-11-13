@@ -111,6 +111,50 @@ export const OSS_CATALOG: OssEntry[] = [
       },
     ],
   },
+  {
+    slug: "deepseek-harness",
+    name: "DeepSeek Harness",
+    tagline: "DeepSeek Harness desktop with a ForkHub update track — mac, Windows, and Linux.",
+    description:
+      "Patched fork track for DeepSeek Harness desktop: the app polls the ForkHub catalog instead of the stock feed, with a per-install publisher switch (Settings → Version), owner-stamped fork rebuilds, and a Linux build (AppImage) from the ImBIOS catalog layered on the same channel.",
+    upstream: "github.com/deepseek-ai/deepseek-harness",
+    upstreamUrl: "https://github.com/deepseek-ai/deepseek-harness",
+    upstreamRepo: "deepseek-ai/deepseek-harness",
+    // Mark vendored from the upstream MIT-licensed repo
+    // (apps/desktop/resources/icon.svg); ForkHub builds carry their own
+    // about-screen credit, this file is only the download-card icon.
+    mark: "/marks/deepseek-harness.svg",
+    publisher: "with-fh",
+    catalogUrl: CATALOG,
+    maintainer: "forkhub",
+    status: "active",
+    stars: 279830,
+    patchCount: 2,
+    trains: ["stable"],
+    updated: "2026-11-13",
+    install: [
+      "fh reuse https://github.com/with-fh/.forkhub/blob/main/repos/github.com/deepseek-ai/deepseek-harness/patches/dsh-forkhub-support-0qjj6stm/INTENT.md",
+      "fh run dsh with-fh -- --version",
+    ],
+    patches: [
+      {
+        id: "dsh-forkhub-support-0qjj6stm",
+        title: "DeepSeek Harness Desktop ForkHub update channel: catalog feed + publisher input + fork rebuild identity",
+        status: "applied",
+        version: 2,
+        intentUrl:
+          "https://github.com/with-fh/.forkhub/blob/main/repos/github.com/deepseek-ai/deepseek-harness/patches/dsh-forkhub-support-0qjj6stm/INTENT.md",
+      },
+      {
+        id: "dsh-linux-support-1b2e3f10",
+        title: "DeepSeek Harness Desktop Linux support: linux-x64 target, AppImage, XDG autostart, per-publisher credit",
+        status: "applied",
+        version: 1,
+        intentUrl:
+          "https://github.com/ImBIOS/.forkhub/blob/main/repos/github.com/deepseek-ai/deepseek-harness/patches/dsh-linux-support-1b2e3f10/INTENT.md",
+      },
+    ],
+  },
 ];
 
 export type OssListInput = {

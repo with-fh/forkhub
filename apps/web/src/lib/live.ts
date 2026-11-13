@@ -59,16 +59,19 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
   return out;
 }
 
-function ownerOf(r: GhRelease): "t3" | "natively" | null {
+function ownerOf(r: GhRelease): "t3" | "natively" | "dsh" | null {
   // Proposed scheme embeds the upstream repo as a trailing slug —
   // v<upstream>.fh.<owner>.<n>.<repo> — so parse that first. Legacy
-  // families (v2.8.8-fh.with-fh.3, pingdotgg-t3code--…-fh4) carry no
+  // families (v2.8.8-fh.with-fh.3, pingdotgg-t3code--…-fh4,
+  // deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14) carry no
   // slug and fall through to release-name matching below.
   const slugHit = /\.([a-z0-9]+(?:-[a-z0-9]+)+)\s*$/i.exec(r.tag_name)?.[1] ?? "";
   if (/t3code/i.test(slugHit)) return "t3";
   if (/natively/i.test(slugHit)) return "natively";
+  if (/deepseek/i.test(slugHit)) return "dsh";
   if (/^t3 code/i.test(r.name) || /t3code/i.test(r.tag_name)) return "t3";
   if (/^natively/i.test(r.name) || /natively/i.test(r.tag_name)) return "natively";
+  if (/deepseek/i.test(r.name) || /deepseek/i.test(r.tag_name)) return "dsh";
   return null;
 }
 
@@ -169,9 +172,10 @@ export async function fetchCatalogReleases(
   return { releases: out, apiOk, apiStatus };
 }
 
-const SLUG_OWNER: Record<string, "t3" | "natively"> = {
+const SLUG_OWNER: Record<string, "t3" | "natively" | "dsh"> = {
   t3code: "t3",
   natively: "natively",
+  "deepseek-harness": "dsh",
 };
 
 // Current stable/nightly builds per OSS entry, derived from the catalog's
