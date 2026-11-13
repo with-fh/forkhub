@@ -228,6 +228,15 @@ export default async function Home() {
                 <div className="fh-harness-tag">AppImage · stable</div>
               </span>
             </Link>
+            <Link href="/download/deepseek-harness" className="fh-harness">
+              <span className="fh-harness-mark">
+                <Package width={18} height={18} />
+              </span>
+              <span>
+                <span className="fh-harness-name">DeepSeek Harness</span>
+                <div className="fh-harness-tag">dmg · exe · AppImage</div>
+              </span>
+            </Link>
             <a href={CATALOG_REPO_URL} target="_blank" rel="noreferrer" className="fh-harness">
               <span className="fh-harness-mark">
                 <FileText width={18} height={18} />

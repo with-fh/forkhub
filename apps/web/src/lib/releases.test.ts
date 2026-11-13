@@ -78,6 +78,36 @@ const NAT_WIN_SPLIT: GhRelease = {
   ],
 };
 
+// Shapes copied from the live with-fh/.forkhub dsh releases API (Nov 2026).
+const DSH_MAC_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14",
+  html_url: "https://github.com/r/5",
+  published_at: "2026-11-10T04:44:47Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-mac-arm64-unsigned.dmg", 270_000_000),
+    asset("SHA256SUMS"),
+    asset("SHA256SUMS-mac"),
+  ],
+};
+
+const DSH_WIN_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  html_url: "https://github.com/r/6",
+  published_at: "2026-11-10T04:22:00Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe", 316_500_000),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe.blockmap"),
+    asset("fh.yml"),
+    asset("latest.yml"),
+    asset("SHA256SUMS"),
+    asset("SHA256SUMS-win"),
+  ],
+};
+
 describe("channelOf", () => {
   test("nightly tags vs stable tags", () => {
     expect(channelOf("v0.1.1-nightly.20261019.3373.fh.with-fh.1")).toBe("nightly");
@@ -136,6 +166,12 @@ describe("classifyAsset", () => {
       arch: "arm64",
       format: ".zip",
     });
+    expect(
+      classifyAsset(asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-mac-arm64-unsigned.dmg")),
+    ).toMatchObject({ platform: "mac", arch: "arm64", format: ".dmg" });
+    expect(
+      classifyAsset(asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe")),
+    ).toMatchObject({ platform: "windows", arch: "x64", kind: "portable", format: ".exe" });
     // Managed fh-run tarball is not a desktop download card.
     expect(classifyAsset(asset("with-fh-fh-t3-0.1.1.tgz"))?.kind).toBe("package");
     // Patched-source tarballs get their own Source code section.
@@ -184,6 +220,23 @@ describe("channelHistory + mergePlatformBuilds", () => {
     expect(nightly[0]?.assets.map((a) => a.format).sort()).toEqual([".deb", "AppImage"]);
     expect(newestShaUrl(nightly)).toBe("https://github.com/dl/SHA256SUMS");
   });
+
+  test("dsh splits map dmg + unsigned exe, merge composes mac + windows", () => {
+    const dshAll = [DSH_MAC_SPLIT, DSH_WIN_SPLIT];
+    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.tag_name);
+    const { stable, nightly } = channelHistory(dshAll, dshOnly, 10);
+    expect(nightly).toEqual([]);
+    expect(stable).toHaveLength(2);
+    expect(stable[0]?.assets.map((a) => a.format)).toEqual([".dmg"]);
+    expect(stable[1]?.assets.map((a) => a.format)).toEqual([".exe"]);
+    const builds = mergePlatformBuilds(stable);
+    const keys = builds.map((b) => `${b.platform}/${b.arch}/${b.format}`);
+    expect(keys).toContain("mac/arm64/.dmg");
+    expect(keys).toContain("windows/x64/.exe");
+    // fh14 carries both SHA256SUMS and SHA256SUMS-mac; shaOf takes the
+    // first checksum asset, so the plain SHA256SUMS URL wins here.
+    expect(newestShaUrl(stable)).toBe("https://github.com/dl/SHA256SUMS");
+  });
 });
 
 describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
@@ -210,6 +263,7 @@ describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
     expect(isUnifiedRelease("v2.9.2-fh.imbios.1")).toBe(true);
     expect(isUnifiedRelease("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh24")).toBe(false);
     expect(isUnifiedRelease("pingdotgg-t3code--v0.1.0-fh1")).toBe(false);
+    expect(isUnifiedRelease("deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14")).toBe(false);
   });
 
   test("Latest prefers canonical unified over newer splits and try-builds", () => {
