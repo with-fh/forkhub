@@ -96,6 +96,7 @@ export type UpstreamRelease = {
   /** Tag URL (tree link), commit URL, author profile URL — all upstream. */
   tagUrl: string;
   commitUrl: string;
+  compareUrl: string | null;
   authorUrl: string;
   publishedAt: string;
   authorLogin: string;
@@ -121,9 +122,7 @@ function upstreamUrl(
   return `https://github.com/${ref}`;
 }
 
-// 5 releases: full SSR bodies (~500KB at 10 for t3 nightlies) exceed
-// Workers subrequest/CPU budgets and 1102 the page. 5 covers the fold.
-const UPSTREAM_LIMIT = 5;
+const UPSTREAM_LIMIT = 10;
 
 /** Render markdown exactly like upstream: marked (gfm) then sanitize-html allowlist. */
 function renderBodyHtml(md: string, repo: string): string {
@@ -274,6 +273,7 @@ async function fetchUpstreamReleases(
         url: conv.releaseUrl,
         tagUrl: upstreamUrl(upstreamRepo, "tree", tagName),
         commitUrl: sha ? upstreamUrl(upstreamRepo, "commit", sha) : conv.releaseUrl,
+        compareUrl: null, // filled after sort (needs previous tag)
         authorUrl: authorHtml ? authorHtml : upstreamUrl(upstreamRepo, "user", login),
         publishedAt: conv.publishedAt,
         authorLogin: login,
@@ -286,6 +286,14 @@ async function fetchUpstreamReleases(
         prerelease: r.prerelease === true,
         latest: false,
       });
+    }
+    const sorted = [...releases].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    for (let i = 0; i < sorted.length; i++) {
+      const cur = sorted[i]!;
+      const prev = sorted[i + 1];
+      if (prev) {
+        cur.compareUrl = `https://github.com/${upstreamRepo}/compare/${prev.tag}...${cur.tag}`;
+      }
     }
     if (releases.length > 0) releases[0]!.latest = true;
     return { releases, apiOk: true };
@@ -359,10 +367,11 @@ export async function getUpstreamMeta(
 ): Promise<{ meta: UpstreamRepoMeta; stars: number | null }> {
   const entry = OSS_CATALOG.find((e) => e.slug === slug);
   if (!entry) return { meta: { stars: null, issues: null, pulls: null }, stars: null };
-  // Single repo fetch (no getStarsMap fan-out: 4 repos x 12s timeouts
-  // reliably exceed Workers fetch/CPU budgets and crash SSR).
-  const meta = await fetchUpstreamRepoMeta(entry.upstreamRepo);
-  return { meta, stars: meta.stars ?? entry.stars };
+  const [meta, starsMap] = await Promise.all([
+    fetchUpstreamRepoMeta(entry.upstreamRepo),
+    getStarsMap(),
+  ]);
+  return { meta, stars: starsMap[slug] ?? entry.stars };
 }
 
 export async function getUpstreamReleases(

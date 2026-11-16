@@ -81,6 +81,37 @@ function AssetRow({ asset }: { asset: DownloadAsset }) {
   );
 }
 
+function ContributorsBlock({ body }: { body: string }) {
+  const users = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const m of body.matchAll(/@([A-Za-z0-9-]+)/g)) {
+      if (!seen.has(m[1]!)) seen.set(m[1]!, `https://github.com/${m[1]}`);
+    }
+    return [...seen.entries()].slice(0, 12);
+  }, [body]);
+  if (users.length === 0) return null;
+  return (
+    <div className="gh-contributors">
+      <h3>Contributors</h3>
+      <ul>
+        {users.map(([login, url]) => (
+          <li key={login}>
+            <a href={url} aria-label={login}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://avatars.githubusercontent.com/${login}?s=64&v=4`}
+                alt={`@${login}`}
+                width={32}
+                height={32}
+              />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ReleaseCard({ release }: { release: UpstreamRelease }) {
   const [assetsOpen, setAssetsOpen] = useState(false);
   return (
@@ -95,23 +126,20 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
         <div className="gh-box-body">
           <div className="gh-release-head">
             <div className="gh-compare">
-              <button
-                type="button"
-                className="gh-compare-btn"
-                aria-haspopup="dialog"
-                aria-expanded="false"
-              >
-                <span>Compare</span>
-                <svg
-                  aria-hidden="true"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  width="16"
-                  fill="currentColor"
-                >
-                  <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 4.604 7H4.604a.25.25 0 0 1-.177-.427Z" />
-                </svg>
-              </button>
+              {release.compareUrl ? (
+                <a href={release.compareUrl} className="gh-compare-btn" aria-haspopup="dialog">
+                  <span>Compare</span>
+                  <svg
+                    aria-hidden="true"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    width="16"
+                    fill="currentColor"
+                  >
+                    <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 4.604 7H4.604a.25.25 0 0 1-.177-.427Z" />
+                  </svg>
+                </a>
+              ) : null}
             </div>
             <div className="gh-release-titlewrap">
               <span className="gh-release-title">
@@ -165,6 +193,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: release.bodyHtml }}
           />
+          <ContributorsBlock body={release.body} />
           {release.assets.length > 0 ? (
             <div className="gh-assets">
               <button
