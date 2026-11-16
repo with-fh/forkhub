@@ -80,12 +80,24 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
         </div>
 
         <h2 className="fh-display" style={{ fontSize: 24, marginTop: 40, marginBottom: 6 }}>
-          Download
+          Releases
         </h2>
         <p style={{ color: "var(--t3-fg-muted)", fontSize: 14, marginBottom: 16 }}>
-          Pick a channel, then a version. Stable tracks tested releases, nightly tracks the latest
-          upstream with patches re-derived daily. Every button downloads directly — no GitHub
-          hunting.
+          Every entry below mirrors the upstream{" "}
+          <a
+            href={`${e.upstreamUrl}/releases`}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              color: "var(--t3-fg)",
+              textDecoration: "underline",
+              textUnderlineOffset: 4,
+            }}
+          >
+            {e.upstream}/releases
+          </a>{" "}
+          page — same title, notes, and assets. ForkHub-track builds (badged below) self-update from
+          the patch catalog instead of the stock feed. Pick a channel, then a version.
         </p>
         <DownloadPanel slug={slug} entryName={e.name} history={history} curlCommands={runCmds} />
 
@@ -106,9 +118,9 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
               >
                 upstream download page
               </a>
-              : stock desktop installers plus the mobile apps. Prefer these only if you want
-              the unpatched build — the ForkHub track above is the one that self-updates from
-              the patch catalog.
+              : stock desktop installers plus the mobile apps. Prefer these only if you want the
+              unpatched build — the ForkHub track above is the one that self-updates from the patch
+              catalog.
             </p>
             <div className="fh-grid-2" style={{ marginTop: 12 }}>
               <div>
@@ -139,9 +151,7 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
               </div>
               <div>
                 <p style={{ fontSize: 14, fontWeight: 600 }}>iOS</p>
-                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
-                  App Store
-                </p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>App Store</p>
                 <a
                   href="https://apps.apple.com/cn/app/deepseek/id6737597349"
                   target="_blank"
@@ -154,9 +164,7 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
               </div>
               <div>
                 <p style={{ fontSize: 14, fontWeight: 600 }}>Android</p>
-                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>
-                  Direct APK
-                </p>
+                <p style={{ fontSize: 12, color: "var(--t3-fg-dim)", marginTop: 4 }}>Direct APK</p>
                 <a
                   href="https://download.deepseek.com/apk/deepseek.apk"
                   className="fh-btn fh-btn-ghost fh-btn-sm"
@@ -167,9 +175,8 @@ export default async function OssDetailPage({ params }: { params: Promise<{ slug
               </div>
             </div>
             <p style={{ fontSize: 11, color: "var(--t3-fg-dim)", marginTop: 12, lineHeight: 1.6 }}>
-              Stock installers update from the upstream feed, not the ForkHub catalog. Linux has
-              no stock desktop build — the ForkHub track above (ImBIOS AppImage) is the Linux
-              download.
+              Stock installers update from the upstream feed, not the ForkHub catalog. Linux has no
+              stock desktop build — the ForkHub track above (ImBIOS AppImage) is the Linux download.
             </p>
           </div>
         )}

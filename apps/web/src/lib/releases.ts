@@ -151,6 +151,20 @@ export function classifyAsset(a: GhAsset): DownloadAsset | null {
       format: /setup/i.test(n) ? "Setup .exe" : ".exe",
     };
   }
+  // Firefox/Chrome extension packages (OpenDia XPI): browser add-on,
+  // shown as its own card (the tgz-package exclusion is only for the
+  // managed `fh run` tarball, which is installable, not a download).
+  if (lower.endsWith(".xpi")) {
+    return {
+      name: n,
+      url: a.browser_download_url,
+      size,
+      platform: "linux",
+      arch: "x64",
+      kind: "portable",
+      format: ".xpi",
+    };
+  }
   if (lower.endsWith(".zip")) {
     // Natively ships mac builds as zips; arch is embedded in the name.
     const arch = archOf(n);

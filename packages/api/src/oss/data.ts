@@ -154,6 +154,36 @@ export const OSS_CATALOG: OssEntry[] = [
       },
     ],
   },
+  {
+    slug: "opendia",
+    name: "OpenDia",
+    tagline: "OpenDia x ForkHub channel: Mozilla-signed Firefox XPI, re-ID + unlisted sign.",
+    description:
+      "Patched fork track for OpenDia (aeonfun/opendia): a Mozilla-signed Firefox XPI published from the .forkhub catalog, re-ID'd and unlisted-signed until upstream ships one. Same release titles, notes, and XPI assets as upstream — ForkHub-track builds self-update from the patch catalog.",
+    upstream: "github.com/aeonfun/opendia",
+    upstreamUrl: "https://github.com/aeonfun/opendia",
+    upstreamRepo: "aeonfun/opendia",
+    mark: "/marks/opendia.png",
+    publisher: "with-fh",
+    catalogUrl: CATALOG,
+    maintainer: "forkhub",
+    status: "active",
+    stars: 1938,
+    patchCount: 1,
+    trains: ["stable"],
+    updated: "2026-11-16",
+    install: ["fh run opendia with-fh -- --version"],
+    patches: [
+      {
+        id: "opendia-resign-f0000000",
+        title: "OpenDia x ForkHub channel: Mozilla-signed Firefox XPI (re-ID + unlisted sign)",
+        status: "applied",
+        version: 1,
+        intentUrl:
+          "https://github.com/with-fh/.forkhub/blob/main/repos/github.com/aeonfun/opendia/patches/opendia-resign-f0000000/INTENT.md",
+      },
+    ],
+  },
 ];
 
 export type OssListInput = {

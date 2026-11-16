@@ -183,6 +183,11 @@ describe("classifyAsset", () => {
       arch: "arm64",
       format: ".zip",
     });
+    // OpenDia Firefox XPI: browser add-on card (portable, own format).
+    expect(classifyAsset(asset("opendia-firefox-1.1.4-fh.with-fh.5.xpi"))).toMatchObject({
+      kind: "portable",
+      format: ".xpi",
+    });
     expect(
       classifyAsset(asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-mac-arm64-unsigned.dmg")),
     ).toMatchObject({ platform: "mac", arch: "arm64", format: ".dmg" });
@@ -246,6 +251,29 @@ describe("channelHistory + mergePlatformBuilds", () => {
     // mac dmg falls back to the older per-platform split.
     expect(builds.find((b) => b.format === ".dmg")?.fromVersion).toBe(DSH_MAC_SPLIT.tag_name);
     expect(pickLatest(stable)?.version).toBe(DSH_UNIFIED.tag_name);
+  });
+
+  test("opendia channel maps signed XPI as its own card", () => {
+    // Live shape: aeonfun-opendia--v1.1.4-fhN splits carry the signed XPI
+    // (+ PROVENANCE.md); updates.json + SHA256SUMS are metadata.
+    const odia: GhRelease = {
+      tag_name: "aeonfun-opendia--v1.1.4-fh6",
+      name: "aeonfun-opendia--v1.1.4-fh6",
+      html_url: "https://github.com/r/8",
+      published_at: "2026-11-01T00:00:00Z",
+      assets: [
+        asset("BUILD_LOG.md"),
+        asset("opendia-firefox-1.1.4-fh.with-fh.5.xpi", 2_000_000),
+        asset("PROVENANCE.md"),
+        asset("SHA256SUMS"),
+      ],
+    };
+    const { stable } = channelHistory([odia], (r) => /opendia/i.test(r.tag_name), 10);
+    expect(stable).toHaveLength(1);
+    const builds = mergePlatformBuilds(stable);
+    expect(builds.map((b) => b.format)).toEqual([".xpi"]);
+    expect(builds[0]?.name).toBe("opendia-firefox-1.1.4-fh.with-fh.5.xpi");
+    expect(pickLatest(stable)?.version).toBe(odia.tag_name);
   });
 
   test("newestShaUrl walks newest-first", () => {

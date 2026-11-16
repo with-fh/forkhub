@@ -59,7 +59,7 @@ export async function getStarsMap(): Promise<Record<string, number | null>> {
   return out;
 }
 
-function ownerOf(r: GhRelease): "t3" | "natively" | "dsh" | null {
+function ownerOf(r: GhRelease): "t3" | "natively" | "dsh" | "opendia" | null {
   // Proposed scheme embeds the upstream repo as a trailing slug —
   // v<upstream>.fh.<owner>.<n>.<repo> — so parse that first. Legacy
   // families (v2.8.8-fh.with-fh.3, pingdotgg-t3code--…-fh4,
@@ -69,9 +69,11 @@ function ownerOf(r: GhRelease): "t3" | "natively" | "dsh" | null {
   if (/t3code/i.test(slugHit)) return "t3";
   if (/natively/i.test(slugHit)) return "natively";
   if (/deepseek/i.test(slugHit)) return "dsh";
+  if (/opendia/i.test(slugHit)) return "opendia";
   if (/^t3 code/i.test(r.name) || /t3code/i.test(r.tag_name)) return "t3";
   if (/^natively/i.test(r.name) || /natively/i.test(r.tag_name)) return "natively";
   if (/deepseek/i.test(r.name) || /deepseek/i.test(r.tag_name)) return "dsh";
+  if (/opendia/i.test(r.name) || /opendia/i.test(r.tag_name)) return "opendia";
   return null;
 }
 
@@ -172,10 +174,11 @@ export async function fetchCatalogReleases(
   return { releases: out, apiOk, apiStatus };
 }
 
-const SLUG_OWNER: Record<string, "t3" | "natively" | "dsh"> = {
+const SLUG_OWNER: Record<string, "t3" | "natively" | "dsh" | "opendia"> = {
   t3code: "t3",
   natively: "natively",
   "deepseek-harness": "dsh",
+  opendia: "opendia",
 };
 
 // Current stable/nightly builds per OSS entry, derived from the catalog's
