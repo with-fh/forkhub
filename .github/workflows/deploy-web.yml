@@ -109,13 +109,14 @@ jobs:
             sleep 20
           done
           if [ "$code" != "307" ]; then echo "::error::/latest returned $code, want 307"; exit 1; fi
-          # deepseek-harness is a pixel-faithful upstream fork (no version
-          # picker): assert on its unique ForkHub-track markers instead.
-          for slug in natively t3code; do
+          # t3code/natively/opendia are GitHub-releases pixel forks (Primer
+          # look, upstream DOM/content; no version picker — that's the old
+          # dark UI): assert on the fork's unique markers instead.
+          for slug in t3code natively opendia; do
             tries=0
-            until curl -s -A "$UA" --max-time 60 "$DEV/download/$slug" | grep -q 'aria-label="Version"'; do
+            until curl -s -A "$UA" --max-time 60 "$DEV/download/$slug" | grep -q 'gh-fork-scope'; do
               tries=$((tries + 1))
-              if [ "$tries" -ge 6 ]; then echo "::error::version picker missing on $slug page"; exit 1; fi
+              if [ "$tries" -ge 6 ]; then echo "::error::gh fork missing on $slug page"; exit 1; fi
               sleep 20
             done
           done
@@ -130,11 +131,11 @@ jobs:
           if [ "$code" != "307" ]; then echo "::error::dsh /latest?platform=linux returned $code, want 307"; exit 1; fi
           # Custom domain: route-alive (challenge page counts — it proves
           # zone routing; browsers pass it, verified manually with screenshots).
-          # deepseek-harness asserts on upstream-clone markers (no version picker there).
-          for slug in natively t3code; do
+          # gh forks assert on fork markers (no version picker on pixel forks).
+          for slug in t3code natively opendia; do
             body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/$slug")
-            if echo "$body" | grep -q 'aria-label="Version"'; then
-              echo "$slug: live with new UI"
+            if echo "$body" | grep -q 'gh-fork-scope'; then
+              echo "$slug: live with gh fork"
             elif echo "$body" | grep -q 'Just a moment'; then
               echo "$slug: route alive (edge challenge for runner egress, browsers pass)"
             else
