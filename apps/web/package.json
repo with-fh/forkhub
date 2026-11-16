@@ -23,6 +23,7 @@
     "dotenv": "catalog:",
     "evlog": "catalog:",
     "lucide-react": "catalog:",
+    "marked": "catalog:",
     "next": "^16.2.11",
     "next-themes": "catalog:",
     "react": "catalog:",

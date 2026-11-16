@@ -1,5 +1,7 @@
 import { OSS_CATALOG } from "@forkhub/api/oss/data";
 
+import { marked } from "marked";
+
 import {
   channelHistory,
   type ChannelRelease,
@@ -99,6 +101,8 @@ export type UpstreamRelease = {
   authorAvatar: string;
   commitSha: string;
   body: string;
+  /** Server-rendered sanitized HTML of the markdown body (upstream parity). */
+  bodyHtml: string;
   assets: DownloadAsset[];
   shaUrl: string | null;
   prerelease: boolean;
@@ -117,6 +121,40 @@ function upstreamUrl(
 }
 
 const UPSTREAM_LIMIT = 10;
+
+/** Escape HTML then let marked handle markdown; strip everything but upstream's allowlist. */
+function renderBodyHtml(md: string, repo: string): string {
+  const esc = md
+    .replace(/&(?!#?[xX]?(?:[0-9a-fA-F]+|\w+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  // marked with breaks + gfm tables like github's renderer
+  const raw = marked.parse(esc, { breaks: true, gfm: true }) as string;
+  return linkifyUpstream(expandDetails(raw), repo);
+}
+
+/** Drop collapsible wrappers (upstream renders notes expanded; our toggle was a fork delta). */
+function expandDetails(html: string): string {
+  return html
+    .replace(/<details[^>]*>/gi, "")
+    .replace(/<\/details>/gi, "")
+    .replace(/<summary[^>]*>[\s\S]*?<\/summary>/gi, "");
+}
+
+/** Rewrite bare @mentions/#PRs/CHANGELOG paths to upstream URLs (what github's pipeline emits). */
+function linkifyUpstream(html: string, repo: string): string {
+  const [owner, name] = repo.split("/");
+  // already-linked stays; link bare #1234 and @users in text nodes only (cheap: skip inside <a ...>)
+  return html
+    .replace(/(<a\b[^>]*>.*?<\/a>)|@(\w[\w-]*)/g, (m: string, link?: string, user?: string) => {
+      if (link) return link;
+      return `<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/${user}/hovercard" href="https://github.com/${user}">@${user}</a>`;
+    })
+    .replace(/(<a\b[^>]*>.*?<\/a>)|(?<!\w)#(\d{2,})/g, (m: string, link?: string, num?: string) => {
+      if (link || !owner || !name) return m;
+      return `<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-url="https://github.com/${owner}/${name}/issues/${num}" data-hovercard-type="pull_request" data-hovercard-url="/${owner}/${name}/pull/${num}/hovercard" href="https://github.com/${owner}/${name}/pull/${num}">#${num}</a>`;
+    });
+}
 
 async function fetchUpstreamReleases(
   upstreamRepo: string,
@@ -182,6 +220,7 @@ async function fetchUpstreamReleases(
         authorAvatar: avatar,
         commitSha: sha,
         body: typeof r.body === "string" ? r.body : "",
+        bodyHtml: renderBodyHtml(typeof r.body === "string" ? r.body : "", upstreamRepo),
         assets: conv.assets,
         shaUrl: conv.shaUrl,
         prerelease: r.prerelease === true,

@@ -1,0 +1,557 @@
+/* Upstream github markdown-body rules (primer), scoped to .gh-fork.
+   Functional color vars mapped to github light values. */
+.gh-fork {
+  --fgColor-default: #1f2328;
+  --fgColor-muted: #59636e;
+  --fgColor-accent: #0969da;
+  --fgColor-danger: #d1242c;
+  --bgColor-default: #ffffff;
+  --bgColor-muted: #f6f8fa;
+  --bgColor-neutral-muted: #818b981f;
+  --borderColor-default: #d1d9e0;
+  --borderColor-muted: #d1d9e080;
+  --borderColor-accent-emphasis: #0969da;
+  --color-fg-default: #1f2328;
+  --color-fg-muted: #59636e;
+  --color-accent-fg: #0969da;
+  --color-danger-fg: #d1242c;
+  --color-canvas-default: #ffffff;
+  --color-canvas-subtle: #f6f8fa;
+  --color-neutral-muted: #818b981f;
+  --color-border-default: #d1d9e0;
+  --color-border-muted: #d1d9e080;
+  --color-accent-emphasis: #0969da;
+}
+.gh-fork .markdown-body {
+  font-family: var(
+    --fontStack-sansSerif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Noto Sans",
+    Helvetica,
+    Arial,
+    sans-serif,
+    "Apple Color Emoji",
+    "Segoe UI Emoji"
+  );
+  overflow-wrap: break-word;
+  font-size: 16px;
+  line-height: 1.5;
+}
+.gh-fork .markdown-body:before {
+  content: "";
+  display: table;
+}
+.gh-fork .markdown-body:after {
+  clear: both;
+  content: "";
+  display: table;
+}
+.gh-fork .markdown-body > :first-child {
+  margin-top: 0 !important;
+}
+.gh-fork .markdown-body > :last-child {
+  margin-bottom: 0 !important;
+}
+.gh-fork .markdown-body a:not([href]) {
+  color: inherit;
+  text-decoration: none;
+}
+.gh-fork .markdown-body .absent {
+  color: var(--fgColor-danger, var(--color-danger-fg));
+}
+.gh-fork .markdown-body .anchor {
+  float: left;
+  padding-right: var(--base-size-4);
+  margin-left: -20px;
+  line-height: 1;
+}
+.gh-fork .markdown-body .anchor:focus {
+  outline: none;
+}
+.gh-fork .markdown-body p,
+.gh-fork .markdown-body blockquote,
+.gh-fork .markdown-body ul,
+.gh-fork .markdown-body ol,
+.gh-fork .markdown-body dl,
+.gh-fork .markdown-body table,
+.gh-fork .markdown-body pre,
+.gh-fork .markdown-body details {
+  margin-top: 0;
+  margin-bottom: var(--base-size-16);
+}
+.gh-fork .markdown-body hr {
+  height: 1px;
+  margin: var(--base-size-24) 0;
+  background-color: var(--borderColor-default, var(--color-border-default));
+  border: 0;
+  padding: 0;
+}
+.gh-fork .markdown-body blockquote {
+  color: var(--fgColor-muted, var(--color-fg-muted));
+  border-left: 0.25em solid var(--borderColor-default, var(--color-border-default));
+  padding: 0 1em;
+}
+.gh-fork .markdown-body blockquote > :first-child {
+  margin-top: 0;
+}
+.gh-fork .markdown-body blockquote > :last-child {
+  margin-bottom: 0;
+}
+.gh-fork .markdown-body h1,
+.gh-fork .markdown-body h2,
+.gh-fork .markdown-body h3,
+.gh-fork .markdown-body h4,
+.gh-fork .markdown-body h5,
+.gh-fork .markdown-body h6 {
+  margin-top: var(--base-size-24);
+  margin-bottom: var(--base-size-16);
+  font-weight: var(--base-text-weight-semibold, 600);
+  line-height: 1.25;
+}
+.gh-fork .markdown-body h1 .octicon-link,
+.gh-fork .markdown-body h2 .octicon-link,
+.gh-fork .markdown-body h3 .octicon-link,
+.gh-fork .markdown-body h4 .octicon-link,
+.gh-fork .markdown-body h5 .octicon-link,
+.gh-fork .markdown-body h6 .octicon-link {
+  color: var(--fgColor-default, var(--color-fg-default));
+  vertical-align: middle;
+  visibility: hidden;
+}
+.gh-fork .markdown-body h1:hover .anchor,
+.gh-fork .markdown-body h2:hover .anchor,
+.gh-fork .markdown-body h3:hover .anchor,
+.gh-fork .markdown-body h4:hover .anchor,
+.gh-fork .markdown-body h5:hover .anchor,
+.gh-fork .markdown-body h6:hover .anchor {
+  text-decoration: none;
+}
+.gh-fork .markdown-body h1:hover .anchor .octicon-link,
+.gh-fork .markdown-body h2:hover .anchor .octicon-link,
+.gh-fork .markdown-body h3:hover .anchor .octicon-link,
+.gh-fork .markdown-body h4:hover .anchor .octicon-link,
+.gh-fork .markdown-body h5:hover .anchor .octicon-link,
+.gh-fork .markdown-body h6:hover .anchor .octicon-link {
+  visibility: visible;
+}
+.gh-fork .markdown-body h1 tt,
+.gh-fork .markdown-body h1 code,
+.gh-fork .markdown-body h2 tt,
+.gh-fork .markdown-body h2 code,
+.gh-fork .markdown-body h3 tt,
+.gh-fork .markdown-body h3 code,
+.gh-fork .markdown-body h4 tt,
+.gh-fork .markdown-body h4 code,
+.gh-fork .markdown-body h5 tt,
+.gh-fork .markdown-body h5 code,
+.gh-fork .markdown-body h6 tt,
+.gh-fork .markdown-body h6 code {
+  font-size: inherit;
+  padding: 0 0.2em;
+}
+.gh-fork .markdown-body h1 {
+  border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));
+  padding-bottom: 0.3em;
+  font-size: 2em;
+}
+.gh-fork .markdown-body h2 {
+  border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+}
+.gh-fork .markdown-body h3 {
+  font-size: 1.25em;
+}
+.gh-fork .markdown-body h4 {
+  font-size: 1em;
+}
+.gh-fork .markdown-body h5 {
+  font-size: 0.875em;
+}
+.gh-fork .markdown-body h6 {
+  color: var(--fgColor-muted, var(--color-fg-muted));
+  font-size: 0.85em;
+}
+.gh-fork .markdown-body summary h1,
+.gh-fork .markdown-body summary h2,
+.gh-fork .markdown-body summary h3,
+.gh-fork .markdown-body summary h4,
+.gh-fork .markdown-body summary h5,
+.gh-fork .markdown-body summary h6 {
+  display: inline-block;
+}
+.gh-fork .markdown-body summary h1 .anchor,
+.gh-fork .markdown-body summary h2 .anchor,
+.gh-fork .markdown-body summary h3 .anchor,
+.gh-fork .markdown-body summary h4 .anchor,
+.gh-fork .markdown-body summary h5 .anchor,
+.gh-fork .markdown-body summary h6 .anchor {
+  margin-left: -40px;
+}
+.gh-fork .markdown-body summary h1,
+.gh-fork .markdown-body summary h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.gh-fork .markdown-body ul,
+.gh-fork .markdown-body ol {
+  padding-left: 2em;
+}
+.gh-fork .markdown-body ul.no-list,
+.gh-fork .markdown-body ol.no-list {
+  padding: 0;
+  list-style-type: none;
+}
+.gh-fork .markdown-body ol[type="a\ s"] {
+  list-style-type: lower-alpha;
+}
+.gh-fork .markdown-body ol[type="A\ s"] {
+  list-style-type: upper-alpha;
+}
+.gh-fork .markdown-body ol[type="i\ s"] {
+  list-style-type: lower-roman;
+}
+.gh-fork .markdown-body ol[type="I\ s"] {
+  list-style-type: upper-roman;
+}
+.gh-fork .markdown-body ol[type="1"],
+.gh-fork .markdown-body div > ol:not([type]) {
+  list-style-type: decimal;
+}
+.gh-fork .markdown-body ul ul,
+.gh-fork .markdown-body ul ol,
+.gh-fork .markdown-body ol ol,
+.gh-fork .markdown-body ol ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.gh-fork .markdown-body li > p {
+  margin-top: var(--base-size-16);
+}
+.gh-fork .markdown-body li + li {
+  margin-top: 0.25em;
+}
+.gh-fork .markdown-body dl {
+  padding: 0;
+}
+.gh-fork .markdown-body dl dt {
+  margin-top: var(--base-size-16);
+  font-size: 1em;
+  font-style: italic;
+  font-weight: var(--base-text-weight-semibold, 600);
+  padding: 0;
+}
+.gh-fork .markdown-body dl dt + dt {
+  margin-top: 0;
+}
+.gh-fork .markdown-body dl dd {
+  padding: 0 var(--base-size-16);
+  margin-bottom: var(--base-size-16);
+}
+.gh-fork .markdown-body table {
+  font-variant: tabular-nums;
+  width: max-content;
+  max-width: 100%;
+  display: block;
+  overflow: auto;
+}
+.gh-fork .markdown-body table th {
+  font-weight: var(--base-text-weight-semibold, 600);
+}
+.gh-fork .markdown-body table th,
+.gh-fork .markdown-body table td {
+  border: 1px solid var(--borderColor-default, var(--color-border-default));
+  padding: 6px 13px;
+}
+.gh-fork .markdown-body table td > :last-child {
+  margin-bottom: 0;
+}
+.gh-fork .markdown-body table tr {
+  background-color: var(--bgColor-default, var(--color-canvas-default));
+  border-top: 1px solid var(--borderColor-muted, var(--color-border-muted));
+}
+.gh-fork .markdown-body table tr:nth-child(2n) {
+  background-color: var(--bgColor-muted, var(--color-canvas-subtle));
+}
+.gh-fork .markdown-body table img {
+  background-color: #0000;
+}
+.gh-fork .markdown-body img {
+  box-sizing: content-box;
+  max-width: 100%;
+}
+.gh-fork .markdown-body img[align="right"] {
+  padding-left: 20px;
+}
+.gh-fork .markdown-body img[align="left"] {
+  padding-right: 20px;
+}
+.gh-fork .markdown-body .emoji {
+  vertical-align: text-top;
+  background-color: #0000;
+  max-width: none;
+}
+.gh-fork .markdown-body span.frame {
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.frame > span {
+  float: left;
+  border: 1px solid var(--borderColor-default, var(--color-border-default));
+  width: auto;
+  margin: 13px 0 0;
+  padding: 7px;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.frame span img {
+  float: left;
+  display: block;
+}
+.gh-fork .markdown-body span.frame span span {
+  clear: both;
+  color: var(--fgColor-default, var(--color-fg-default));
+  padding: 5px 0 0;
+  display: block;
+}
+.gh-fork .markdown-body span.align-center {
+  clear: both;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.align-center > span {
+  text-align: center;
+  margin: 13px auto 0;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.align-center span img {
+  text-align: center;
+  margin: 0 auto;
+}
+.gh-fork .markdown-body span.align-right {
+  clear: both;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.align-right > span {
+  text-align: right;
+  margin: 13px 0 0;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.align-right span img {
+  text-align: right;
+  margin: 0;
+}
+.gh-fork .markdown-body span.float-left {
+  float: left;
+  margin-right: 13px;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.float-left span {
+  margin: 13px 0 0;
+}
+.gh-fork .markdown-body span.float-right {
+  float: right;
+  margin-left: 13px;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body span.float-right > span {
+  text-align: right;
+  margin: 13px auto 0;
+  display: block;
+  overflow: hidden;
+}
+.gh-fork .markdown-body code,
+.gh-fork .markdown-body tt {
+  white-space: break-spaces;
+  background-color: var(--bgColor-neutral-muted, var(--color-neutral-muted));
+  border-radius: 6px;
+  margin: 0;
+  padding: 0.2em 0.4em;
+  font-size: 85%;
+}
+.gh-fork .markdown-body code br,
+.gh-fork .markdown-body tt br {
+  display: none;
+}
+.gh-fork .markdown-body del code {
+  -webkit-text-decoration: inherit;
+  text-decoration: inherit;
+}
+.gh-fork .markdown-body samp {
+  font-size: 85%;
+}
+.gh-fork .markdown-body pre {
+  overflow-wrap: normal;
+}
+.gh-fork .markdown-body pre code {
+  font-size: 100%;
+}
+.gh-fork .markdown-body pre > code {
+  word-break: normal;
+  white-space: pre;
+  background: 0 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.gh-fork .markdown-body .highlight {
+  margin-bottom: var(--base-size-16);
+}
+.gh-fork .markdown-body .highlight pre {
+  word-break: normal;
+  margin-bottom: 0;
+}
+.gh-fork .markdown-body .highlight pre,
+.gh-fork .markdown-body pre {
+  padding: var(--base-size-16);
+  color: var(--fgColor-default, var(--color-fg-default));
+  background-color: var(--bgColor-muted, var(--color-canvas-subtle));
+  border-radius: 6px;
+  font-size: 85%;
+  line-height: 1.45;
+  overflow: auto;
+}
+.gh-fork .markdown-body pre code,
+.gh-fork .markdown-body pre tt {
+  line-height: inherit;
+  overflow-wrap: normal;
+  background-color: #0000;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: inline;
+  overflow: visible;
+}
+.gh-fork .markdown-body .csv-data td,
+.gh-fork .markdown-body .csv-data th {
+  text-align: left;
+  white-space: nowrap;
+  padding: 5px;
+  font-size: 12px;
+  line-height: 1;
+  overflow: hidden;
+}
+.gh-fork .markdown-body .csv-data .blob-num {
+  padding: 10px var(--base-size-8) 9px;
+  text-align: right;
+  background: var(--bgColor-default, var(--color-canvas-default));
+  border: 0;
+}
+.gh-fork .markdown-body .csv-data tr {
+  border-top: 0;
+}
+.gh-fork .markdown-body .csv-data th {
+  font-weight: var(--base-text-weight-semibold, 600);
+  background: var(--bgColor-muted, var(--color-canvas-subtle));
+  border-top: 0;
+}
+.gh-fork .markdown-body [data-footnote-ref]:before {
+  content: "[";
+}
+.gh-fork .markdown-body [data-footnote-ref]:after {
+  content: "]";
+}
+.gh-fork .markdown-body .footnotes {
+  color: var(--fgColor-muted, var(--color-fg-muted));
+  border-top: 1px solid var(--borderColor-default, var(--color-border-default));
+  font-size: 12px;
+}
+.gh-fork .markdown-body .footnotes ol {
+  padding-left: var(--base-size-16);
+}
+.gh-fork .markdown-body .footnotes ol ul {
+  padding-left: var(--base-size-16);
+  margin-top: var(--base-size-16);
+  display: inline-block;
+}
+.gh-fork .markdown-body .footnotes li {
+  position: relative;
+}
+.gh-fork .markdown-body .footnotes li:target:before {
+  top: calc(var(--base-size-8)*-1);
+  right: calc(var(--base-size-8)*-1);
+  bottom: calc(var(--base-size-8)*-1);
+  left: calc(var(--base-size-24)*-1);
+  pointer-events: none;
+  content: "";
+  border: 2px solid var(--borderColor-accent-emphasis, var(--color-accent-emphasis));
+  border-radius: 6px;
+  position: absolute;
+}
+.gh-fork .markdown-body .footnotes li:target {
+  color: var(--fgColor-default, var(--color-fg-default));
+}
+.gh-fork .markdown-body .footnotes .data-footnote-backref g-emoji {
+  font-family: monospace;
+}
+.gh-fork [data-a11y-link-underlines="true"] .markdown-body a,
+.gh-fork [data-a11y-link-underlines="true"] .markdown-body a:hover,
+.gh-fork [data-a11y-link-underlines="true"] .markdown-body-short a,
+.gh-fork [data-a11y-link-underlines="true"] .markdown-body-short a:hover,
+.gh-fork [data-a11y-link-underlines="true"] .commit-desc a,
+.gh-fork [data-a11y-link-underlines="true"] .commit-desc a:hover,
+.gh-fork [data-a11y-link-underlines="true"] .Link--inTextBlock,
+.gh-fork [data-a11y-link-underlines="true"] .Link--inTextBlock:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link--secondary,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link--secondary:hover,
+.gh-fork
+  [data-a11y-link-underlines="true"]
+  .TimelineItem-body:not(.timeline-comment-group)
+  .text-normal
+  .Link--primary:not(.text-bold),
+.gh-fork
+  [data-a11y-link-underlines="true"]
+  .TimelineItem-body:not(.timeline-comment-group)
+  .text-normal
+  .Link--primary:not(.text-bold):hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Details-element .Link,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Details-element .Link:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link--muted time,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link--muted time:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .markdown-title,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .markdown-title:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineBody [class*="timelineAgoLink"],
+.gh-fork [data-a11y-link-underlines="true"] .TimelineBody [class*="timelineAgoLink"]:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineBody .Link--secondary,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineBody .Link--secondary:hover,
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link:not(.Link--primary),
+.gh-fork [data-a11y-link-underlines="true"] .TimelineItem-body .Link:not(.Link--primary):hover,
+.gh-fork [data-a11y-link-underlines="true"] .Links--underline a,
+.gh-fork [data-a11y-link-underlines="true"] .Links--underline a:hover,
+.gh-fork [data-a11y-link-underlines="true"] .repos-list-description a,
+.gh-fork [data-a11y-link-underlines="true"] .extended-commit-description-container a {
+  text-underline-offset: 0.2rem;
+  text-decoration: underline;
+}
+.gh-fork [data-a11y-link-underlines="true"] .js-issue-row .opened-by > a:hover,
+.gh-fork [data-a11y-link-underlines="true"] .js-issue-row .milestone-link:hover,
+.gh-fork
+  [data-a11y-link-underlines="true"]
+  .js-issue-row
+  .milestone-link:hover
+  > .css-truncate-target,
+.gh-fork
+  [data-a11y-link-underlines="true"]
+  .markdown-body
+  :is(
+    h1,
+    .gh-fork h2,
+    .gh-fork h3,
+    .gh-fork h4,
+    .gh-fork h5,
+    .gh-fork h6,
+    .gh-fork .markdown-heading
+  )
+  > .anchor,
+.gh-fork [data-a11y-link-underlines="true"] .markdown-body .tasklist-issue-content a,
+.gh-fork [data-a11y-link-underlines="true"] .Link--inTextBlock[data-marky-github-reference],
+.gh-fork [data-a11y-link-underlines="true"] .Link--inTextBlock[data-marky-github-reference]:hover {
+  text-decoration: none;
+}

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { DownloadAsset } from "@/lib/releases";
 import type { UpstreamRelease } from "@/lib/live";
 import { formatBytes } from "@/lib/releases";
+import "./gh-markdown.css";
 
 /**
  * Upstream GitHub-releases pixel fork for /download/[slug]: same DOM order, copy, structure,
@@ -81,10 +82,7 @@ function AssetRow({ asset }: { asset: DownloadAsset }) {
 }
 
 function ReleaseCard({ release }: { release: UpstreamRelease }) {
-  const [expanded, setExpanded] = useState(false);
-  const body = release.body.trim();
-  const paragraphs = body ? body.split(/\n{2,}/) : [];
-  const visible = expanded ? paragraphs : paragraphs.slice(0, 3);
+  const [assetsOpen, setAssetsOpen] = useState(false);
   return (
     <section
       id={`release-${release.tag}`}
@@ -163,32 +161,22 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
               </a>
             ) : null}
           </div>
-          <div className="gh-release-notes">
-            {visible.map((p, i) => (
-              // eslint-disable-next-line react/no-array-index-key
-              <p key={i}>{p}</p>
-            ))}
-            {paragraphs.length > 3 ? (
-              <button
-                type="button"
-                className="gh-link-muted gh-expand-btn"
-                onClick={() => setExpanded((v) => !v)}
-              >
-                {expanded ? "Show less" : `Plus ${paragraphs.length - 3} more bug fixes.`}
-              </button>
-            ) : null}
-          </div>
+          <div
+            className="gh-release-notes markdown-body tmp-my-3"
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{ __html: release.bodyHtml }}
+          />
           {release.assets.length > 0 ? (
             <div className="gh-assets">
               <button
                 type="button"
                 className="gh-assets-toggle"
-                onClick={() => setExpanded((v) => !v)}
-                aria-expanded={expanded}
+                onClick={() => setAssetsOpen((v) => !v)}
+                aria-expanded={assetsOpen}
               >
                 Assets ({release.assets.length})
               </button>
-              {expanded && (
+              {assetsOpen && (
                 <ul className="gh-asset-list">
                   {release.assets.map((a) => (
                     <AssetRow key={a.url} asset={a} />
