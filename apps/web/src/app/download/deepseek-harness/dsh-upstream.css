@@ -506,3 +506,22 @@ html[data-download-mobile="true"] .download-page .download-phone-initial {
     margin-top: 32px;
   }
 }
+
+/* Chromeless pixel-fork: hide ForkHub site chrome + dark theme on this
+   route only (upstream page is light, full-bleed, no site nav/footer).
+   Scoped under .download-page so no other route is affected. */
+html[data-fh-chrome="site"]:has(.download-page .download-content) .fh-chrome .fh-nav,
+html[data-fh-chrome="site"]:has(.download-page .download-content) .fh-chrome .fh-footer {
+  display: none !important;
+}
+html[data-fh-chrome="site"]:has(.download-page .download-content) {
+  background: #fdfeff;
+}
+html[data-fh-chrome="site"]:has(.download-page .download-content) body {
+  background: #fdfeff;
+}
+html[data-fh-chrome="site"]:has(.download-page .download-content) .fh-chrome main {
+  padding: 0;
+  margin: 0;
+  max-width: none;
+}
