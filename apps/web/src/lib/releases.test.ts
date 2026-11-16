@@ -491,8 +491,29 @@ describe("getUpstreamMeta counts", () => {
     try {
       const { meta } = await getUpstreamMeta("t3code");
       expect(meta.stars).toBe(23940);
-      expect(meta.issues).toBe(1200);
+      expect(meta.issues).toBe(0);
       expect(meta.pulls).toBe(2300);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("issues count excludes open PRs (Issues tab semantics)", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
+      const u = String(url);
+      if (u.includes("/search/issues")) {
+        return new Response(JSON.stringify({ total_count: 2300 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ stargazers_count: 23940, open_issues_count: 3500 }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta.pulls).toBe(2300);
+      expect(meta.issues).toBe(1200);
     } finally {
       globalThis.fetch = origFetch;
     }
@@ -574,6 +595,10 @@ describe("getUpstreamReleases URL wiring", () => {
     try {
       const { releases } = await getUpstreamReleases("natively");
       expect(releases[0]?.authorUrl).toBe("https://github.com/apps/github-actions");
+      // display convention matches github.com server HTML: bot suffix
+      // stripped for display, avatar sized like upstream (?s=40)
+      expect(releases[0]?.authorLogin).toBe("github-actions");
+      expect(releases[0]?.authorAvatar).toBe("https://avatars/x?s=40");
       // non-sha target_commitish falls back to release URL
       expect(releases[0]?.commitUrl).toBe(releases[0]?.url);
     } finally {

@@ -274,6 +274,9 @@ html[data-gh-fork="true"] body {
   color: var(--gh-fg-muted);
   font-size: 12px;
 }
+.gh-author-link {
+  font-weight: 600;
+}
 .gh-tag-link {
   font-family: ui-monospace, monospace;
 }

@@ -262,7 +262,16 @@ async function fetchUpstreamReleases(
         r.author && typeof r.author.login === "string"
           ? r.author.login
           : (upstreamRepo.split("/")[0] ?? "");
-      const avatar = r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
+      // Display convention matches github.com server HTML: bot suffixes
+      // are stripped for display (`github-actions`, alt `@github-actions`)
+      // while authorUrl keeps the API-provided apps URL. Avatar URLs from
+      // the API carry no size param; upstream serves `?s=40` (20px @2x).
+      const displayLogin = login.replace(/\[bot\]$/i, "");
+      const rawAvatar = r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
+      const avatar =
+        rawAvatar !== "" && !/[?&]s=\d+/.test(rawAvatar)
+          ? `${rawAvatar}${rawAvatar.includes("?") ? "&" : "?"}s=40`
+          : rawAvatar;
       const authorHtml = r.author && typeof r.author.html_url === "string" ? r.author.html_url : "";
       const target = typeof r.target_commitish === "string" ? r.target_commitish : "";
       const sha = /^[0-9a-f]{4,40}$/i.test(target) ? target : "";
@@ -276,7 +285,7 @@ async function fetchUpstreamReleases(
         compareUrl: null, // filled after sort (needs previous tag)
         authorUrl: authorHtml ? authorHtml : upstreamUrl(upstreamRepo, "user", login),
         publishedAt: conv.publishedAt,
-        authorLogin: login,
+        authorLogin: displayLogin,
         authorAvatar: avatar,
         commitSha: sha,
         body: typeof r.body === "string" ? r.body : "",
@@ -354,7 +363,14 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
     }
     return {
       stars: typeof d.stargazers_count === "number" ? d.stargazers_count : null,
-      issues: typeof d.open_issues_count === "number" ? d.open_issues_count : null,
+      // open_issues_count includes open PRs; the Issues tab shows
+      // issues-only, i.e. open_issues minus open PRs (verified: 3.5k - 2.3k = 1.2k on t3code).
+      issues:
+        typeof d.open_issues_count === "number" && typeof pulls === "number"
+          ? Math.max(d.open_issues_count - pulls, 0)
+          : typeof d.open_issues_count === "number"
+            ? d.open_issues_count
+            : null,
       pulls,
     };
   } catch {

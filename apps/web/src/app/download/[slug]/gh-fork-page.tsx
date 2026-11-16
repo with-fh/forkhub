@@ -32,7 +32,10 @@ function timeAgo(iso: string): string {
 function shortTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return timeAgo(iso);
-  return `${d.getDate()} ${d.toLocaleString("en-US", { month: "short" })} ${`${d.getHours()}`.padStart(2, "0")}:${`${d.getMinutes()}`.padStart(2, "0")}`;
+  // UTC, matching github.com server-rendered <relative-time> fallback
+  // text ("16 Nov 14:05"); server-local tz would shift the visible time.
+  const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  return `${d.getUTCDate()} ${mon} ${`${d.getUTCHours()}`.padStart(2, "0")}:${`${d.getUTCMinutes()}`.padStart(2, "0")}`;
 }
 
 function absoluteTitle(iso: string): string {
@@ -45,6 +48,7 @@ function absoluteTitle(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
     timeZoneName: "short",
+    timeZone: "UTC",
   });
 }
 
@@ -157,7 +161,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             {release.authorAvatar ? (
               <img
                 src={release.authorAvatar}
-                alt={release.authorLogin}
+                alt={`@${release.authorLogin}`}
                 width={20}
                 height={20}
                 style={{ borderRadius: "50%" }}
