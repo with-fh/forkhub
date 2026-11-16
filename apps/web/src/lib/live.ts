@@ -121,7 +121,9 @@ function upstreamUrl(
   return `https://github.com/${ref}`;
 }
 
-const UPSTREAM_LIMIT = 10;
+// 5 releases: full SSR bodies (~500KB at 10 for t3 nightlies) exceed
+// Workers subrequest/CPU budgets and 1102 the page. 5 covers the fold.
+const UPSTREAM_LIMIT = 5;
 
 /** Render markdown exactly like upstream: marked (gfm) then sanitize-html allowlist. */
 function renderBodyHtml(md: string, repo: string): string {
