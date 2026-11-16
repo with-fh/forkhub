@@ -345,3 +345,31 @@ html[data-gh-fork="true"] body {
     font-size: 26px;
   }
 }
+
+.gh-fork .user-mention {
+  color: var(--gh-fg-accent);
+  font-weight: 600;
+}
+.gh-fork .issue-link {
+  color: var(--gh-fg-accent);
+}
+.gh-fork .markdown-body a {
+  color: var(--gh-fg-accent);
+  text-decoration: none;
+}
+.gh-fork .markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.gh-collapse-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: var(--gh-fg-muted);
+  font-size: 14px;
+  padding: 6px 12px;
+  margin-top: 12px;
+  cursor: default;
+}
