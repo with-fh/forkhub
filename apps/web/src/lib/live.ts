@@ -222,14 +222,21 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
     };
     let pulls: number | null = null;
     try {
-      const q = await fetch(
-        `https://api.github.com/search/issues?q=repo:${upstreamRepo}+type:pr+state:open&per_page=1`,
-        {
-          next: { revalidate: 3600 },
-          headers: githubHeaders(),
-          signal: AbortSignal.timeout(12000),
-        },
-      );
+      const pqCtrl = new AbortController();
+      const pqTimer = setTimeout(() => pqCtrl.abort(), 12000);
+      let q: Response;
+      try {
+        q = await fetch(
+          `https://api.github.com/search/issues?q=repo:${upstreamRepo}+type:pr+state:open&per_page=1`,
+          {
+            next: { revalidate: 3600 },
+            headers: githubHeaders(),
+            signal: pqCtrl.signal,
+          },
+        );
+      } finally {
+        clearTimeout(pqTimer);
+      }
       if (q.ok) {
         const j = (await q.json()) as { total_count?: number };
         if (typeof j.total_count === "number") pulls = j.total_count;
