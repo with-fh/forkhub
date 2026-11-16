@@ -506,34 +506,3 @@ html[data-download-mobile="true"] .download-page .download-phone-initial {
     margin-top: 32px;
   }
 }
-/* ForkHub-track additions (outside upstream parity scope): version note + disclosure strip */
-.download-version-note {
-  margin: 12px 0 0;
-  padding-block: 4px;
-  font-size: 12px;
-  color: #81858c;
-  font-weight: 400;
-}
-.download-forkhub-strip {
-  max-width: 482px;
-  margin: 64px auto 0;
-  text-align: center;
-  font-size: 12px;
-  line-height: 20px;
-  color: #81858c;
-}
-.download-forkhub-strip p {
-  margin: 8px 0;
-}
-.download-forkhub-strip a {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.download-forkhub-strip code {
-  font-family: ui-monospace, monospace;
-  font-size: 11px;
-  background: #0000000a;
-  padding: 1px 6px;
-  border-radius: 6px;
-}
