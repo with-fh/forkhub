@@ -7,13 +7,11 @@ import type { UpstreamRelease } from "@/lib/live";
 import { formatBytes } from "@/lib/releases";
 
 /**
- * Upstream GitHub-releases fork for /download/[slug]: same DOM order, copy, and structure as
- * github.com/<owner>/<repo>/releases — global header, repo header, repo
- * tabs, sidebar (Releases/Tags + per-release anchor list), release cards
- * (title, Pre-release/Latest labels, author line, tag/commit links, full
- * notes body, asset list). ForkHub deltas: buttons resolve to catalog
- * builds (badged "ForkHub track"), plus channel tabs + version picker
- * above the list (GitHub has none; needed to select the ForkHub track).
+ * Upstream GitHub-releases pixel fork for /download/[slug]: same DOM order, copy, structure,
+ * and behavior as github.com/<owner>/<repo>/releases — global header, repo header, repo tabs,
+ * sidebar (Releases/Tags + per-release anchor list), release cards (title, Pre-release label,
+ * author line, tag/commit links, full notes body, asset list). Asset downloads resolve to
+ * ForkHub catalog builds (same filenames as upstream); all other links are upstream URLs.
  */
 
 function timeAgo(iso: string): string {
@@ -59,12 +57,6 @@ function AssetRow({ asset }: { asset: DownloadAsset }) {
         {asset.name}
       </a>
       {size && <span style={{ color: "var(--gh-fg-muted)", fontSize: 12 }}>{size}</span>}
-      <span
-        className="gh-forkhub-badge"
-        title="Patched ForkHub-track build — self-updates from the patch catalog"
-      >
-        ForkHub track
-      </span>
     </li>
   );
 }
@@ -93,7 +85,6 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
               </span>
               <span>
                 {release.prerelease ? <span className="gh-label-warning">Pre-release</span> : null}
-                {release.latest ? <span className="gh-label-success">Latest</span> : null}
               </span>
             </div>
           </div>
@@ -170,13 +161,11 @@ export default function GhForkPage({
   owner,
   repo,
   upstreamReleasesUrl,
-  catalogReleasesUrl,
   releases,
 }: {
   owner: string;
   repo: string;
   upstreamReleasesUrl: string;
-  catalogReleasesUrl: string;
   releases: UpstreamRelease[];
 }) {
   const [query, setQuery] = useState("");
@@ -274,12 +263,6 @@ export default function GhForkPage({
               />
             </div>
           </div>
-          <p className="gh-forkhub-note">
-            ForkHub-track mirror of{" "}
-            <a href={upstreamReleasesUrl}>{upstreamReleasesUrl.replace("https://", "")}</a> — same
-            titles, notes, and assets; downloads resolve to{" "}
-            <a href={catalogReleasesUrl}>catalog builds</a>.
-          </p>
           <div className="gh-results">
             {filtered.map((r) => (
               <ReleaseCard key={r.tag} release={r} />
