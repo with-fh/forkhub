@@ -45,12 +45,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-fh-chrome="site">
       <body className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased`}>
         <Providers>
-          <Header />
-          <main>{children}</main>
-          <Footer />
+          <div className="fh-chrome">
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </div>
         </Providers>
       </body>
     </html>
