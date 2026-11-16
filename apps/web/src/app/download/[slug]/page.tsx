@@ -1,7 +1,14 @@
 import { notFound } from "next/navigation";
 import { getOss } from "@forkhub/api/oss/data";
 
-import { getStarsMap, getUpstreamReleases } from "@/lib/live";
+import { getUpstreamMeta, getUpstreamReleases } from "@/lib/live";
+
+function compact(n: number | null): string | null {
+  if (n == null || !Number.isFinite(n)) return null;
+  if (n < 1000) return `${n}`;
+  const v = n / 1000;
+  return `${v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}k`;
+}
 import GhForkChrome from "./gh-fork-chrome";
 import GhForkPage from "./gh-fork-page";
 import "./gh-fork.css";
@@ -30,9 +37,10 @@ export default async function DownloadSlugPage({ params }: { params: Promise<{ s
   const e = getOss(slug);
   if (!e) notFound();
 
-  const [starsMap, upstream] = await Promise.all([getStarsMap(), getUpstreamReleases(slug)]);
-  const stars = starsMap[slug] ?? e.stars;
-  void stars;
+  const [{ meta }, upstream] = await Promise.all([
+    getUpstreamMeta(slug),
+    getUpstreamReleases(slug),
+  ]);
 
   return (
     <GhForkChrome>
@@ -41,6 +49,8 @@ export default async function DownloadSlugPage({ params }: { params: Promise<{ s
         repo={e.upstreamRepo.split("/")[1] ?? e.slug}
         upstreamReleasesUrl={`${e.upstreamUrl}/releases`}
         releases={upstream.releases}
+        issueCount={compact(meta.issues)}
+        prCount={compact(meta.pulls)}
       />
     </GhForkChrome>
   );

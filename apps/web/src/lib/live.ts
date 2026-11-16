@@ -195,6 +195,67 @@ async function fetchUpstreamReleases(
   }
 }
 
+export type UpstreamRepoMeta = {
+  stars: number | null;
+  issues: number | null;
+  pulls: number | null;
+};
+
+async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepoMeta> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12_000);
+    let res: Response;
+    try {
+      res = await fetch(`https://api.github.com/repos/${upstreamRepo}`, {
+        next: { revalidate: 3600 },
+        headers: githubHeaders(),
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) return { stars: null, issues: null, pulls: null };
+    const d = (await res.json()) as {
+      stargazers_count?: number;
+      open_issues_count?: number;
+    };
+    let pulls: number | null = null;
+    try {
+      const q = await fetch(
+        `https://api.github.com/search/issues?q=repo:${upstreamRepo}+type:pr+state:open&per_page=1`,
+        {
+          next: { revalidate: 3600 },
+          headers: githubHeaders(),
+          signal: AbortSignal.timeout(12000),
+        },
+      );
+      if (q.ok) {
+        const j = (await q.json()) as { total_count?: number };
+        if (typeof j.total_count === "number") pulls = j.total_count;
+      }
+    } catch {
+      // pulls stays null; tabs render without that count
+    }
+    return {
+      stars: typeof d.stargazers_count === "number" ? d.stargazers_count : null,
+      issues: typeof d.open_issues_count === "number" ? d.open_issues_count : null,
+      pulls,
+    };
+  } catch {
+    return { stars: null, issues: null, pulls: null };
+  }
+}
+
+export async function getUpstreamMeta(
+  slug: string,
+): Promise<{ meta: UpstreamRepoMeta; stars: number | null }> {
+  const entry = OSS_CATALOG.find((e) => e.slug === slug);
+  if (!entry) return { meta: { stars: null, issues: null, pulls: null }, stars: null };
+  const meta = await fetchUpstreamRepoMeta(entry.upstreamRepo);
+  return { meta, stars: meta.stars ?? entry.stars };
+}
+
 export async function getUpstreamReleases(
   slug: string,
 ): Promise<{ releases: UpstreamRelease[]; apiOk: boolean }> {
