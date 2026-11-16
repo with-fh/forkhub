@@ -13,12 +13,10 @@ export default function DshDownloadPage({
   macUrl,
   winForkUrl,
   linuxUrl,
-  version,
 }: {
   macUrl: string;
   winForkUrl: string | null;
   linuxUrl: string | null;
-  version: string | null;
 }) {
   useEffect(() => {
     // Same mobile-detection as upstream: sets data-download-mobile on <html>.
@@ -157,7 +155,6 @@ export default function DshDownloadPage({
                   </>
                 ) : null}
               </p>
-              {version ? <p className="download-version-note">ForkHub track · {version}</p> : null}
             </div>
           </div>
         </section>
@@ -239,39 +236,6 @@ export default function DshDownloadPage({
             alt="DeepSeek app chat and history screens"
             loading="lazy"
           />
-        </section>
-        <section className="download-forkhub-strip" aria-label="ForkHub track details">
-          <p>
-            ForkHub track{version ? ` · ${version}` : ""}: desktop installers above are patched
-            builds that self-update from the{" "}
-            <a href="https://github.com/with-fh/.forkhub" target="_blank" rel="noreferrer">
-              with-fh patch catalog
-            </a>{" "}
-            instead of the stock feed. Prefer stock? Use the same buttons on{" "}
-            <a href="https://www.deepseek.com/en/download/" target="_blank" rel="noreferrer">
-              deepseek.com
-            </a>
-            . Linux has no stock desktop build — the ForkHub AppImage is the Linux download.
-          </p>
-          <p>
-            <code>fh run dsh with-fh -- --version</code> installs the managed build. Patch intents:{" "}
-            <a
-              href="https://github.com/with-fh/.forkhub/blob/main/repos/github.com/deepseek-ai/deepseek-harness/patches/dsh-forkhub-support-0qjj6stm/INTENT.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              update channel
-            </a>{" "}
-            ·{" "}
-            <a
-              href="https://github.com/with-fh/.forkhub/blob/main/repos/github.com/deepseek-ai/deepseek-harness/patches/dsh-linux-support-1b2e3f10/INTENT.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              linux support
-            </a>
-            .
-          </p>
         </section>
       </div>
     </main>
