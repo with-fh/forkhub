@@ -90,6 +90,10 @@ export type UpstreamRelease = {
   tag: string;
   name: string;
   url: string;
+  /** Tag URL (tree link), commit URL, author profile URL — all upstream. */
+  tagUrl: string;
+  commitUrl: string;
+  authorUrl: string;
   publishedAt: string;
   authorLogin: string;
   authorAvatar: string;
@@ -100,6 +104,17 @@ export type UpstreamRelease = {
   prerelease: boolean;
   latest: boolean;
 };
+
+function upstreamUrl(
+  repo: string,
+  kind: "releases" | "tree" | "commit" | "user",
+  ref: string,
+): string {
+  if (kind === "releases") return `https://github.com/${repo}/releases`;
+  if (kind === "tree") return `https://github.com/${repo}/tree/${ref}`;
+  if (kind === "commit") return `https://github.com/${repo}/commit/${ref}`;
+  return `https://github.com/${ref}`;
+}
 
 const UPSTREAM_LIMIT = 10;
 
@@ -130,7 +145,7 @@ async function fetchUpstreamReleases(
       published_at?: string;
       prerelease?: boolean;
       body?: string | null;
-      author?: { login?: string; avatar_url?: string };
+      author?: { login?: string; avatar_url?: string; html_url?: string };
       target_commitish?: string;
       assets?: GhApiAsset[];
     }>;
@@ -151,15 +166,21 @@ async function fetchUpstreamReleases(
           ? r.author.login
           : (upstreamRepo.split("/")[0] ?? "");
       const avatar = r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
+      const authorHtml = r.author && typeof r.author.html_url === "string" ? r.author.html_url : "";
       const target = typeof r.target_commitish === "string" ? r.target_commitish : "";
+      const sha = /^[0-9a-f]{4,40}$/i.test(target) ? target : "";
+      const tagName = typeof r.tag_name === "string" ? r.tag_name : conv.version;
       releases.push({
         tag: conv.version,
         name: conv.name,
         url: conv.releaseUrl,
+        tagUrl: upstreamUrl(upstreamRepo, "tree", tagName),
+        commitUrl: sha ? upstreamUrl(upstreamRepo, "commit", sha) : conv.releaseUrl,
+        authorUrl: authorHtml ? authorHtml : upstreamUrl(upstreamRepo, "user", login),
         publishedAt: conv.publishedAt,
         authorLogin: login,
         authorAvatar: avatar,
-        commitSha: /^[0-9a-f]{4,40}$/i.test(target) ? target : "",
+        commitSha: sha,
         body: typeof r.body === "string" ? r.body : "",
         assets: conv.assets,
         shaUrl: conv.shaUrl,
