@@ -28,6 +28,12 @@ function timeAgo(iso: string): string {
   return `${Math.floor(months / 12)} years ago`;
 }
 
+function shortTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return timeAgo(iso);
+  return `${d.getDate()} ${d.toLocaleString("en-US", { month: "short" })} ${`${d.getHours()}`.padStart(2, "0")}:${`${d.getMinutes()}`.padStart(2, "0")}`;
+}
+
 function absoluteTitle(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
@@ -117,6 +123,9 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
               </span>
               <span>
                 {release.prerelease ? <span className="gh-label-warning">Pre-release</span> : null}
+                {release.latest && !release.prerelease ? (
+                  <span className="gh-label-success">Latest</span>
+                ) : null}
               </span>
             </div>
           </div>
@@ -137,10 +146,12 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             <span>
               released this{" "}
               <relative-time
+                className="no-wrap"
+                prefix=""
                 dateTime={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
               >
-                {timeAgo(release.publishedAt)}
+                {shortTime(release.publishedAt)}
               </relative-time>
             </span>
             <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
@@ -282,6 +293,9 @@ export default function GhForkPage({
                 </li>
               ))}
             </ul>
+            <button type="button" className="gh-collapse-btn" aria-expanded="true">
+              Collapse sidebar
+            </button>
           </nav>
         </aside>
 
