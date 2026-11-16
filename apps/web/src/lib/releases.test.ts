@@ -442,8 +442,41 @@ describe("fetchCatalogReleases", () => {
   });
 });
 
+describe("bodyHtml server rendering", () => {
+  test("expands details/summary, links mentions + PR numbers", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v9.9.9",
+        name: "R",
+        html_url: "https://github.com/o/r/releases/tag/v9.9.9",
+        published_at: "2026-11-01T00:00:00Z",
+        prerelease: false,
+        body: "Hi @someone see #123\n\n<details><summary>Full changelog</summary>\n\nBody text\n\n</details>",
+        author: { login: "x", avatar_url: "", html_url: "https://github.com/x" },
+        target_commitish: "abc1234",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("t3code");
+      const html = releases[0]?.bodyHtml ?? "";
+      expect(html.includes("<details")).toBe(false);
+      expect(html.includes("<summary")).toBe(false);
+      expect(html).toContain("Body text");
+      expect(html).toContain('href="https://github.com/someone">@someone</a>');
+      expect(html).toContain('href="https://github.com/pingdotgg/t3code/pull/123">#123</a>');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
+
 describe("getUpstreamMeta counts", () => {
-  test("returns stars/issues/pulls from repo + search APIs", async () => {
+  test("returns compact stars/issues/pulls from repo + search APIs", async () => {
     const { getUpstreamMeta } = await import("./live");
     const origFetch = globalThis.fetch;
     (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
@@ -456,9 +489,10 @@ describe("getUpstreamMeta counts", () => {
       });
     }) as typeof fetch;
     try {
-      const { meta, stars } = await getUpstreamMeta("t3code");
-      expect(meta).toEqual({ stars: 23940, issues: 1200, pulls: 2300 });
-      expect(stars).toBe(23940);
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta.stars).toBe(23940);
+      expect(meta.issues).toBe(1200);
+      expect(meta.pulls).toBe(2300);
     } finally {
       globalThis.fetch = origFetch;
     }

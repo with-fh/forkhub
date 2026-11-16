@@ -1,5 +1,8 @@
 import { OSS_CATALOG } from "@forkhub/api/oss/data";
 
+import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
+
 import {
   channelHistory,
   type ChannelRelease,
@@ -99,6 +102,8 @@ export type UpstreamRelease = {
   authorAvatar: string;
   commitSha: string;
   body: string;
+  /** Server-rendered sanitized HTML of the markdown body (upstream parity). */
+  bodyHtml: string;
   assets: DownloadAsset[];
   shaUrl: string | null;
   prerelease: boolean;
@@ -117,6 +122,97 @@ function upstreamUrl(
 }
 
 const UPSTREAM_LIMIT = 10;
+
+/** Render markdown exactly like upstream: marked (gfm) then sanitize-html allowlist. */
+function renderBodyHtml(md: string, repo: string): string {
+  const raw = marked.parse(md, { breaks: true, gfm: true }) as string;
+  const clean = sanitizeHtml(raw, {
+    allowedTags: [
+      "a",
+      "b",
+      "blockquote",
+      "br",
+      "code",
+      "del",
+      "details",
+      "div",
+      "em",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "hr",
+      "i",
+      "img",
+      "input",
+      "ins",
+      "kbd",
+      "li",
+      "ol",
+      "p",
+      "pre",
+      "s",
+      "span",
+      "strike",
+      "strong",
+      "sub",
+      "summary",
+      "sup",
+      "table",
+      "tbody",
+      "td",
+      "tfoot",
+      "th",
+      "thead",
+      "tr",
+      "tt",
+      "u",
+      "ul",
+    ],
+    allowedAttributes: {
+      a: [
+        "href",
+        "title",
+        "class",
+        "data-hovercard-type",
+        "data-hovercard-url",
+        "data-octo-click",
+        "data-octo-dimensions",
+        "aria-keyshortcuts",
+      ],
+      img: ["src", "alt", "width", "height"],
+      input: ["type", "checked", "disabled"],
+      "*": ["id", "class"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+  });
+  return linkifyUpstream(expandDetails(clean), repo);
+}
+
+/** Drop collapsible wrappers (upstream renders notes expanded; our toggle was a fork delta). */
+function expandDetails(html: string): string {
+  return html
+    .replace(/<details[^>]*>/gi, "")
+    .replace(/<\/details>/gi, "")
+    .replace(/<summary[^>]*>[\s\S]*?<\/summary>/gi, "");
+}
+
+/** Rewrite bare @mentions/#PRs/CHANGELOG paths to upstream URLs (what github's pipeline emits). */
+function linkifyUpstream(html: string, repo: string): string {
+  const [owner, name] = repo.split("/");
+  // already-linked stays; link bare #1234 and @users in text nodes only (cheap: skip inside <a ...>)
+  return html
+    .replace(/(<a\b[^>]*>.*?<\/a>)|@(\w[\w-]*)/g, (m: string, link?: string, user?: string) => {
+      if (link) return link;
+      return `<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/${user}/hovercard" href="https://github.com/${user}">@${user}</a>`;
+    })
+    .replace(/(<a\b[^>]*>.*?<\/a>)|(?<!\w)#(\d{2,})/g, (m: string, link?: string, num?: string) => {
+      if (link || !owner || !name) return m;
+      return `<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-url="https://github.com/${owner}/${name}/issues/${num}" data-hovercard-type="pull_request" data-hovercard-url="/${owner}/${name}/pull/${num}/hovercard" href="https://github.com/${owner}/${name}/pull/${num}">#${num}</a>`;
+    });
+}
 
 async function fetchUpstreamReleases(
   upstreamRepo: string,
@@ -182,6 +278,7 @@ async function fetchUpstreamReleases(
         authorAvatar: avatar,
         commitSha: sha,
         body: typeof r.body === "string" ? r.body : "",
+        bodyHtml: renderBodyHtml(typeof r.body === "string" ? r.body : "", upstreamRepo),
         assets: conv.assets,
         shaUrl: conv.shaUrl,
         prerelease: r.prerelease === true,
@@ -220,6 +317,7 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
       stargazers_count?: number;
       open_issues_count?: number;
     };
+    // pulls count needs search API (extra call, cached same way)
     let pulls: number | null = null;
     try {
       const pqCtrl = new AbortController();
@@ -242,7 +340,7 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
         if (typeof j.total_count === "number") pulls = j.total_count;
       }
     } catch {
-      // pulls stays null; tabs render without that count
+      // pulls stays null -> tab renders without count, like logged-out edge cases
     }
     return {
       stars: typeof d.stargazers_count === "number" ? d.stargazers_count : null,
@@ -259,8 +357,11 @@ export async function getUpstreamMeta(
 ): Promise<{ meta: UpstreamRepoMeta; stars: number | null }> {
   const entry = OSS_CATALOG.find((e) => e.slug === slug);
   if (!entry) return { meta: { stars: null, issues: null, pulls: null }, stars: null };
-  const meta = await fetchUpstreamRepoMeta(entry.upstreamRepo);
-  return { meta, stars: meta.stars ?? entry.stars };
+  const [meta, starsMap] = await Promise.all([
+    fetchUpstreamRepoMeta(entry.upstreamRepo),
+    getStarsMap(),
+  ]);
+  return { meta, stars: starsMap[slug] ?? entry.stars };
 }
 
 export async function getUpstreamReleases(
