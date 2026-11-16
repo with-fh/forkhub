@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOss } from "@forkhub/api/oss/data";
 
@@ -28,7 +29,19 @@ export function generateStaticParams() {
  * builds). deepseek-harness keeps its bespoke deepseek.com chromeless
  * clone (/download/deepseek-harness route) since upstream has no
  * releases page — see apps/web/src/app/download/deepseek-harness/.
+ *
+ * Title matches the upstream releases page (`Releases · owner/repo · GitHub`).
  */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const e = getOss(slug);
+  if (!e || slug === "deepseek-harness") return {};
+  return { title: `Releases · ${e.upstreamRepo} · GitHub` };
+}
 export default async function DownloadSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   // deepseek-harness has its own bespoke chromeless route; [slug] serves the gh forks.
