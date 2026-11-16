@@ -79,14 +79,34 @@ const NAT_WIN_SPLIT: GhRelease = {
 };
 
 // Shapes copied from the live with-fh/.forkhub dsh releases API (Nov 2026).
-const DSH_MAC_SPLIT: GhRelease = {
-  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14",
-  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14",
+// Unified updater tags (v<base>.<owner>.<date>.<n>) carry no repo slug;
+// production matches them by release name ("DeepSeek Harness ForkHub ...").
+const DSH_UNIFIED: GhRelease = {
+  tag_name: "v0.2.2-rc.3.with-fh.20261116.1",
+  name: "DeepSeek Harness ForkHub v0.2.2-rc.3.with-fh.20261116.1",
   html_url: "https://github.com/r/5",
-  published_at: "2026-11-10T04:44:47Z",
+  published_at: "2026-11-16T04:00:34Z",
+  assets: [
+    asset("fh-linux.yml"),
+    asset("fh.yml"),
+    asset("latest-linux.yml"),
+    asset("latest.yml"),
+    asset(
+      "deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-linux-x86_64-unsigned.AppImage",
+      375_212_022,
+    ),
+    asset("deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-win-x64-unsigned.exe", 308_000_000),
+  ],
+};
+
+const DSH_MAC_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.3-fh2",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.3-fh2",
+  html_url: "https://github.com/r/6",
+  published_at: "2026-11-13T04:44:47Z",
   assets: [
     asset("BUILD_LOG.md"),
-    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-mac-arm64-unsigned.dmg", 270_000_000),
+    asset("deepseek-harness-0.2.2-rc.3.with-fh.20261113.1-mac-arm64-unsigned.dmg", 270_000_000),
     asset("SHA256SUMS"),
     asset("SHA256SUMS-mac"),
   ],
@@ -95,14 +115,11 @@ const DSH_MAC_SPLIT: GhRelease = {
 const DSH_WIN_SPLIT: GhRelease = {
   tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
   name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
-  html_url: "https://github.com/r/6",
-  published_at: "2026-11-10T04:22:00Z",
+  html_url: "https://github.com/r/7",
+  published_at: "2026-11-10T04:44:47Z",
   assets: [
     asset("BUILD_LOG.md"),
-    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe", 316_500_000),
-    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe.blockmap"),
-    asset("fh.yml"),
-    asset("latest.yml"),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe", 308_000_000),
     asset("SHA256SUMS"),
     asset("SHA256SUMS-win"),
   ],
@@ -209,6 +226,28 @@ describe("channelHistory + mergePlatformBuilds", () => {
     );
   });
 
+  test("dsh unified release maps AppImage + exe + mac dmg fallback", () => {
+    // Unified tags (v<base>.<owner>.<date>.<n>) carry no repo slug — the
+    // ownerOf matcher keys on release names for dsh, so the fixture names
+    // mirror production ("DeepSeek Harness ForkHub ..." for unified).
+    const allDsh = [DSH_UNIFIED, DSH_MAC_SPLIT];
+    const { stable } = channelHistory(allDsh, (r) => /deepseek/i.test(r.name), 10);
+    expect(stable.map((r) => r.version)).toEqual([DSH_UNIFIED.tag_name, DSH_MAC_SPLIT.tag_name]);
+    const [unified, macSplit] = stable;
+    expect(unified?.assets.map((a) => a.format).sort()).toEqual([".exe", "AppImage"]);
+    expect(macSplit?.assets.map((a) => a.format)).toEqual([".dmg"]);
+    const builds = mergePlatformBuilds(stable);
+    const keys = builds.map((b) => `${b.platform}/${b.arch}/${b.format}`);
+    expect(keys).toContain("linux/x64/AppImage");
+    expect(keys).toContain("windows/x64/.exe");
+    expect(keys).toContain("mac/arm64/.dmg");
+    // Linux AppImage comes from the newest unified release.
+    expect(builds.find((b) => b.format === "AppImage")?.fromVersion).toBe(DSH_UNIFIED.tag_name);
+    // mac dmg falls back to the older per-platform split.
+    expect(builds.find((b) => b.format === ".dmg")?.fromVersion).toBe(DSH_MAC_SPLIT.tag_name);
+    expect(pickLatest(stable)?.version).toBe(DSH_UNIFIED.tag_name);
+  });
+
   test("newestShaUrl walks newest-first", () => {
     const { stable } = channelHistory(all, nativelyOnly, 10);
     expect(newestShaUrl(stable)).toBe("https://github.com/dl/SHA256SUMS-mac");
@@ -223,7 +262,7 @@ describe("channelHistory + mergePlatformBuilds", () => {
 
   test("dsh splits map dmg + unsigned exe, merge composes mac + windows", () => {
     const dshAll = [DSH_MAC_SPLIT, DSH_WIN_SPLIT];
-    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.tag_name);
+    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.name);
     const { stable, nightly } = channelHistory(dshAll, dshOnly, 10);
     expect(nightly).toEqual([]);
     expect(stable).toHaveLength(2);
@@ -240,7 +279,12 @@ describe("channelHistory + mergePlatformBuilds", () => {
 });
 
 describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
-  const rel = (version: string, publishedAt: string, name = version, body: string | null = null): ChannelRelease => ({
+  const rel = (
+    version: string,
+    publishedAt: string,
+    name = version,
+    body: string | null = null,
+  ): ChannelRelease => ({
     version,
     name,
     publishedAt,
@@ -252,7 +296,10 @@ describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
 
   test("detects PR try-builds by notes", () => {
     expect(
-      isTryBuild("Natively PR #661 (full) @ v2.9.2", "Try-build for upstream PR #661 (full flavor). Not for general use."),
+      isTryBuild(
+        "Natively PR #661 (full) @ v2.9.2",
+        "Try-build for upstream PR #661 (full flavor). Not for general use.",
+      ),
     ).toBe(true);
     expect(isTryBuild("v2.9.2-fh.with-fh.6-pr661", "PR try-build")).toBe(true);
     expect(isTryBuild("Natively ForkHub v2.9.2-fh.with-fh.5", "Stable release")).toBe(false);
@@ -261,16 +308,26 @@ describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
   test("unified releases are v<up>-fh.<owner>.<n>", () => {
     expect(isUnifiedRelease("v2.9.2-fh.with-fh.5")).toBe(true);
     expect(isUnifiedRelease("v2.9.2-fh.imbios.1")).toBe(true);
-    expect(isUnifiedRelease("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh24")).toBe(false);
+    expect(
+      isUnifiedRelease("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh24"),
+    ).toBe(false);
     expect(isUnifiedRelease("pingdotgg-t3code--v0.1.0-fh1")).toBe(false);
     expect(isUnifiedRelease("deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14")).toBe(false);
   });
 
   test("Latest prefers canonical unified over newer splits and try-builds", () => {
     const history = [
-      rel("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26", "2026-10-22T20:39:10Z"),
+      rel(
+        "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26",
+        "2026-10-22T20:39:10Z",
+      ),
       rel("v2.9.2-fh.with-fh.5", "2026-10-21T20:42:23Z", "Natively ForkHub v2.9.2-fh.with-fh.5"),
-      rel("v2.9.2-fh.imbios.1", "2026-10-17T10:49:49Z", "Natively PR #661 (full) @ v2.9.2", "Try-build. Not for general use."),
+      rel(
+        "v2.9.2-fh.imbios.1",
+        "2026-10-17T10:49:49Z",
+        "Natively PR #661 (full) @ v2.9.2",
+        "Try-build. Not for general use.",
+      ),
     ];
     // Newest raw tag is the fh26 split; Latest must be the unified with-fh.5.
     expect(pickLatest(history)?.version).toBe("v2.9.2-fh.with-fh.5");
