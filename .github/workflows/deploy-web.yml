@@ -109,7 +109,9 @@ jobs:
             sleep 20
           done
           if [ "$code" != "307" ]; then echo "::error::/latest returned $code, want 307"; exit 1; fi
-          for slug in natively t3code deepseek-harness; do
+          # deepseek-harness is a pixel-faithful upstream fork (no version
+          # picker): assert on its unique ForkHub-track markers instead.
+          for slug in natively t3code; do
             tries=0
             until curl -s -A "$UA" --max-time 60 "$DEV/download/$slug" | grep -q 'aria-label="Version"'; do
               tries=$((tries + 1))
@@ -117,9 +119,19 @@ jobs:
               sleep 20
             done
           done
+          tries=0
+          until curl -s -A "$UA" --max-time 60 "$DEV/download/deepseek-harness" | grep -q 'Download for macOS'; do
+            tries=$((tries + 1))
+            if [ "$tries" -ge 6 ]; then echo "::error::upstream-clone content missing on deepseek-harness page"; exit 1; fi
+            sleep 20
+          done
+          # Latest-redirect parity for the fork page: linux AppImage resolves.
+          code=$(curl -s -A "$UA" -o /dev/null -w '%{http_code}' --max-time 60 "$DEV/download/deepseek-harness/latest?channel=stable&platform=linux")
+          if [ "$code" != "307" ]; then echo "::error::dsh /latest?platform=linux returned $code, want 307"; exit 1; fi
           # Custom domain: route-alive (challenge page counts — it proves
           # zone routing; browsers pass it, verified manually with screenshots).
-          for slug in natively t3code deepseek-harness; do
+          # deepseek-harness asserts on upstream-clone markers (no version picker there).
+          for slug in natively t3code; do
             body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/$slug")
             if echo "$body" | grep -q 'aria-label="Version"'; then
               echo "$slug: live with new UI"
@@ -129,4 +141,12 @@ jobs:
               echo "::error::$slug page unexpected content"; exit 1;
             fi
           done
+          body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/deepseek-harness")
+          if echo "$body" | grep -q 'Download for macOS'; then
+            echo "deepseek-harness: live with upstream clone"
+          elif echo "$body" | grep -q 'Just a moment'; then
+            echo "deepseek-harness: route alive (edge challenge for runner egress, browsers pass)"
+          else
+            echo "::error::deepseek-harness page unexpected content"; exit 1;
+          fi
           echo "Production smoke test passed."
