@@ -143,14 +143,13 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             </a>
             <span>
               released this{" "}
-              <relative-time
+              <time
                 className="no-wrap"
-                prefix=""
                 dateTime={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
               >
                 {shortTime(release.publishedAt)}
-              </relative-time>
+              </time>
             </span>
             <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
               {release.tag}
