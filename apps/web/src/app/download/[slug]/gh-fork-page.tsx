@@ -90,6 +90,25 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
       <div className="gh-box">
         <div className="gh-box-body">
           <div className="gh-release-head">
+            <div className="gh-compare">
+              <button
+                type="button"
+                className="gh-compare-btn"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+              >
+                <span>Compare</span>
+                <svg
+                  aria-hidden="true"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  width="16"
+                  fill="currentColor"
+                >
+                  <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 4.604 7H4.604a.25.25 0 0 1-.177-.427Z" />
+                </svg>
+              </button>
+            </div>
             <div className="gh-release-titlewrap">
               <span className="gh-release-title">
                 <a href={release.tagUrl} className="gh-link-primary">
@@ -144,7 +163,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 className="gh-link-muted gh-expand-btn"
                 onClick={() => setExpanded((v) => !v)}
               >
-                {expanded ? "Show less" : `Show ${paragraphs.length - 3} more`}
+                {expanded ? "Show less" : `Plus ${paragraphs.length - 3} more bug fixes.`}
               </button>
             ) : null}
           </div>
@@ -254,11 +273,11 @@ export default function GhForkPage({
             </a>
             <a href={`${upstreamReleasesUrl.replace(/\/releases\/?$/, "/tags")}`}>Tags</a>
             <h2>On this page</h2>
-            <ul>
-              {filtered.slice(0, 10).map((r) => (
+            <ul className="gh-anchor-list">
+              {filtered.map((r) => (
                 <li key={r.tag}>
                   <a href={`#release-${r.tag}`} title={r.name}>
-                    {r.name.length > 52 ? `${r.name.slice(0, 52)}…` : r.name}
+                    {r.name}
                   </a>
                 </li>
               ))}

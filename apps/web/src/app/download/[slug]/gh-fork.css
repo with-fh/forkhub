@@ -235,6 +235,28 @@ html[data-gh-fork="true"] body {
   gap: 12px;
   flex-wrap: wrap;
 }
+.gh-compare {
+  order: 2;
+  flex: none;
+  margin-left: auto;
+}
+.gh-compare-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gh-fg-default);
+  cursor: default;
+  white-space: nowrap;
+}
+.gh-compare-btn svg {
+  fill: currentColor;
+}
 .gh-release-title {
   font-size: 32px;
   line-height: 40px;
