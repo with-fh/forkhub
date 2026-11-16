@@ -96,6 +96,7 @@ export type UpstreamRelease = {
   /** Tag URL (tree link), commit URL, author profile URL — all upstream. */
   tagUrl: string;
   commitUrl: string;
+  compareUrl: string | null;
   authorUrl: string;
   publishedAt: string;
   authorLogin: string;
@@ -272,6 +273,7 @@ async function fetchUpstreamReleases(
         url: conv.releaseUrl,
         tagUrl: upstreamUrl(upstreamRepo, "tree", tagName),
         commitUrl: sha ? upstreamUrl(upstreamRepo, "commit", sha) : conv.releaseUrl,
+        compareUrl: null, // filled after sort (needs previous tag)
         authorUrl: authorHtml ? authorHtml : upstreamUrl(upstreamRepo, "user", login),
         publishedAt: conv.publishedAt,
         authorLogin: login,
@@ -284,6 +286,14 @@ async function fetchUpstreamReleases(
         prerelease: r.prerelease === true,
         latest: false,
       });
+    }
+    const sorted = [...releases].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+    for (let i = 0; i < sorted.length; i++) {
+      const cur = sorted[i]!;
+      const prev = sorted[i + 1];
+      if (prev) {
+        cur.compareUrl = `https://github.com/${upstreamRepo}/compare/${prev.tag}...${cur.tag}`;
+      }
     }
     if (releases.length > 0) releases[0]!.latest = true;
     return { releases, apiOk: true };

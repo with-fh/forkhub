@@ -364,3 +364,35 @@ html[data-gh-fork="true"] body {
 .gh-fork .markdown-body a:hover {
   text-decoration: underline;
 }
+
+/* Contributors footer (matches upstream Box-footer avatar stack) */
+.gh-contributors {
+  border-top: 1px solid var(--gh-border-muted);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+.gh-contributors h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.gh-contributors ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.gh-contributors img {
+  border-radius: 50%;
+  display: block;
+}
+/* Compare renders as a link styled like upstream's button */
+a.gh-compare-btn {
+  text-decoration: none;
+  color: inherit;
+}
+a.gh-compare-btn:hover {
+  text-decoration: none;
+}
