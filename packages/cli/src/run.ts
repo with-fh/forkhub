@@ -247,7 +247,11 @@ export function resolveCacheDir(owner: string, pkg: string, version: string): st
 
 export async function fetchRegistry(owner: string): Promise<Record<string, RegistryPackage>> {
   const url = `https://raw.githubusercontent.com/${owner}/.forkhub/main/registry.json`;
-  const response = await fetchWithRetry(url);
+  // Identity encoding: raw.githubusercontent.com can serve a stale
+  // compressed (br/zstd) variant to Bun's default Accept-Encoding while
+  // identity responses are fresh. Registry reads must be current —
+  // a stale registry resolves assets that no longer exist.
+  const response = await fetchWithRetry(url, { headers: { "Accept-Encoding": "identity" } });
   if (response.status === 404) {
     throw new Error(`${owner}/.forkhub has no registry.json on main yet — nothing to run.`);
   }

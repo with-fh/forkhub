@@ -63,20 +63,30 @@ const WITH_FH_RELEASES: Release[] = [
     })),
   },
   {
-    // FORECAST (not yet published): first with-fh dsh unified-updater
-    // release. Upstream cuts dsh-v0.2.2-rc.1 (prerelease, zero assets);
-    // the fork channel publishes v0.2.2-fh.with-fh.1 with per-OS installers
-    // + both updater manifests per platform (same layout as Natively).
-    tag_name: "v0.2.2-fh.with-fh.1",
+    // Live shape (Nov 2026): unified updater releases
+    // v<base>.<owner>.<date>.<n> carry all platforms' installers +
+    // per-platform updater manifests (see with-fh/.forkhub #27/#28).
+    tag_name: "v0.2.2-rc.3.with-fh.20261116.1",
     draft: false,
     assets: [
-      "fh-mac.yml",
+      "fh-linux.yml",
       "fh.yml",
-      "latest-mac.yml",
+      "latest-linux.yml",
       "latest.yml",
-      "dsh-0.2.2-fh.with-fh.1-arm64.dmg",
-      "dsh-0.2.2-fh.with-fh.1-x64.dmg",
-      "dsh-0.2.2-fh.with-fh.1.exe",
+      "deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-linux-x86_64-unsigned.AppImage",
+      "deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-win-x64-unsigned.exe",
+    ].map((name) => ({ name, browser_download_url: url(name) })),
+  },
+  {
+    // Previous unified release (mac leg finished before linux existed):
+    // proves per-platform fallback — the arm64 dmg resolves from history
+    // while the newest release carries win+linux.
+    tag_name: "v0.2.2-rc.3.with-fh.20261113.1",
+    draft: false,
+    assets: [
+      "fh.yml",
+      "latest.yml",
+      "deepseek-harness-0.2.2-rc.3.with-fh.20261113.1-mac-arm64-unsigned.dmg",
     ].map((name) => ({ name, browser_download_url: url(name) })),
   },
 ];
@@ -139,24 +149,22 @@ async function loadEntries(): Promise<Entry[]> {
           pkgs: ["natively-linux", "dsh-linux"],
         },
       ]
-    : (
-        (["with-fh-natively", "with-fh-dsh", "imbios-natively-linux", "imbios-dsh-linux"] as const).map(
-          (name) => ({
-            file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
-            owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
-            pkgs: [
-              name === "with-fh-natively"
-                ? "natively"
-                : name === "with-fh-dsh"
-                  ? "dsh"
-                  : name === "imbios-natively-linux"
-                    ? "natively-linux"
-                    : "dsh-linux",
-            ],
-            single: true,
-          }),
-        )
-      ) as Array<{ file: string; owner: string; pkgs: string[] }>;
+    : ((
+        ["with-fh-natively", "with-fh-dsh", "imbios-natively-linux", "imbios-dsh-linux"] as const
+      ).map((name) => ({
+        file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
+        owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
+        pkgs: [
+          name === "with-fh-natively"
+            ? "natively"
+            : name === "with-fh-dsh"
+              ? "dsh"
+              : name === "imbios-natively-linux"
+                ? "natively-linux"
+                : "dsh-linux",
+        ],
+        single: true,
+      })) as Array<{ file: string; owner: string; pkgs: string[] }>);
   const out: Entry[] = [];
   for (const { file, owner, pkgs } of files) {
     if (!existsSync(file)) {
