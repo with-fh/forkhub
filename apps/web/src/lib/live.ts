@@ -1,6 +1,11 @@
 import { OSS_CATALOG } from "@forkhub/api/oss/data";
 
-import { channelHistory, type ChannelRelease, type GhRelease } from "./releases";
+import {
+  channelHistory,
+  type ChannelRelease,
+  type DownloadAsset,
+  type GhRelease,
+} from "./releases";
 
 const CATALOG_RELEASES_URL = "https://api.github.com/repos/with-fh/.forkhub/releases?per_page=100";
 
@@ -80,6 +85,102 @@ function ownerOf(r: GhRelease): "t3" | "natively" | "dsh" | "opendia" | null {
 type GhApiAsset = { name: string; browser_download_url: string; size?: number };
 
 type GhApiRelease = Omit<GhRelease, "assets"> & { assets: GhApiAsset[] };
+
+export type UpstreamRelease = {
+  tag: string;
+  name: string;
+  url: string;
+  publishedAt: string;
+  authorLogin: string;
+  authorAvatar: string;
+  commitSha: string;
+  body: string;
+  assets: DownloadAsset[];
+  shaUrl: string | null;
+  prerelease: boolean;
+  latest: boolean;
+};
+
+const UPSTREAM_LIMIT = 10;
+
+async function fetchUpstreamReleases(
+  upstreamRepo: string,
+): Promise<{ releases: UpstreamRelease[]; apiOk: boolean }> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12_000);
+    let res: Response;
+    try {
+      res = await fetch(
+        `https://api.github.com/repos/${upstreamRepo}/releases?per_page=${UPSTREAM_LIMIT}`,
+        {
+          next: { revalidate: 3600 },
+          headers: githubHeaders(),
+          signal: ctrl.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) return { releases: [], apiOk: false };
+    const batch = (await res.json()) as Array<{
+      tag_name?: string;
+      name?: string | null;
+      html_url?: string;
+      published_at?: string;
+      prerelease?: boolean;
+      body?: string | null;
+      author?: { login?: string; avatar_url?: string };
+      target_commitish?: string;
+      assets?: GhApiAsset[];
+    }>;
+    const { toChannelRelease } = await import("./releases");
+    const releases: UpstreamRelease[] = [];
+    for (const r of batch) {
+      if (typeof r.tag_name !== "string") continue;
+      const conv = toChannelRelease({
+        tag_name: r.tag_name,
+        name: typeof r.name === "string" && r.name ? r.name : r.tag_name,
+        html_url: typeof r.html_url === "string" ? r.html_url : "",
+        published_at: typeof r.published_at === "string" ? r.published_at : "",
+        assets: Array.isArray(r.assets) ? r.assets : [],
+        body: typeof r.body === "string" ? r.body : null,
+      });
+      const login =
+        r.author && typeof r.author.login === "string"
+          ? r.author.login
+          : (upstreamRepo.split("/")[0] ?? "");
+      const avatar = r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
+      const target = typeof r.target_commitish === "string" ? r.target_commitish : "";
+      releases.push({
+        tag: conv.version,
+        name: conv.name,
+        url: conv.releaseUrl,
+        publishedAt: conv.publishedAt,
+        authorLogin: login,
+        authorAvatar: avatar,
+        commitSha: /^[0-9a-f]{4,40}$/i.test(target) ? target : "",
+        body: typeof r.body === "string" ? r.body : "",
+        assets: conv.assets,
+        shaUrl: conv.shaUrl,
+        prerelease: r.prerelease === true,
+        latest: false,
+      });
+    }
+    if (releases.length > 0) releases[0]!.latest = true;
+    return { releases, apiOk: true };
+  } catch {
+    return { releases: [], apiOk: false };
+  }
+}
+
+export async function getUpstreamReleases(
+  slug: string,
+): Promise<{ releases: UpstreamRelease[]; apiOk: boolean }> {
+  const entry = OSS_CATALOG.find((e) => e.slug === slug);
+  if (!entry) return { releases: [], apiOk: false };
+  return fetchUpstreamReleases(entry.upstreamRepo);
+}
 
 type PageFetcher = (
   url: string,
