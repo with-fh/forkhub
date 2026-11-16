@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   formatBytes,
@@ -34,6 +34,52 @@ const KIND_LABEL: Record<PlatformBuild["kind"], string> = {
 function shortDate(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : d.toISOString().slice(0, 10);
+}
+
+/**
+ * Upstream-parity release notes: same title + body the GitHub releases page
+ * shows, rendered inline under the version line. ForkHub-track releases
+ * carry a "ForkHub track" badge; stock-upstream wording is untouched.
+ */
+function ReleaseNotesBody({ name, version }: { name: string; version: string }) {
+  const [body, setBody] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    setBody(null);
+    fetch(`/api/release-notes?version=${encodeURIComponent(version)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (live && j && typeof j.body === "string") setBody(j.body);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [version]);
+  return (
+    <div style={{ marginTop: 16 }}>
+      <p style={{ fontSize: 15, fontWeight: 600 }}>{name}</p>
+      <span className="fh-badge fh-badge-accent" style={{ marginTop: 8, display: "inline-block" }}>
+        ForkHub track
+      </span>
+      {body != null && body !== "" ? (
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            color: "var(--t3-fg-muted)",
+            marginTop: 12,
+            lineHeight: 1.6,
+          }}
+        >
+          {body.slice(0, 4000)}
+          {body.length > 4000 ? "…" : ""}
+        </pre>
+      ) : null}
+    </div>
+  );
 }
 
 function CopyButton({ text, label }: { text: string; label: string }) {
@@ -156,7 +202,8 @@ export default function DownloadPanel({
     return mergePlatformBuilds(releases);
   }, [selected, releases]);
 
-  const grouped = useMemo(() => {    const out = new Map<Platform, PlatformBuild[]>();
+  const grouped = useMemo(() => {
+    const out = new Map<Platform, PlatformBuild[]>();
     for (const b of builds) {
       const list = out.get(b.platform) ?? [];
       list.push(b);
@@ -284,14 +331,13 @@ export default function DownloadPanel({
         </p>
       )}
 
+      {shownRelease && <ReleaseNotesBody name={shownRelease.name} version={shownRelease.version} />}
+
       {shownRelease?.tryBuild && (
-        <div
-          className="fh-tile"
-          style={{ borderStyle: "dashed", padding: 16, marginTop: 12 }}
-        >
+        <div className="fh-tile" style={{ borderStyle: "dashed", padding: 16, marginTop: 12 }}>
           <p style={{ fontSize: 13, color: "var(--t3-fg-muted)", lineHeight: 1.6 }}>
-            ⚠ This is a PR try-build ({shownRelease.version}), not a general release —
-            pick Latest above unless you know you need exactly this one.
+            ⚠ This is a PR try-build ({shownRelease.version}), not a general release — pick Latest
+            above unless you know you need exactly this one.
           </p>
         </div>
       )}
