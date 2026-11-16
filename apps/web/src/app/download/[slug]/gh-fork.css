@@ -373,3 +373,8 @@ html[data-gh-fork="true"] body {
   margin-top: 12px;
   cursor: default;
 }
+
+.gh-tab-count {
+  color: var(--gh-fg-muted);
+  font-weight: 400;
+}

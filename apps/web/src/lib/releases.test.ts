@@ -442,6 +442,42 @@ describe("fetchCatalogReleases", () => {
   });
 });
 
+describe("getUpstreamMeta counts", () => {
+  test("returns stars/issues/pulls from repo + search APIs", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
+      const u = String(url);
+      if (u.includes("/search/issues")) {
+        return new Response(JSON.stringify({ total_count: 2300 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ stargazers_count: 23940, open_issues_count: 1200 }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+    try {
+      const { meta, stars } = await getUpstreamMeta("t3code");
+      expect(meta).toEqual({ stars: 23940, issues: 1200, pulls: 2300 });
+      expect(stars).toBe(23940);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("nulls on API failure", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response("nope", { status: 403 })) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta).toEqual({ stars: null, issues: null, pulls: null });
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
+
 describe("getUpstreamReleases URL wiring", () => {
   test("tag/commit/author URLs point at upstream repo paths", async () => {
     const { getUpstreamReleases } = await import("./live");

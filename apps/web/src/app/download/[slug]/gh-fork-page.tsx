@@ -208,11 +208,15 @@ export default function GhForkPage({
   repo,
   upstreamReleasesUrl,
   releases,
+  issueCount,
+  prCount,
 }: {
   owner: string;
   repo: string;
   upstreamReleasesUrl: string;
   releases: UpstreamRelease[];
+  issueCount: string | null;
+  prCount: string | null;
 }) {
   const [query, setQuery] = useState("");
   const filtered = useMemo(() => {
@@ -260,17 +264,25 @@ export default function GhForkPage({
           </a>
         </nav>
         <nav className="gh-tabs" aria-label="Repository">
-          {[
-            "Code",
-            "Issues",
-            "Pull requests",
-            "Discussions",
-            "Actions",
-            "Security and quality",
-            "Insights",
-          ].map((t) => (
-            <a key={t} href={`https://github.com/${owner}/${repo}`} className="gh-tab">
-              {t}
+          {(
+            [
+              { label: "Code", count: null },
+              { label: "Issues", count: issueCount },
+              { label: "Pull requests", count: prCount },
+              { label: "Discussions", count: null },
+              { label: "Actions", count: null },
+              { label: "Security and quality", count: null },
+              { label: "Insights", count: null },
+            ] as { label: string; count: string | null }[]
+          ).map((t) => (
+            <a key={t.label} href={`https://github.com/${owner}/${repo}`} className="gh-tab">
+              {t.label}
+              {t.count != null ? (
+                <>
+                  {" "}
+                  <span className="gh-tab-count">{t.count}</span>
+                </>
+              ) : null}
             </a>
           ))}
         </nav>
