@@ -4,8 +4,8 @@
    Label, Button--secondary, text-bold, color-fg-*), so the fork reads
    identical even before githubassets CSS loads. */
 
-html[data-gh-fork="true"] .fh-chrome > :not(main),
-html[data-gh-fork="true"] .fh-chrome > main > :not(.gh-fork-scope) {
+html[data-fh-chrome="site"]:has(.gh-fork-scope) .fh-chrome > :not(main),
+html[data-fh-chrome="site"]:has(.gh-fork-scope) .fh-chrome > main > :not(.gh-fork-scope) {
   display: none !important;
 }
 
