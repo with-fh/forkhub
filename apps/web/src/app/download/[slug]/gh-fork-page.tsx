@@ -28,6 +28,19 @@ function timeAgo(iso: string): string {
   return `${Math.floor(months / 12)} years ago`;
 }
 
+function absoluteTitle(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 function AssetRow({ asset }: { asset: DownloadAsset }) {
   const size = formatBytes(asset.size);
   return (
@@ -79,7 +92,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
           <div className="gh-release-head">
             <div className="gh-release-titlewrap">
               <span className="gh-release-title">
-                <a href={release.url} className="gh-link-primary">
+                <a href={release.tagUrl} className="gh-link-primary">
                   {release.name}
                 </a>
               </span>
@@ -99,20 +112,23 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 style={{ borderRadius: "50%" }}
               />
             ) : null}
-            <a href={release.url} className="gh-link-muted">
+            <a href={release.authorUrl} className="gh-link-muted gh-author-link">
               {release.authorLogin}
             </a>
-            <span>released this {timeAgo(release.publishedAt)}</span>
-            <a href={release.url} className="gh-link-muted gh-tag-link">
+            <span>
+              released this{" "}
+              <relative-time
+                dateTime={release.publishedAt}
+                title={absoluteTitle(release.publishedAt)}
+              >
+                {timeAgo(release.publishedAt)}
+              </relative-time>
+            </span>
+            <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
               {release.tag}
             </a>
             {release.commitSha ? (
-              <a href={release.url} className="gh-link-muted">
-                {release.commitSha.slice(0, 7)}
-              </a>
-            ) : null}
-            {release.commitSha ? (
-              <a href={release.url} className="gh-link-muted">
+              <a href={release.commitUrl} className="gh-link-muted">
                 {release.commitSha.slice(0, 7)}
               </a>
             ) : null}

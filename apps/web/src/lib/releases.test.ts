@@ -441,3 +441,73 @@ describe("fetchCatalogReleases", () => {
     }
   });
 });
+
+describe("getUpstreamReleases URL wiring", () => {
+  test("tag/commit/author URLs point at upstream repo paths", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v1.2.3",
+        name: "Release v1.2.3",
+        html_url: "https://github.com/o/r/releases/tag/v1.2.3",
+        published_at: "2026-11-01T00:00:00Z",
+        prerelease: false,
+        body: "notes",
+        author: {
+          login: "someone",
+          avatar_url: "https://avatars/x",
+          html_url: "https://github.com/someone",
+        },
+        target_commitish: "abc123def456",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("t3code");
+      expect(releases).toHaveLength(1);
+      // upstream repo for t3code per catalog data
+      expect(releases[0]?.tagUrl).toBe("https://github.com/pingdotgg/t3code/tree/v1.2.3");
+      expect(releases[0]?.commitUrl).toBe(
+        "https://github.com/pingdotgg/t3code/commit/abc123def456",
+      );
+      expect(releases[0]?.authorUrl).toBe("https://github.com/someone");
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("bot authors keep their apps URL", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v9.9.9",
+        name: "Bot release",
+        html_url: "https://github.com/o/r/releases/tag/v9.9.9",
+        published_at: "2026-11-02T00:00:00Z",
+        prerelease: false,
+        body: "",
+        author: {
+          login: "github-actions[bot]",
+          avatar_url: "https://avatars/x",
+          html_url: "https://github.com/apps/github-actions",
+        },
+        target_commitish: "main",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("natively");
+      expect(releases[0]?.authorUrl).toBe("https://github.com/apps/github-actions");
+      // non-sha target_commitish falls back to release URL
+      expect(releases[0]?.commitUrl).toBe(releases[0]?.url);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
