@@ -357,11 +357,10 @@ export async function getUpstreamMeta(
 ): Promise<{ meta: UpstreamRepoMeta; stars: number | null }> {
   const entry = OSS_CATALOG.find((e) => e.slug === slug);
   if (!entry) return { meta: { stars: null, issues: null, pulls: null }, stars: null };
-  const [meta, starsMap] = await Promise.all([
-    fetchUpstreamRepoMeta(entry.upstreamRepo),
-    getStarsMap(),
-  ]);
-  return { meta, stars: starsMap[slug] ?? entry.stars };
+  // Single repo fetch (no getStarsMap fan-out: 4 repos x 12s timeouts
+  // reliably exceed Workers CPU/fetch budgets and crash SSR).
+  const meta = await fetchUpstreamRepoMeta(entry.upstreamRepo);
+  return { meta, stars: meta.stars ?? entry.stars };
 }
 
 export async function getUpstreamReleases(
