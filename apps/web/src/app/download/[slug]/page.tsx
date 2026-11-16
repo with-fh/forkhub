@@ -40,7 +40,6 @@ export default async function DownloadSlugPage({ params }: { params: Promise<{ s
         owner={e.upstreamRepo.split("/")[0] ?? ""}
         repo={e.upstreamRepo.split("/")[1] ?? e.slug}
         upstreamReleasesUrl={`${e.upstreamUrl}/releases`}
-        catalogReleasesUrl="https://github.com/with-fh/.forkhub/releases"
         releases={upstream.releases}
       />
     </GhForkChrome>
