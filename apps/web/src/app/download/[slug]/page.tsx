@@ -9,7 +9,6 @@ function compact(n: number | null): string | null {
   const v = n / 1000;
   return `${v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}k`;
 }
-import GhForkChrome from "./gh-fork-chrome";
 import GhForkPage from "./gh-fork-page";
 import "./gh-fork.css";
 
@@ -43,15 +42,13 @@ export default async function DownloadSlugPage({ params }: { params: Promise<{ s
   ]);
 
   return (
-    <GhForkChrome>
-      <GhForkPage
-        owner={e.upstreamRepo.split("/")[0] ?? ""}
-        repo={e.upstreamRepo.split("/")[1] ?? e.slug}
-        upstreamReleasesUrl={`${e.upstreamUrl}/releases`}
-        releases={upstream.releases}
-        issueCount={compact(meta.issues)}
-        prCount={compact(meta.pulls)}
-      />
-    </GhForkChrome>
+    <GhForkPage
+      owner={e.upstreamRepo.split("/")[0] ?? ""}
+      repo={e.upstreamRepo.split("/")[1] ?? e.slug}
+      upstreamReleasesUrl={`${e.upstreamUrl}/releases`}
+      releases={upstream.releases}
+      issueCount={compact(meta.issues)}
+      prCount={compact(meta.pulls)}
+    />
   );
 }
