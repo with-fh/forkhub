@@ -149,9 +149,6 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
               </span>
               <span>
                 {release.prerelease ? <span className="gh-label-warning">Pre-release</span> : null}
-                {release.latest && !release.prerelease ? (
-                  <span className="gh-label-success">Latest</span>
-                ) : null}
               </span>
             </div>
           </div>
@@ -171,20 +168,36 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             </a>
             <span>
               released this{" "}
-              <time
+              <span
                 className="no-wrap"
-                dateTime={release.publishedAt}
+                data-relative-time={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
               >
                 {shortTime(release.publishedAt)}
-              </time>
+              </span>
             </span>
             <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
-              {release.tag}
+              <svg
+                aria-label="Tag"
+                role="img"
+                height={16}
+                viewBox="0 0 16 16"
+                version="1.1"
+                width={16}
+                fill="currentColor"
+                style={{ verticalAlign: "text-bottom" }}
+              >
+                <path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" />
+              </svg>
+              <span style={{ marginLeft: 4 }}>{release.tag}</span>
             </a>
             {release.commitSha ? (
-              <a href={release.commitUrl} className="gh-link-muted">
-                {release.commitSha.slice(0, 7)}
+              <a
+                href={release.commitUrl}
+                className="gh-link-muted gh-commit-link"
+                data-hovercard-type="commit"
+              >
+                <span className="gh-commit-sha">{release.commitSha.slice(0, 7)}</span>
               </a>
             ) : null}
           </div>
