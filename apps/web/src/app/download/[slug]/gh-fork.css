@@ -235,6 +235,10 @@ html[data-gh-fork="true"] body {
   gap: 12px;
   flex-wrap: wrap;
 }
+.gh-tab-count {
+  color: var(--gh-fg-muted);
+  font-weight: 400;
+}
 .gh-compare {
   order: 2;
   flex: none;

@@ -464,11 +464,48 @@ describe("bodyHtml server rendering", () => {
     try {
       const { releases } = await getUpstreamReleases("t3code");
       const html = releases[0]?.bodyHtml ?? "";
-      expect(html).not.toContain("<details");
-      expect(html).not.toContain("<summary");
+      expect(html.includes("<details")).toBe(false);
+      expect(html.includes("<summary")).toBe(false);
       expect(html).toContain("Body text");
       expect(html).toContain('href="https://github.com/someone">@someone</a>');
       expect(html).toContain('href="https://github.com/pingdotgg/t3code/pull/123">#123</a>');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
+
+describe("getUpstreamMeta counts", () => {
+  test("returns compact stars/issues/pulls from repo + search APIs", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
+      const u = String(url);
+      if (u.includes("/search/issues")) {
+        return new Response(JSON.stringify({ total_count: 2300 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ stargazers_count: 23940, open_issues_count: 1200 }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta.stars).toBe(23940);
+      expect(meta.issues).toBe(1200);
+      expect(meta.pulls).toBe(2300);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("nulls on API failure", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response("nope", { status: 403 })) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta).toEqual({ stars: null, issues: null, pulls: null });
     } finally {
       globalThis.fetch = origFetch;
     }

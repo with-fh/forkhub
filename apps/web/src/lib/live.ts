@@ -1,6 +1,7 @@
 import { OSS_CATALOG } from "@forkhub/api/oss/data";
 
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 
 import {
   channelHistory,
@@ -122,15 +123,72 @@ function upstreamUrl(
 
 const UPSTREAM_LIMIT = 10;
 
-/** Escape HTML then let marked handle markdown; strip everything but upstream's allowlist. */
+/** Render markdown exactly like upstream: marked (gfm) then sanitize-html allowlist. */
 function renderBodyHtml(md: string, repo: string): string {
-  const esc = md
-    .replace(/&(?!#?[xX]?(?:[0-9a-fA-F]+|\w+);)/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  // marked with breaks + gfm tables like github's renderer
-  const raw = marked.parse(esc, { breaks: true, gfm: true }) as string;
-  return linkifyUpstream(expandDetails(raw), repo);
+  const raw = marked.parse(md, { breaks: true, gfm: true }) as string;
+  const clean = sanitizeHtml(raw, {
+    allowedTags: [
+      "a",
+      "b",
+      "blockquote",
+      "br",
+      "code",
+      "del",
+      "details",
+      "div",
+      "em",
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+      "h5",
+      "h6",
+      "hr",
+      "i",
+      "img",
+      "input",
+      "ins",
+      "kbd",
+      "li",
+      "ol",
+      "p",
+      "pre",
+      "s",
+      "span",
+      "strike",
+      "strong",
+      "sub",
+      "summary",
+      "sup",
+      "table",
+      "tbody",
+      "td",
+      "tfoot",
+      "th",
+      "thead",
+      "tr",
+      "tt",
+      "u",
+      "ul",
+    ],
+    allowedAttributes: {
+      a: [
+        "href",
+        "title",
+        "class",
+        "data-hovercard-type",
+        "data-hovercard-url",
+        "data-octo-click",
+        "data-octo-dimensions",
+        "aria-keyshortcuts",
+      ],
+      img: ["src", "alt", "width", "height"],
+      input: ["type", "checked", "disabled"],
+      "*": ["id", "class"],
+    },
+    allowedSchemes: ["http", "https", "mailto"],
+  });
+  return linkifyUpstream(expandDetails(clean), repo);
 }
 
 /** Drop collapsible wrappers (upstream renders notes expanded; our toggle was a fork delta). */
@@ -259,6 +317,7 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
       stargazers_count?: number;
       open_issues_count?: number;
     };
+    // pulls count needs search API (extra call, cached same way)
     let pulls: number | null = null;
     try {
       const q = await fetch(
@@ -274,7 +333,7 @@ async function fetchUpstreamRepoMeta(upstreamRepo: string): Promise<UpstreamRepo
         if (typeof j.total_count === "number") pulls = j.total_count;
       }
     } catch {
-      // pulls stays null; tabs render without that count
+      // pulls stays null -> tab renders without count, like logged-out edge cases
     }
     return {
       stars: typeof d.stargazers_count === "number" ? d.stargazers_count : null,
@@ -291,8 +350,11 @@ export async function getUpstreamMeta(
 ): Promise<{ meta: UpstreamRepoMeta; stars: number | null }> {
   const entry = OSS_CATALOG.find((e) => e.slug === slug);
   if (!entry) return { meta: { stars: null, issues: null, pulls: null }, stars: null };
-  const meta = await fetchUpstreamRepoMeta(entry.upstreamRepo);
-  return { meta, stars: meta.stars ?? entry.stars };
+  const [meta, starsMap] = await Promise.all([
+    fetchUpstreamRepoMeta(entry.upstreamRepo),
+    getStarsMap(),
+  ]);
+  return { meta, stars: starsMap[slug] ?? entry.stars };
 }
 
 export async function getUpstreamReleases(
