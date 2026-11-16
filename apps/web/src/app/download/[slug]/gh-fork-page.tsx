@@ -1,0 +1,293 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+import type { DownloadAsset } from "@/lib/releases";
+import type { UpstreamRelease } from "@/lib/live";
+import { formatBytes } from "@/lib/releases";
+
+/**
+ * Upstream GitHub-releases fork for /download/[slug]: same DOM order, copy, and structure as
+ * github.com/<owner>/<repo>/releases — global header, repo header, repo
+ * tabs, sidebar (Releases/Tags + per-release anchor list), release cards
+ * (title, Pre-release/Latest labels, author line, tag/commit links, full
+ * notes body, asset list). ForkHub deltas: buttons resolve to catalog
+ * builds (badged "ForkHub track"), plus channel tabs + version picker
+ * above the list (GitHub has none; needed to select the ForkHub track).
+ */
+
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${Math.max(mins, 1)} minutes ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} months ago`;
+  return `${Math.floor(months / 12)} years ago`;
+}
+
+function AssetRow({ asset }: { asset: DownloadAsset }) {
+  const size = formatBytes(asset.size);
+  return (
+    <li
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "6px 0",
+        borderTop: "1px solid var(--gh-border-muted)",
+        fontSize: 14,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/gh/file-icon.svg"
+        alt=""
+        aria-hidden="true"
+        width={16}
+        height={16}
+        style={{ flex: "none", opacity: 0.7 }}
+      />
+      <a
+        href={asset.url}
+        style={{ color: "var(--gh-fg-accent)", textDecoration: "none", wordBreak: "break-all" }}
+      >
+        {asset.name}
+      </a>
+      {size && <span style={{ color: "var(--gh-fg-muted)", fontSize: 12 }}>{size}</span>}
+      <span
+        className="gh-forkhub-badge"
+        title="Patched ForkHub-track build — self-updates from the patch catalog"
+      >
+        ForkHub track
+      </span>
+    </li>
+  );
+}
+
+function ReleaseCard({ release }: { release: UpstreamRelease }) {
+  const [expanded, setExpanded] = useState(false);
+  const body = release.body.trim();
+  const paragraphs = body ? body.split(/\n{2,}/) : [];
+  const visible = expanded ? paragraphs : paragraphs.slice(0, 3);
+  return (
+    <section
+      id={`release-${release.tag}`}
+      aria-label={release.name}
+      className="gh-release-card"
+      style={{ scrollMarginTop: 24 }}
+    >
+      <h2 className="sr-only">{release.name}</h2>
+      <div className="gh-box">
+        <div className="gh-box-body">
+          <div className="gh-release-head">
+            <div className="gh-release-titlewrap">
+              <span className="gh-release-title">
+                <a href={release.url} className="gh-link-primary">
+                  {release.name}
+                </a>
+              </span>
+              <span>
+                {release.prerelease ? <span className="gh-label-warning">Pre-release</span> : null}
+                {release.latest ? <span className="gh-label-success">Latest</span> : null}
+              </span>
+            </div>
+          </div>
+          <div className="gh-release-meta">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {release.authorAvatar ? (
+              <img
+                src={release.authorAvatar}
+                alt={release.authorLogin}
+                width={20}
+                height={20}
+                style={{ borderRadius: "50%" }}
+              />
+            ) : null}
+            <a href={release.url} className="gh-link-muted">
+              {release.authorLogin}
+            </a>
+            <span>released this {timeAgo(release.publishedAt)}</span>
+            <a href={release.url} className="gh-link-muted gh-tag-link">
+              {release.tag}
+            </a>
+            {release.commitSha ? (
+              <a href={release.url} className="gh-link-muted">
+                {release.commitSha.slice(0, 7)}
+              </a>
+            ) : null}
+            {release.commitSha ? (
+              <a href={release.url} className="gh-link-muted">
+                {release.commitSha.slice(0, 7)}
+              </a>
+            ) : null}
+          </div>
+          <div className="gh-release-notes">
+            {visible.map((p, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <p key={i}>{p}</p>
+            ))}
+            {paragraphs.length > 3 ? (
+              <button
+                type="button"
+                className="gh-link-muted gh-expand-btn"
+                onClick={() => setExpanded((v) => !v)}
+              >
+                {expanded ? "Show less" : `Show ${paragraphs.length - 3} more`}
+              </button>
+            ) : null}
+          </div>
+          {release.assets.length > 0 ? (
+            <div className="gh-assets">
+              <button
+                type="button"
+                className="gh-assets-toggle"
+                onClick={() => setExpanded((v) => !v)}
+                aria-expanded={expanded}
+              >
+                Assets ({release.assets.length})
+              </button>
+              {expanded && (
+                <ul className="gh-asset-list">
+                  {release.assets.map((a) => (
+                    <AssetRow key={a.url} asset={a} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function GhForkPage({
+  owner,
+  repo,
+  upstreamReleasesUrl,
+  catalogReleasesUrl,
+  releases,
+}: {
+  owner: string;
+  repo: string;
+  upstreamReleasesUrl: string;
+  catalogReleasesUrl: string;
+  releases: UpstreamRelease[];
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return releases;
+    return releases.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        r.tag.toLowerCase().includes(q) ||
+        r.body.toLowerCase().includes(q),
+    );
+  }, [releases, query]);
+  return (
+    <div className="gh-fork gh-fork-scope">
+      <header className="gh-global-header">
+        <a href="https://github.com" className="gh-global-logo" aria-label="GitHub homepage">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/gh/github-mark-white.svg" alt="" width={32} height={32} />
+        </a>
+        <nav className="gh-global-nav" aria-label="Global">
+          {["Products", "Developers", "Businesses", "Resources", "Pricing"].map((t) => (
+            <a key={t} href="https://github.com" className="gh-global-link">
+              {t}
+            </a>
+          ))}
+        </nav>
+        <div className="gh-global-search" role="search">
+          <span>Search</span>
+          <kbd>/</kbd>
+        </div>
+        <a href="https://github.com/login" className="gh-signin">
+          Sign in
+        </a>
+        <a href="https://github.com/signup" className="gh-signup">
+          Sign up
+        </a>
+      </header>
+
+      <div className="gh-repohead">
+        <nav className="gh-crumbs" aria-label="Breadcrumbs">
+          <a href={`https://github.com/${owner}`}>{owner}</a>
+          <span> / </span>
+          <a href={`https://github.com/${owner}/${repo}`} className="gh-crumb-repo">
+            {repo}
+          </a>
+        </nav>
+        <nav className="gh-tabs" aria-label="Repository">
+          {[
+            "Code",
+            "Issues",
+            "Pull requests",
+            "Discussions",
+            "Actions",
+            "Security and quality",
+            "Insights",
+          ].map((t) => (
+            <a key={t} href={`https://github.com/${owner}/${repo}`} className="gh-tab">
+              {t}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div className="gh-layout">
+        <aside className="gh-sidebar">
+          <nav aria-label="Releases and tags">
+            <a href={upstreamReleasesUrl} className="gh-side-active">
+              Releases
+            </a>
+            <a href={`${upstreamReleasesUrl.replace(/\/releases\/?$/, "/tags")}`}>Tags</a>
+            <h2>On this page</h2>
+            <ul>
+              {filtered.slice(0, 10).map((r) => (
+                <li key={r.tag}>
+                  <a href={`#release-${r.tag}`} title={r.name}>
+                    {r.name.length > 52 ? `${r.name.slice(0, 52)}…` : r.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </aside>
+
+        <main className="gh-main">
+          <div className="gh-releases-head">
+            <h1>Releases</h1>
+            <div className="gh-find">
+              <input
+                type="search"
+                aria-label="Find a release"
+                placeholder="Find a release"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          <p className="gh-forkhub-note">
+            ForkHub-track mirror of{" "}
+            <a href={upstreamReleasesUrl}>{upstreamReleasesUrl.replace("https://", "")}</a> — same
+            titles, notes, and assets; downloads resolve to{" "}
+            <a href={catalogReleasesUrl}>catalog builds</a>.
+          </p>
+          <div className="gh-results">
+            {filtered.map((r) => (
+              <ReleaseCard key={r.tag} release={r} />
+            ))}
+            {filtered.length === 0 ? <p>No releases match “{query}”.</p> : null}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
