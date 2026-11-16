@@ -112,6 +112,19 @@ const DSH_MAC_SPLIT: GhRelease = {
   ],
 };
 
+const DSH_WIN_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  html_url: "https://github.com/r/7",
+  published_at: "2026-11-10T04:44:47Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe", 308_000_000),
+    asset("SHA256SUMS"),
+    asset("SHA256SUMS-win"),
+  ],
+};
+
 describe("channelOf", () => {
   test("nightly tags vs stable tags", () => {
     expect(channelOf("v0.1.1-nightly.20261019.3373.fh.with-fh.1")).toBe("nightly");
@@ -249,7 +262,7 @@ describe("channelHistory + mergePlatformBuilds", () => {
 
   test("dsh splits map dmg + unsigned exe, merge composes mac + windows", () => {
     const dshAll = [DSH_MAC_SPLIT, DSH_WIN_SPLIT];
-    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.tag_name);
+    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.name);
     const { stable, nightly } = channelHistory(dshAll, dshOnly, 10);
     expect(nightly).toEqual([]);
     expect(stable).toHaveLength(2);
