@@ -7,7 +7,7 @@ import type { UpstreamRelease } from "@/lib/live";
 import { formatBytes } from "@/lib/releases";
 
 /**
- * Upstream GitHub-releases fork: same DOM order, copy, and structure as
+ * Upstream GitHub-releases fork for /download/[slug]: same DOM order, copy, and structure as
  * github.com/<owner>/<repo>/releases — global header, repo header, repo
  * tabs, sidebar (Releases/Tags + per-release anchor list), release cards
  * (title, Pre-release/Latest labels, author line, tag/commit links, full
@@ -15,12 +15,6 @@ import { formatBytes } from "@/lib/releases";
  * builds (badged "ForkHub track"), plus channel tabs + version picker
  * above the list (GitHub has none; needed to select the ForkHub track).
  */
-
-function shortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -172,7 +166,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
   );
 }
 
-export default function GhReleasesFork({
+export default function GhForkPage({
   owner,
   repo,
   upstreamReleasesUrl,
