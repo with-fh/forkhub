@@ -71,7 +71,10 @@ function shortTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return timeAgo(iso);
   // UTC, matching github.com server-rendered <relative-time> fallback
-  // text ("16 Nov 14:05"); server-local tz would shift the visible time.
+  // text ("17 Nov 02:59"); server-local tz would shift the visible time.
+  // The useRelativeTime hook upgrades this to live relative text
+  // post-hydration via GitHub's own element (no custom-element JSX,
+  // so React 19 hydration stays safe per #66).
   const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
   return `${d.getUTCDate()} ${mon} ${`${d.getUTCHours()}`.padStart(2, "0")}:${`${d.getUTCMinutes()}`.padStart(2, "0")}`;
 }
@@ -101,7 +104,7 @@ function absoluteTitle(iso: string): string {
 let relativeTimeModule: Promise<unknown> | null = null;
 
 function useRelativeTime(iso: string) {
-  const ref = useRef<HTMLSpanElement | null>(null);
+  const ref = useRef<HTMLTimeElement | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -256,14 +259,14 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             </a>
             <span>
               released this{" "}
-              <span
+              <time
                 ref={timeRef}
                 className="no-wrap"
                 data-relative-time={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
               >
                 {shortTime(release.publishedAt)}
-              </span>
+              </time>
             </span>
             <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
               <svg
