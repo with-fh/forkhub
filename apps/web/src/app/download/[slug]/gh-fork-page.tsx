@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { DownloadAsset } from "@/lib/releases";
 import type { UpstreamRelease } from "@/lib/live";
@@ -90,6 +90,47 @@ function absoluteTitle(iso: string): string {
   });
 }
 
+// Post-hydration upgrade of the server-rendered absolute timestamp to
+// GitHub's live relative text ("3 hours ago", "yesterday", "on Oct 8").
+// React keeps rendering the plain <time> fallback (identical tag, attrs,
+// and text to github.com server HTML — hence hydration-safe); this hook
+// only mutates textContent via the DOM API using GitHub's own published
+// element, so there is no custom-element JSX for React to reconcile.
+// A re-render (e.g. filter change) restores server text and the effect
+// re-applies the upgrade. Failures keep the absolute fallback.
+let relativeTimeModule: Promise<unknown> | null = null;
+
+function useRelativeTime(iso: string) {
+  const ref = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        relativeTimeModule ??= import("@github/relative-time-element");
+        await relativeTimeModule;
+        if (cancelled) return;
+        const node = ref.current;
+        if (!node || typeof document === "undefined") return;
+        const probe = document.createElement("relative-time");
+        probe.setAttribute("datetime", iso);
+        probe.setAttribute("threshold", "PT0S");
+        document.body.appendChild(probe);
+        const rendered = (probe.shadowRoot?.textContent ?? "").trim();
+        probe.remove();
+        if (!cancelled && rendered !== "" && node.textContent !== rendered) {
+          node.textContent = rendered;
+        }
+      } catch {
+        // keep server-rendered absolute fallback
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [iso]);
+  return ref;
+}
+
 function AssetRow({ asset }: { asset: DownloadAsset }) {
   const size = formatBytes(asset.size);
   return (
@@ -156,6 +197,7 @@ function ContributorsBlock({ body }: { body: string }) {
 
 function ReleaseCard({ release }: { release: UpstreamRelease }) {
   const [assetsOpen, setAssetsOpen] = useState(false);
+  const timeRef = useRelativeTime(release.publishedAt);
   return (
     <section
       id={`release-${release.tag}`}
@@ -215,6 +257,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             <span>
               released this{" "}
               <span
+                ref={timeRef}
                 className="no-wrap"
                 data-relative-time={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
