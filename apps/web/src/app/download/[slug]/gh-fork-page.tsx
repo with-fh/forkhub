@@ -113,7 +113,10 @@ function useRelativeTime(iso: string) {
         if (!node || typeof document === "undefined") return;
         const probe = document.createElement("relative-time");
         probe.setAttribute("datetime", iso);
-        probe.setAttribute("threshold", "PT0S");
+        // NOTE: no threshold attribute — in this element version
+        // threshold="PT0S" caps relative display (verified live: a 2h-old
+        // timestamp rendered "on Nov 17" with it, "2 hours ago" without),
+        // while github.com shows relative text for recent releases.
         document.body.appendChild(probe);
         const rendered = (probe.shadowRoot?.textContent ?? "").trim();
         probe.remove();
