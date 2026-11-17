@@ -103,7 +103,7 @@ function absoluteTitle(iso: string): string {
 let relativeTimeModule: Promise<unknown> | null = null;
 
 function useRelativeTime(iso: string) {
-  const ref = useRef<HTMLSpanElement | null>(null);
+  const ref = useRef<HTMLTimeElement | null>(null);
   useEffect(() => {
     let cancelled = false;
     (async () => {
