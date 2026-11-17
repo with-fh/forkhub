@@ -14,6 +14,7 @@
     "@forkhub/api": "workspace:*",
     "@forkhub/env": "workspace:*",
     "@forkhub/ui": "workspace:*",
+    "@github/relative-time-element": "catalog:",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "^1.14.6",

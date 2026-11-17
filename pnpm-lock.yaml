@@ -107,6 +107,9 @@ settings:
 
 catalogs:
   default:
+    '@github/relative-time-element':
+      specifier: ^5.3.1
+      version: 5.3.1
     '@orpc/client':
       specifier: ^1.14.6
       version: 1.14.8
@@ -334,6 +337,9 @@ importers:
       '@forkhub/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@github/relative-time-element':
+        specifier: 'catalog:'
+        version: 5.3.1
       '@orpc/client':
         specifier: 'catalog:'
         version: 1.14.8
@@ -1737,6 +1743,9 @@ packages:
     peerDependenciesMeta:
       tailwindcss:
         optional: true
+
+  '@github/relative-time-element@5.3.1':
+    resolution: {integrity: sha512-f++QCIXxGH7rMbpTASRfLyCyPydd4HqwOmATBb/sAUCq72HEZN0MX9znmJSp7NKYxuQxF8j0Mv3ez9P32c70vw==}
 
   '@hono/node-server@1.19.14':
     resolution: {integrity: sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw==}
@@ -7387,6 +7396,8 @@ snapshots:
   '@fumadocs/tailwind@0.1.1(tailwindcss@4.3.3)':
     optionalDependencies:
       tailwindcss: 4.3.3
+
+  '@github/relative-time-element@5.3.1': {}
 
   '@hono/node-server@1.19.14(hono@4.12.31)':
     dependencies:
