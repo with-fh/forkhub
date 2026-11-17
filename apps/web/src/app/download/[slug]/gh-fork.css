@@ -110,7 +110,11 @@ html[data-gh-fork="true"] body {
   font-weight: 600;
 }
 .gh-crumbs a {
+  color: var(--gh-fg-default);
+}
+.gh-crumbs a:hover {
   color: var(--gh-fg-accent);
+  text-decoration: underline;
 }
 .gh-crumb-repo {
   font-weight: 600;
@@ -123,6 +127,9 @@ html[data-gh-fork="true"] body {
   border-bottom: none;
 }
 .gh-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--gh-fg-default);
   font-size: 14px;
   padding: 8px 8px 6px;
@@ -130,10 +137,28 @@ html[data-gh-fork="true"] body {
   border-radius: 6px 6px 0 0;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
+  position: relative;
 }
 .gh-tab:hover {
   background: #818b981a;
   text-decoration: none;
+}
+.gh-tab-icon {
+  display: inline-flex;
+  color: var(--gh-fg-muted);
+}
+.gh-tab-selected .gh-tab-icon {
+  color: var(--gh-fg-default);
+}
+.gh-tab-selected::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 2px;
+  background: #fd8c73;
+  border-radius: 2px;
 }
 
 /* two-column layout */

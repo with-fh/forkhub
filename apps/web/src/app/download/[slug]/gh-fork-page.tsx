@@ -9,11 +9,44 @@ import "./gh-markdown.css";
 
 /**
  * Upstream GitHub-releases pixel fork for /download/[slug]: same DOM order, copy, structure,
- * and behavior as github.com/<owner>/<repo>/releases — global header, repo header, repo tabs,
- * sidebar (Releases/Tags + per-release anchor list), release cards (title, Pre-release label,
- * author line, tag/commit links, full notes body, asset list). Asset downloads resolve to
- * ForkHub catalog builds (same filenames as upstream); all other links are upstream URLs.
+ * and behavior as github.com/<owner>/<repo>/releases — global header, repo header, repo tabs
+ * (with octicon glyphs + Code selected underline), breadcrumbs, sidebar (Releases/Tags +
+ * per-release anchor list), release cards (title, Pre-release label, author line, tag/commit
+ * links, full notes body, asset list). Asset downloads resolve to ForkHub catalog builds
+ * (same filenames as upstream); all other links are upstream URLs.
  */
+
+const OCTICONS: Record<string, string> = {
+  code: "m11.28 3.22 4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L13.94 8l-3.72-3.72a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215Zm-6.56 0a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042L2.06 8l3.72 3.72a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L.47 8.53a.75.75 0 0 1 0-1.06Z",
+  issues:
+    "M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z",
+  pulls:
+    "M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z",
+  discussions:
+    "M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm5.28 2.47 2.5 2.5a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 1.06-1.06Z",
+  actions:
+    "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z",
+  security:
+    "M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.7 1.067 1.836 2.008 3.725 2.804a.25.25 0 0 0 .196 0c1.889-.796 3.025-1.737 3.725-2.804.782-1.194 1.057-2.502 1.057-3.86V3.48a.25.25 0 0 0-.174-.238l-5.25-1.68ZM8 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7ZM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z",
+  insights:
+    "M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z",
+};
+
+function Octicon({ name }: { name: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      height={16}
+      viewBox="0 0 16 16"
+      width={16}
+      fill="currentColor"
+      style={{ verticalAlign: "text-bottom" }}
+    >
+      <path d={OCTICONS[name]} />
+    </svg>
+  );
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -299,17 +332,25 @@ export default function GhForkPage({
         <nav className="gh-tabs" aria-label="Repository">
           {(
             [
-              { label: "Code", count: null },
-              { label: "Issues", count: issueCount },
-              { label: "Pull requests", count: prCount },
-              { label: "Discussions", count: null },
-              { label: "Actions", count: null },
-              { label: "Security and quality", count: null },
-              { label: "Insights", count: null },
-            ] as { label: string; count: string | null }[]
+              { label: "Code", count: null, icon: "code", selected: true },
+              { label: "Issues", count: issueCount, icon: "issues", selected: false },
+              { label: "Pull requests", count: prCount, icon: "pulls", selected: false },
+              { label: "Discussions", count: null, icon: "discussions", selected: false },
+              { label: "Actions", count: null, icon: "actions", selected: false },
+              { label: "Security and quality", count: null, icon: "security", selected: false },
+              { label: "Insights", count: null, icon: "insights", selected: false },
+            ] as { label: string; count: string | null; icon: string; selected: boolean }[]
           ).map((t) => (
-            <a key={t.label} href={`https://github.com/${owner}/${repo}`} className="gh-tab">
-              {t.label}
+            <a
+              key={t.label}
+              href={`https://github.com/${owner}/${repo}`}
+              className={t.selected ? "gh-tab gh-tab-selected" : "gh-tab"}
+              aria-current={t.selected ? "page" : undefined}
+            >
+              <span className="gh-tab-icon">
+                <Octicon name={t.icon} />
+              </span>
+              <span>{t.label}</span>
               {t.count != null ? (
                 <>
                   {" "}
