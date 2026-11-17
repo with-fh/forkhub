@@ -35,8 +35,8 @@ The pain: every upstream release, manually re-apply, re-fix, re-test.
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap ImBIOS/tap https://github.com/with-fh/forkhub
-brew install forkhub
+brew tap with-fh/tap https://github.com/with-fh/forkhub
+brew install with-fh/tap/forkhub
 ```
 
 ### npm

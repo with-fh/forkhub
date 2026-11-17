@@ -54,8 +54,8 @@ fh watch     # daemon-side: auto-detect drift, generate bundles, apply
 ### Homebrew (macOS / Linux)
 
 ```bash
-brew tap ImBIOS/tap https://github.com/with-fh/forkhub
-brew install forkhub
+brew tap with-fh/tap https://github.com/with-fh/forkhub
+brew install with-fh/tap/forkhub
 ```
 
 ### npm (stable / latest channel)
@@ -152,7 +152,7 @@ The core invariant: **intent is truth, diffs are evidence.** When upstream relea
 Anyone hitting the same bug can get the identical fix:
 
 ```bash
-fh import https://github.com/ImBIOS/.forkhub/blob/main/repos/github.com/pingdotgg/t3code/patches/fix-t3code-strip-osc-ansi-escapes-from-opencode-cl-y7shx01y/INTENT.md
+fh import https://github.com/with-fh/.forkhub/blob/main/repos/github.com/pingdotgg/t3code/patches/fix-t3code-strip-osc-ansi-escapes-from-opencode-cl-y7shx01y/INTENT.md
 ```
 
 ## Sharing & discovering patches

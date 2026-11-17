@@ -17,14 +17,14 @@
     "rebase",
     "upstream-sync"
   ],
-  "homepage": "https://github.com/with-fh/forkhub#readme",
+  "homepage": "https://github.com/ImBIOS/forkhub#readme",
   "bugs": {
-    "url": "https://github.com/with-fh/forkhub/issues"
+    "url": "https://github.com/ImBIOS/forkhub/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/with-fh/forkhub.git"
+    "url": "git+https://github.com/ImBIOS/forkhub.git"
   },
   "bin": {
     "fh": "bin/fh.js"
@@ -38,8 +38,7 @@
     "CHANGELOG.md",
     "Dockerfile",
     "test-orchestrator.sh",
-    ".opencode",
-    ".agents/skills"
+    ".opencode"
   ],
   "type": "module",
   "module": "src/cli.ts",
@@ -62,7 +61,8 @@
     "update": "bun run src/cli.ts update",
     "rollback": "bun run src/cli.ts rollback",
     "status": "bun run src/cli.ts status",
-    "prepublishOnly": "tsc --noEmit && node scripts/sync-skill.mjs"
+    "verify:catalog-fixtures": "bun run scripts/verify-catalog-fixtures.ts",
+    "prepublishOnly": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest"
