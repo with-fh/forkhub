@@ -68,10 +68,12 @@ function timeAgo(iso: string): string {
 }
 
 function shortTime(iso: string): string {
+  // Fallback text inside <time>, matching github.com server-rendered
+  // <relative-time> output ("17 Nov 02:59"); client JS hydrates it to
+  // relative text ("1 hour ago"). The old hydration-crash fix (#66)
+  // stands: plain <time>, never the custom element (React 19 choke).
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return timeAgo(iso);
-  // UTC, matching github.com server-rendered <relative-time> fallback
-  // text ("16 Nov 14:05"); server-local tz would shift the visible time.
   const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
   return `${d.getUTCDate()} ${mon} ${`${d.getUTCHours()}`.padStart(2, "0")}:${`${d.getUTCMinutes()}`.padStart(2, "0")}`;
 }
@@ -256,14 +258,14 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             </a>
             <span>
               released this{" "}
-              <span
+              <time
                 ref={timeRef}
                 className="no-wrap"
-                data-relative-time={release.publishedAt}
+                dateTime={release.publishedAt}
                 title={absoluteTitle(release.publishedAt)}
               >
                 {shortTime(release.publishedAt)}
-              </span>
+              </time>
             </span>
             <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
               <svg

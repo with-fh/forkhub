@@ -229,9 +229,6 @@ html[data-gh-fork="true"] body {
   padding: 4px 12px;
   color: var(--gh-fg-muted);
   font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* releases head */
