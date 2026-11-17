@@ -121,9 +121,16 @@ function useRelativeTime(iso: string) {
         // while github.com shows relative text for recent releases.
         document.body.appendChild(probe);
         const rendered = (probe.shadowRoot?.textContent ?? "").trim();
+        // Mirror the element's own tooltip (viewer-local absolute time),
+        // exactly as github.com upgrades title on render.
+        const upgradedTitle = probe.getAttribute("title");
         probe.remove();
-        if (!cancelled && rendered !== "" && node.textContent !== rendered) {
+        if (cancelled) return;
+        if (rendered !== "" && node.textContent !== rendered) {
           node.textContent = rendered;
+        }
+        if (upgradedTitle && node.getAttribute("title") !== upgradedTitle) {
+          node.setAttribute("title", upgradedTitle);
         }
       } catch {
         // keep server-rendered absolute fallback
