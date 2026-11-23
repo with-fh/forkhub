@@ -156,11 +156,13 @@ html[data-gh-fork="true"] body {
   align-items: center;
   border: 1px solid #3d444d;
   border-radius: 4px;
-  padding: 0 6px;
+  padding: 4px 8px;
+  font-family: "Mona Sans Mono", monospace;
   font-size: 11px;
   font-weight: 400;
-  line-height: 20px;
-  color: #a4aea6;
+  line-height: 10px;
+  letter-spacing: 0.21px;
+  color: #fff;
 }
 /* Upstream groups search + auth CTAs in a flex ctaContainer with
    margin-left 16px that absorbs the free space (flex auto). The menu
@@ -177,6 +179,8 @@ html[data-gh-fork="true"] body {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.21px;
+  line-height: 21px;
+  color: #a4aea6;
 }
 .gh-signin-wrap {
   display: block;
@@ -186,8 +190,10 @@ html[data-gh-fork="true"] body {
   display: inline-flex;
   align-items: center;
   height: 32px;
+  box-sizing: border-box;
   margin-left: 8px;
   padding: 0 12px;
+  border: 1px solid transparent;
   color: #fff;
   font-size: 16px;
   font-weight: 400;
@@ -201,14 +207,16 @@ html[data-gh-fork="true"] body {
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.21px;
-  line-height: 20px;
+  line-height: 21px;
 }
 .gh-signup {
   display: inline-flex;
   align-items: center;
   height: 32px;
+  box-sizing: border-box;
   padding: 0 12px;
   background: #fff;
+  border: 1px solid transparent;
   border-radius: 6px;
   color: #000;
   font-size: 16px;
