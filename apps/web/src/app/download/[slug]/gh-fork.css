@@ -136,10 +136,10 @@ html[data-gh-fork="true"] body {
   transform: rotate(90deg);
 }
 .gh-global-search {
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
-  gap: normal;
+  justify-content: stretch;
+  gap: 12px;
   width: 200px;
   height: 36px;
   box-sizing: border-box;
@@ -151,6 +151,14 @@ html[data-gh-fork="true"] body {
   font-family: inherit;
   font-size: 16px;
   cursor: pointer;
+}
+.gh-search-text {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.21px;
+  line-height: 21px;
 }
 .gh-global-search kbd {
   display: flex;
@@ -337,7 +345,7 @@ html[data-gh-fork="true"] body {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -8px;
+  bottom: 0;
   height: 2px;
   background: #fd8c73;
 }

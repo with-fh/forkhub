@@ -362,8 +362,10 @@ export default function GhForkPage({
           </nav>
           <div className="gh-cta">
             <button type="button" className="gh-global-search" aria-label="Search or jump to, type / to search">
-              <span className="gh-search-label">Search</span>
-              <kbd>/</kbd>
+              <span className="gh-search-text">
+                <span className="gh-search-label">Search</span>
+                <kbd>/</kbd>
+              </span>
             </button>
             <span className="gh-signin-wrap">
               <a href="https://github.com/login" className="gh-signin">
