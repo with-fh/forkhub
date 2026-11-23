@@ -355,11 +355,11 @@ export default function GhForkPage({
             </button>
             <span className="gh-signin-wrap">
               <a href="https://github.com/login" className="gh-signin">
-                Sign in
+                <span className="gh-auth-label">Sign in</span>
               </a>
             </span>
             <a href="https://github.com/signup" className="gh-signup">
-              Sign up
+              <span className="gh-auth-label">Sign up</span>
             </a>
             <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
               <Octicon name="sliders" />
