@@ -143,8 +143,8 @@ html[data-gh-fork="true"] body {
   font-family: inherit;
   font-size: 14px;
   font-weight: 400;
-  line-height: 20px;
-  letter-spacing: normal;
+  line-height: 21px;
+  letter-spacing: 0.24px;
   white-space: nowrap;
   cursor: pointer;
 }
