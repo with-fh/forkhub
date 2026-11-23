@@ -253,7 +253,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 <a href={release.tagUrl} className="gh-tag-link" title={release.tag}>
                   <span className="gh-tag-truncate">
                     <Octicon name="tag" className="gh-meta-icon" />
-                    {release.tag}
+                    <span className="gh-tag-text">{release.tag}</span>
                   </span>
                 </a>
               </div>
