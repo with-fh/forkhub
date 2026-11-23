@@ -723,6 +723,7 @@ ul.gh-anchor-list {
 }
 .gh-meta-icon {
   color: var(--gh-fg-muted);
+  vertical-align: text-bottom;
 }
 .gh-tag-link {
   display: inline;
@@ -739,7 +740,12 @@ ul.gh-anchor-list {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  vertical-align: bottom;
+  vertical-align: top;
+}
+.gh-tag-truncate .gh-tag-text {
+  display: inline;
+  margin-left: 4px;
+  vertical-align: baseline;
 }
 .gh-verified-summary {
   display: block;
