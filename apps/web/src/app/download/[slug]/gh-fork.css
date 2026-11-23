@@ -98,7 +98,7 @@ html[data-gh-fork="true"] body {
 .gh-global-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: normal;
   height: 28px;
   box-sizing: border-box;
   padding: 0 8px;
@@ -125,6 +125,7 @@ html[data-gh-fork="true"] body {
   color: #ffffffb3;
   width: 16px;
   height: 16px;
+  margin-left: 4px;
   transform: rotate(90deg);
 }
 .gh-global-search {
