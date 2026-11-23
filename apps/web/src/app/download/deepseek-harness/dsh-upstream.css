@@ -43,6 +43,38 @@
   backdrop-filter: blur(4px);
   box-shadow: 2px 4px 8px #2f4c8f14;
 }
+.ds-locale-toggle {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 3px;
+  border-radius: 100px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+.ds-locale-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 100px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background-color 0.2s,
+    box-shadow 0.2s;
+}
+.ds-locale-toggle-item.is-active {
+  background: hsla(0, 0%, 100%, 0.45);
+  color: #1e232c;
+  box-shadow: rgba(0, 0, 0, 0.08) 0 1px 3px;
+}
 .download-header a {
   display: flex;
   color: #5362ff;
@@ -77,10 +109,6 @@
   width: 88px;
   height: 88px;
   margin-bottom: 32px;
-  border-radius: 14.667px;
-  box-shadow:
-    1.467px 2.933px 7.333px #0000000a,
-    0 1.467px 2.933px #00000014;
 }
 .download-page h1,
 .download-page h2 {
