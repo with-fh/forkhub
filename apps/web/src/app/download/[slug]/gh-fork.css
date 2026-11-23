@@ -281,7 +281,7 @@ html[data-gh-fork="true"] body {
 .gh-tab-count {
   display: block;
   min-width: 20px;
-  height: 20px;
+  height: 18px;
   box-sizing: border-box;
   padding: 2px 6px;
   border-radius: 24px;
@@ -289,7 +289,7 @@ html[data-gh-fork="true"] body {
   color: var(--gh-fg-default);
   font-size: 12px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 12px;
   text-align: center;
 }
 
