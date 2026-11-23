@@ -230,7 +230,6 @@ html[data-gh-fork="true"] body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   height: 32px;
   box-sizing: border-box;
   margin: 0 0 8px;
@@ -248,6 +247,7 @@ html[data-gh-fork="true"] body {
 .gh-tab-icon {
   display: inline-flex;
   color: var(--gh-fg-muted);
+  margin-right: 8px;
 }
 .gh-tab-selected {
   font-weight: 600;
@@ -270,6 +270,7 @@ html[data-gh-fork="true"] body {
   height: 20px;
   box-sizing: border-box;
   padding: 0 6px;
+  margin-left: 8px;
   border-radius: 24px;
   background: var(--gh-neutral-muted);
   color: var(--gh-fg-default);
