@@ -246,6 +246,7 @@ html[data-gh-fork="true"] body {
 .gh-tabs {
   display: flex;
   align-items: flex-start;
+  gap: 8px;
   height: 48px;
   box-sizing: border-box;
   padding: 8px 16px 0;
