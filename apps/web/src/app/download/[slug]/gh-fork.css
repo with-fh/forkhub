@@ -56,6 +56,26 @@ html[data-gh-fork="true"] body {
   flex: none;
 }
 
+/* Upstream's marketing header renders in "Mona Sans" (a real webfont on
+   github.com). Self-host the variable build here and alias it under both
+   "Mona Sans" and "MonaSansFallback" so the fork resolves the identical
+   binary. Scoped to the header only — the releases body intentionally keeps
+   the named-but-unshipped "Mona Sans VF" fallback stack like upstream. */
+@font-face {
+  font-family: "Mona Sans";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url(/fonts/mona-sans-latin-wght-normal.woff2) format("woff2-variations");
+}
+@font-face {
+  font-family: "MonaSansFallback";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url(/fonts/mona-sans-latin-wght-normal.woff2) format("woff2-variations");
+}
+
 /* ── global header: 68px black bar ── */
 .gh-global-header {
   height: 68px;
