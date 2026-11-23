@@ -2,14 +2,14 @@
 
 ## Bun & PNPM
 
-Default to using Bun instead of Node.js, and PNPM for package management.
+Default to using Bun for everything — package manager and runtime.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `pnpm install` instead of `npm install` or `yarn install` or `bun install`
+- Use `bun install` instead of `npm install`, `yarn install`, or `pnpm install`
 - Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `pnpx <package> <command>` instead of `npx <package> <command>` for not locally-installedp package, and `pnpm <package> <command>` instead of `npm <package> <command>` for locally-installed package.
+- Use `bunx <package> <command>` instead of `npx <package> <command>` for not locally-installed package, and `bun run <command>` instead of `npm run <command>` for locally-installed package.
 - Bun automatically loads .env, so don't use dotenv.
 
 ### APIs
@@ -112,28 +112,21 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 
 Two channels only. Never mix artifacts between them.
 
-| Channel             | Trigger                                                                                               | Version format                                                               | Published to                                                                                                                                                                                                  |
-| ------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **canary**          | EVERY push to the `canary` branch (CI: `.github/workflows/publish.yml`, canary jobs)                  | `<dev-version>-canary.<YYYYMMDDHHmm>.<sha7>` — CI-generated, never hand-edit | npm dist-tag `canary` **and** rolling GitHub Release tagged `canary` (4 platform binaries + `SHA256SUMS`, prerelease, never `latest`); also installable via `github:with-fh/forkhub#canary&path:packages/cli` |
-| **latest (stable)** | pushing a `vX.Y.Z` tag whose commit is on `canary` (CI: `.github/workflows/publish.yml`, stable jobs) | exact `X.Y.Z`                                                                | npm dist-tag `latest` + GitHub Release (**mandatory, always**)                                                                                                                                                |
+| Channel | Trigger | Version format | Published to |
+|---|---|---|---|
+| **canary** | EVERY push to the `canary` branch (CI: `.github/workflows/publish.yml`, canary jobs) | `<dev-version>-canary.<YYYYMMDDHHmm>.<sha7>` — CI-generated, never hand-edit | npm dist-tag `canary` **and** rolling GitHub Release tagged `canary` (4 platform binaries + `SHA256SUMS`, prerelease, never `latest`); also installable via `github:ImBIOS/forkhub#canary&path:packages/cli` |
+| **latest (stable)** | pushing a `vX.Y.Z` tag whose commit is on `canary` (CI: `.github/workflows/publish.yml`, stable jobs) | exact `X.Y.Z` | npm dist-tag `latest` + GitHub Release (**mandatory, always**) |
 
 ### PR previews & forkhub-bot comment
 
 Every PR (`opened`/`synchronize`/`reopened`) is handled by `.github/workflows/pr-preview.yml`, which keeps **exactly ONE** rolling comment authored as **forkhub-bot** on the PR (identified by marker `<!-- forkhub-bot:intent-patch-preview -->`; it is edited in place on every push — never post duplicate preview comments). The comment always contains:
 
-1. **Try this PR with `fh`**: install commands pinned to the PR head — `pnpm dlx "github:with-fh/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
-2. **Intent-patch reuse info**: lists any `INTENT.md` files carried by the PR with grab commands, plus the `fh draft` / `fh satisfied` / `fh publish` capture workflow and `fh import` / `fh search --target github.com/with-fh/forkhub` reuse path.
+1. **Try this PR with `fh`**: install commands pinned to the PR head — `bunx --bun "github:ImBIOS/forkhub#refs/pull/<N>/head&path:packages/cli" fh --help` (requires Bun ≥ 1.3).
+2. **Intent-patch reuse info**: lists any `INTENT.md` files carried by the PR with grab commands, plus the `fh draft` / `fh satisfied` / `fh publish` capture workflow and `fh import` / `fh search --target github.com/ImBIOS/forkhub` reuse path.
 3. **Usage metrics**: commits, files touched, ±lines, CI check rollup.
 
 Implementation notes: the workflow uses `pull_request_target` so fork PRs get comments too, and it NEVER executes PR code (API queries + comment authoring only) — keep it that way.
 
-## ForkHub agent skill (must stay shippable)
-
-- Canonical source is `skills/forkhub/SKILL.md`. It MUST start with valid YAML frontmatter: `name: forkhub` (matches the dir name), `description` (what it does + when to use it), `license: MIT`. The `skills` CLI (Vercel) ignores skills without frontmatter.
-- `.agents/skills/forkhub/SKILL.md` is a synced discovery copy — after editing the canonical file, copy it over. The two files must stay byte-identical; no CI checks this, you do.
-- The skill ships inside the `forkhub` npm package: `packages/cli/scripts/sync-skill.mjs` (runs in `prepack`) bundles the canonical file into `.agents/skills/forkhub/` in the tarball, which is the preferred discovery path for `npx skills experimental_sync` scanning `node_modules`. Never commit that generated dir (gitignored) — it is pack-time output.
-- Install paths that must keep working: `npx skills add with-fh/forkhub --skill forkhub` (git) and npm-bundled sync. After ANY CLI workflow change (new command, changed flags, new flows), update the skill in the SAME commit — a stale skill is a bug.
-- Verify after touching the skill: frontmatter parses as YAML with `name`+`description`, and a scratch `npx skills add <this-repo> --skill forkhub` discovers exactly one skill.
 
 Rules:
 
@@ -142,6 +135,6 @@ Rules:
 - A stable tag WITHOUT a GitHub Release is a bug. `publish.yml` must publish to npm, build binaries, attach them (+ `SHA256SUMS`) to the GitHub Release, and update `Formula/forkhub.rb`. If any step fails, fix and re-run — don't leave a half-released tag.
 - Canary publishes are automatic on every push to `canary`: npm dist-tag `canary` + the rolling GitHub Release `canary` (tag is force-moved to HEAD each push; binaries + `SHA256SUMS` re-uploaded with `--clobber`). Do not bump versions for canary by hand; CI derives `<base>-canary.<timestamp>.<sha>` at publish time.
 - Keep `packages/cli/package.json` version strictly ABOVE the last stable tag (right after cutting `vX.Y.Z`, bump the canary base to `X.Y.(Z+1)` or next minor) so canary semver always sorts above stable — otherwise npm rejects canary publishes.
-- After cutting a stable release, verify: `npm view forkhub version` matches the tag, the GitHub Release exists with binaries attached, and `brew install with-fh/tap/forkhub` still resolves.
+- After cutting a stable release, verify: `npm view forkhub version` matches the tag, the GitHub Release exists with binaries attached, and `brew install ImBIOS/tap/forkhub` still resolves.
 - First-ever publish of the package name requires a manual `npm publish` from `packages/cli` (claim name + register `publish.yml` as the OIDC trusted publisher in npm package settings — npm allows only ONE workflow file per package, which is why both channels share this single workflow). CI-only publishing works after that.
 - A git TAG named `canary` (rolling release) coexists with the `canary` BRANCH — always use explicit refspecs (`refs/heads/canary`, `refs/tags/canary`, `HEAD:refs/heads/canary`) in scripts and checkouts; bare `canary` is an ambiguous refspec and fails pushes.

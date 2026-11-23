@@ -17,15 +17,15 @@
   },
   "dependencies": {
     "@forkhub/env": "workspace:*",
-    "dotenv": "catalog:",
-    "drizzle-orm": "catalog:",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
     "pg": "^8.22.0",
-    "zod": "catalog:"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@forkhub/config": "workspace:*",
-    "@types/pg": "catalog:",
+    "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
-    "typescript": "catalog:"
+    "typescript": "^6.0.3"
   }
 }

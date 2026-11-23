@@ -15,34 +15,34 @@ test("compareSemver orders nightly trains by date then build", () => {
   expect(compareSemver("0.0.43-nightly.20260926.2318", "0.0.43-nightly.20260927.2331")).toBe(-1);
   expect(
     compareSemver(
-      "0.0.43-nightly.20260927.2331.fh.with-fh.1",
-      "0.0.43-nightly.20260927.2331.fh.with-fh.2",
+      "0.0.43-nightly.20260927.2331.fh.imbios.1",
+      "0.0.43-nightly.20260927.2331.fh.imbios.2",
     ),
   ).toBe(-1);
-  expect(compareSemver("0.0.42-fh.with-fh.1", "0.0.42")).toBe(-1);
+  expect(compareSemver("0.0.42-fh.imbios.1", "0.0.42")).toBe(-1);
   expect(compareSemver("1.0.0", "1.0.0")).toBe(0);
   expect(compareSemver("v1.0.0", "1.0.0")).toBe(0);
 });
 
 test("fillAssetTemplate substitutes owner and version", () => {
   expect(
-    fillAssetTemplate("{owner}-fh-t3-{version}.tgz", { owner: "with-fh", version: "1.0.0" }),
-  ).toBe("with-fh-fh-t3-1.0.0.tgz");
+    fillAssetTemplate("{owner}-fh-t3-{version}.tgz", { owner: "ImBIOS", version: "1.0.0" }),
+  ).toBe("imbios-fh-t3-1.0.0.tgz");
 });
 
 test("pickReleaseTags takes the newest channel tag by semver", () => {
   const releases = [
     { tag_name: "v0.0.42", draft: false },
-    { tag_name: "v0.0.43-nightly.20260926.2318.fh.with-fh.1", draft: false },
-    { tag_name: "v0.0.43-nightly.20260927.2331.fh.with-fh.1", draft: false },
+    { tag_name: "v0.0.43-nightly.20260926.2318.fh.imbios.1", draft: false },
+    { tag_name: "v0.0.43-nightly.20260927.2331.fh.imbios.1", draft: false },
     { tag_name: "pingdotgg-t3code--v0.0.42-fh1", draft: false },
     { tag_name: "v9.9.9-draft", draft: true },
   ];
   expect(
     pickReleaseTags(releases, { channel: "nightly", tagMatch: "-nightly\\.[0-9]{8}\\." }),
   ).toEqual([
-    "v0.0.43-nightly.20260927.2331.fh.with-fh.1",
-    "v0.0.43-nightly.20260926.2318.fh.with-fh.1",
+    "v0.0.43-nightly.20260927.2331.fh.imbios.1",
+    "v0.0.43-nightly.20260926.2318.fh.imbios.1",
   ]);
 });
 
@@ -71,8 +71,8 @@ test("findChecksum parses sha256sum lines", () => {
 });
 
 test("resolveCacheDir nests owner, package, version", () => {
-  const dir = resolveCacheDir("with-fh", "t3", "1.0.0");
-  expect(dir.endsWith("forkhub/run/with-fh/t3/1.0.0")).toBe(true);
+  const dir = resolveCacheDir("ImBIOS", "t3", "1.0.0");
+  expect(dir.endsWith("forkhub/run/ImBIOS/t3/1.0.0")).toBe(true);
 });
 
 test("fillAssetTemplate substitutes platform/os/arch for Electron artifacts", () => {
@@ -93,8 +93,8 @@ test("fillAssetTemplate substitutes platform/os/arch for Electron artifacts", ()
   ).toBe("Natively.3.1.0-fh.with-fh.1.exe");
   // Legacy templates without platform placeholders are untouched.
   expect(
-    fillAssetTemplate("{owner}-fh-t3-{version}.tgz", { owner: "with-fh", version: "1.0.0" }),
-  ).toBe("with-fh-fh-t3-1.0.0.tgz");
+    fillAssetTemplate("{owner}-fh-t3-{version}.tgz", { owner: "ImBIOS", version: "1.0.0" }),
+  ).toBe("imbios-fh-t3-1.0.0.tgz");
 });
 
 test("assetTemplateForPlatform prefers the per-platform override", () => {

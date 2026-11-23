@@ -68,10 +68,10 @@ jobs:
             echo
             echo '```bash'
             echo "# one-shot, no global install"
-            echo "pnpm dlx \"github:${REPO}#refs/pull/${NUMBER}/head&path:packages/cli\" fh --help"
+            echo "bunx --bun \"github:${REPO}#refs/pull/${NUMBER}/head&path:packages/cli\" fh --help"
             echo
             echo "# or pin globally to this PR"
-            echo "pnpm add -g \"github:${REPO}#refs/pull/${NUMBER}/head&path:packages/cli\""
+            echo "bun install -g \"github:${REPO}#refs/pull/${NUMBER}/head&path:packages/cli\""
             echo '```'
             echo
             echo "## ♻️ Reuse this intent-patch"

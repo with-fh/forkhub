@@ -13,13 +13,11 @@ import {
  * against recorded live release shapes (no network). Run from the CLI
  * package dir: `bun run scripts/verify-catalog-fixtures.ts`.
  *
- * Single catalog: with-fh/.forkhub serves every platform (incl. Linux —
- * the ImBIOS/.forkhub catalog is deleted, its linux entries merged here).
  * Recorded 2026-11-06 via gh api:
  * - with-fh unified updater v3.1.0-fh.with-fh.1 assets
  * - with-fh namespaced bundle natively-...--v3.1.0-fh7 assets
+ * - ImBIOS v3.1.0-fh.imbios.1 assets
  * - with-fh t3 updater v0.1.1-nightly.20261019.3373.fh.with-fh.1 assets
- * - with-fh dsh unified updater v0.2.2-rc.3.with-fh.<date>.<n> assets
  */
 
 type Asset = { name: string; browser_download_url: string };
@@ -93,7 +91,25 @@ const WITH_FH_RELEASES: Release[] = [
   },
 ];
 
-void 0; // ImBIOS/.forkhub deleted — single catalog (with-fh) serves Linux now.
+const IMBIOS_RELEASES: Release[] = [
+  {
+    tag_name: "v3.1.0-fh.imbios.1",
+    draft: false,
+    assets: ["latest-linux.yml", "Natively-3.1.0-fh.imbios.1.AppImage", "SHA256SUMS"].map(
+      (name) => ({ name, browser_download_url: url(name) }),
+    ),
+  },
+  {
+    // FORECAST (not yet published): first ImBIOS dsh-linux release,
+    // after the with-fh dsh channel realizes and dsh-linux-support lands.
+    tag_name: "v0.2.2-fh.imbios.1",
+    draft: false,
+    assets: ["latest-linux.yml", "dsh-0.2.2-fh.imbios.1.AppImage", "SHA256SUMS"].map((name) => ({
+      name,
+      browser_download_url: url(name),
+    })),
+  },
+];
 
 type Entry = {
   file: string;
@@ -115,10 +131,11 @@ type Entry = {
 };
 
 async function loadEntries(): Promise<Entry[]> {
-  // Default (CI): vendored entry fixtures under tests/fixtures. Pass
-  // WITH_FH_DIR to check a live with-fh catalog checkout instead
-  // (e.g. the catalog PR).
+  // Default (CI): vendored entry fixtures under tests/fixtures, recorded
+  // 2026-11-06. Pass WITH_FH_DIR / IMBIOS_DIR to check live catalog
+  // checkouts instead (e.g. the with-fh + ImBIOS catalog PRs).
   const withFh = process.env.WITH_FH_DIR;
+  const imbios = process.env.IMBIOS_DIR;
   const files: Array<{ file: string; owner: string; pkgs: string[] }> = withFh
     ? [
         {
@@ -126,11 +143,26 @@ async function loadEntries(): Promise<Entry[]> {
           owner: "with-fh",
           pkgs: ["natively", "dsh"],
         },
+        {
+          file: join(imbios ?? "/tmp/opencode/catalogs/imbios", "registry.json"),
+          owner: "ImBIOS",
+          pkgs: ["natively-linux", "dsh-linux"],
+        },
       ]
-    : ((["with-fh-natively", "with-fh-dsh"] as const).map((name) => ({
+    : ((
+        ["with-fh-natively", "with-fh-dsh", "imbios-natively-linux", "imbios-dsh-linux"] as const
+      ).map((name) => ({
         file: new URL(`../tests/fixtures/${name}.json`, import.meta.url).pathname,
-        owner: "with-fh",
-        pkgs: [name === "with-fh-natively" ? "natively" : "dsh"],
+        owner: name.startsWith("with-fh") ? "with-fh" : "ImBIOS",
+        pkgs: [
+          name === "with-fh-natively"
+            ? "natively"
+            : name === "with-fh-dsh"
+              ? "dsh"
+              : name === "imbios-natively-linux"
+                ? "natively-linux"
+                : "dsh-linux",
+        ],
         single: true,
       })) as Array<{ file: string; owner: string; pkgs: string[] }>);
   const out: Entry[] = [];
@@ -166,7 +198,7 @@ const fail = (msg: string) => {
 
 async function main(): Promise<void> {
   for (const { pkg, owner, json } of await loadEntries()) {
-    const releases = WITH_FH_RELEASES;
+    const releases = owner === "with-fh" ? WITH_FH_RELEASES : IMBIOS_RELEASES;
     // Same fail-fast path as production resolvePackage (bad regex /
     // extract / {asset} throws before any tag walk).
     for (const platform of json.platforms ?? []) {

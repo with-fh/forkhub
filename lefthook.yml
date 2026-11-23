@@ -5,8 +5,8 @@ pre-commit:
   parallel: true
   jobs:
     - name: oxlint
-      run: pnpm oxlint --fix {staged_files}
+      run: bunx oxlint --fix {staged_files}
       stage_fixed: true
     - name: oxfmt
-      run: pnpm oxfmt --write {staged_files}
+      run: bunx oxfmt --write {staged_files}
       stage_fixed: true

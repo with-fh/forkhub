@@ -1,20 +1,20 @@
 {
   "mcpServers": {
     "better-t-stack": {
-      "command": "pnpm",
-      "args": ["dlx", "create-better-t-stack@latest", "mcp"]
+      "command": "bunx",
+      "args": ["create-better-t-stack@latest", "mcp"]
     },
     "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
+      "command": "bunx",
+      "args": ["@upstash/context7-mcp"]
     },
     "shadcn": {
-      "command": "npx",
-      "args": ["-y", "shadcn@latest", "mcp"]
+      "command": "bunx",
+      "args": ["shadcn@latest", "mcp"]
     },
     "next-devtools": {
-      "command": "npx",
-      "args": ["-y", "next-devtools-mcp@latest"]
+      "command": "bunx",
+      "args": ["next-devtools-mcp@latest"]
     }
   }
 }

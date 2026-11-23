@@ -1,41 +1,29 @@
 import type { Metadata } from "next";
-import { DM_Sans, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
-import Footer from "@/components/footer";
 import Header from "@/components/header";
 import Providers from "@/components/providers";
-import { FORKHUB_SITE_URL } from "@/lib/site";
 
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(FORKHUB_SITE_URL),
-  title: "ForkHub — the open-source control plane for fork patches",
+  title: "forkhub — keep your fork's patches while staying up-to-date",
   description:
-    "Declare each local change once as intent. ForkHub re-derives it against every upstream release. Patches are intent, not diffs.",
-  openGraph: {
-    title: "ForkHub — the open-source control plane for fork patches",
-    description:
-      "Declare each local change once as intent. ForkHub re-derives it against every upstream release.",
-    url: FORKHUB_SITE_URL,
-    siteName: "ForkHub",
-    type: "website",
-  },
+    "Declare each local change once as intent, and an AI agent re-derives it against every new upstream release.",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "48x48 32x32 16x16", type: "image/x-icon" },
+      { url: "/favicon.ico", sizes: "32x32 16x16", type: "image/x-icon" },
     ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 
@@ -45,13 +33,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" data-fh-chrome="site">
-      <body className={`${dmSans.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          <div className="fh-chrome">
+          <div className="grid grid-rows-[auto_1fr] h-svh">
             <Header />
-            <main>{children}</main>
-            <Footer />
+            {children}
           </div>
         </Providers>
       </body>
