@@ -360,9 +360,9 @@ export default function GhForkPage({
                 <Octicon name="triangle-right" className="gh-caret" />
               </button>
             ))}
-            <button type="button" className="gh-global-link" aria-expanded="false">
+            <a href="https://github.com/pricing" className="gh-global-link gh-global-anchor">
               Pricing
-            </button>
+            </a>
           </nav>
           <div className="gh-cta">
             <button type="button" className="gh-global-search" aria-label="Search or jump to, type / to search">

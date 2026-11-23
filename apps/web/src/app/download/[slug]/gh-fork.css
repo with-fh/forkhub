@@ -128,6 +128,11 @@ html[data-gh-fork="true"] body {
   color: #ffffffcc;
   text-decoration: none;
 }
+/* Upstream Pricing is an anchor (no caret, no letter-spacing) while the
+   dropdown triggers are buttons (caret, 0.24px). */
+.gh-global-anchor {
+  letter-spacing: normal;
+}
 .gh-caret {
   color: #ffffffb3;
   width: 16px;
