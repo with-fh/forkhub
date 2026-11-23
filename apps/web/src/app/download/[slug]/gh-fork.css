@@ -138,7 +138,7 @@ html[data-gh-fork="true"] body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: normal;
   width: 200px;
   height: 36px;
   box-sizing: border-box;
@@ -161,12 +161,13 @@ html[data-gh-fork="true"] body {
 }
 .gh-signin-wrap {
   display: block;
-  margin-right: 8px;
+  margin-right: 0;
 }
 .gh-signin {
   display: inline-flex;
   align-items: center;
   height: 32px;
+  margin-left: 8px;
   padding: 0 12px;
   color: #fff;
   font-size: 16px;
