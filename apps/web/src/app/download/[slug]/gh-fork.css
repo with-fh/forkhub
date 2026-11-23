@@ -152,12 +152,30 @@ html[data-gh-fork="true"] body {
   cursor: pointer;
 }
 .gh-global-search kbd {
+  display: flex;
+  align-items: center;
   border: 1px solid #3d444d;
   border-radius: 4px;
   padding: 0 6px;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 400;
   line-height: 20px;
   color: #a4aea6;
+}
+/* Upstream groups search + auth CTAs in a flex ctaContainer with
+   margin-left 16px that absorbs the free space (flex auto). The menu
+   button lives inside that container, not as a page-level sibling. */
+.gh-cta {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  margin-left: 16px;
+}
+.gh-search-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.21px;
 }
 .gh-signin-wrap {
   display: block;

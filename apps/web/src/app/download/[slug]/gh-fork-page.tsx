@@ -348,21 +348,23 @@ export default function GhForkPage({
               Pricing
             </button>
           </nav>
-          <button type="button" className="gh-global-search" aria-label="Search or jump to, type / to search">
-            <span>Search</span>
-            <kbd>/</kbd>
-          </button>
-          <span className="gh-signin-wrap">
-            <a href="https://github.com/login" className="gh-signin">
-              Sign in
+          <div className="gh-cta">
+            <button type="button" className="gh-global-search" aria-label="Search or jump to, type / to search">
+              <span className="gh-search-label">Search</span>
+              <kbd>/</kbd>
+            </button>
+            <span className="gh-signin-wrap">
+              <a href="https://github.com/login" className="gh-signin">
+                Sign in
+              </a>
+            </span>
+            <a href="https://github.com/signup" className="gh-signup">
+              Sign up
             </a>
-          </span>
-          <a href="https://github.com/signup" className="gh-signup">
-            Sign up
-          </a>
-          <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
-            <Octicon name="sliders" />
-          </button>
+            <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
+              <Octicon name="sliders" />
+            </button>
+          </div>
         </div>
       </header>
 
