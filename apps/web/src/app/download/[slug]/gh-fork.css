@@ -56,39 +56,14 @@ html[data-gh-fork="true"] body {
   flex: none;
 }
 
-/* Upstream's marketing header renders in "Mona Sans" (a real webfont on
-   github.com). Self-host the static 400/500 cuts here so the fork resolves
-   real Mona Sans metrics. Scoped to the header only — the releases body
-   intentionally keeps the named-but-unshipped "Mona Sans VF" fallback stack
-   like upstream. */
-@font-face {
-  font-family: "Mona Sans";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(/fonts/mona-sans-latin-400-normal.woff2) format("woff2");
-}
-@font-face {
-  font-family: "Mona Sans";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url(/fonts/mona-sans-latin-500-normal.woff2) format("woff2");
-}
-@font-face {
-  font-family: "MonaSansFallback";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url(/fonts/mona-sans-latin-400-normal.woff2) format("woff2");
-}
-@font-face {
-  font-family: "MonaSansFallback";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url(/fonts/mona-sans-latin-500-normal.woff2) format("woff2");
-}
+/* The releases body intentionally keeps the named-but-unshipped "Mona Sans
+   VF" fallback stack like upstream. The marketing header below names
+   "Mona Sans" exactly like upstream's Primer Brand stack and likewise
+   ships no @font-face for it, so both sides fall through to the same
+   system sans. Verified by measurement: upstream resolves no Mona
+   webfont (document.fonts shows only the Backtick Fix hack), and the
+   fork must do the same — self-hosting real Mona made our text ~10px
+   wider per word and broke parity. */
 
 /* ── global header: 68px black bar ── */
 .gh-global-header {
