@@ -125,6 +125,7 @@ html[data-gh-fork="true"] body {
   color: #ffffffb3;
   width: 16px;
   height: 16px;
+  transform: rotate(90deg);
 }
 .gh-global-search {
   display: flex;
