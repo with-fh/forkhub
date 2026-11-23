@@ -338,14 +338,15 @@ export default function GhForkPage({
             <img src="/gh/github-mark-white.svg" alt="" width={32} height={32} />
           </a>
           <nav className="gh-global-nav" aria-label="Global">
-            {["Products", "Developers", "Businesses", "Resources", "Pricing"].map((t) => (
-              <span key={t} className="gh-global-item">
-                <button type="button" className="gh-global-link" aria-expanded="false">
-                  <span>{t}</span>
-                  {t === "Pricing" ? null : <Octicon name="triangle-right" className="gh-caret" />}
-                </button>
-              </span>
+            {["Products", "Developers", "Businesses", "Resources"].map((t) => (
+              <button key={t} type="button" className="gh-global-link" aria-expanded="false">
+                {t}
+                <Octicon name="triangle-right" className="gh-caret" />
+              </button>
             ))}
+            <button type="button" className="gh-global-link" aria-expanded="false">
+              Pricing
+            </button>
           </nav>
           <div className="gh-global-search" role="search">
             <span>Search</span>

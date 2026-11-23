@@ -108,14 +108,11 @@ html[data-gh-fork="true"] body {
   color: #fff;
   font-family: inherit;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 21px;
   letter-spacing: 0.24px;
   white-space: nowrap;
   cursor: pointer;
-}
-.gh-global-item {
-  display: inline-flex;
 }
 .gh-global-link:hover {
   color: #ffffffcc;
