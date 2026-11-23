@@ -136,9 +136,11 @@ html[data-gh-fork="true"] body {
   padding: 1px 4px 1px 12px;
   border: 1px solid #3d444d;
   border-radius: 6px;
+  background: none;
   color: #a4aea6;
-  font-size: 14px;
-  margin-right: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  cursor: pointer;
 }
 .gh-global-search kbd {
   border: 1px solid #3d444d;
@@ -147,6 +149,10 @@ html[data-gh-fork="true"] body {
   font-size: 12px;
   line-height: 20px;
   color: #a4aea6;
+}
+.gh-signin-wrap {
+  display: block;
+  margin-right: 8px;
 }
 .gh-signin {
   display: inline-flex;
@@ -164,7 +170,6 @@ html[data-gh-fork="true"] body {
   align-items: center;
   height: 32px;
   padding: 0 12px;
-  margin-left: 8px;
   background: #fff;
   border-radius: 6px;
   color: #000;
@@ -186,7 +191,7 @@ html[data-gh-fork="true"] body {
   justify-content: center;
   width: 32px;
   height: 32px;
-  margin-left: 8px;
+  margin: 0;
   padding: 0;
   background: none;
   border: 1px solid transparent;
