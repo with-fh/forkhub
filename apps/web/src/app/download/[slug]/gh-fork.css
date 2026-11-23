@@ -281,9 +281,6 @@ html[data-gh-fork="true"] body {
   color: var(--gh-fg-muted);
 }
 .gh-tabs {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
   height: 48px;
   box-sizing: border-box;
   padding: 8px 16px 0;
@@ -291,6 +288,17 @@ html[data-gh-fork="true"] body {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+}
+.gh-tabs-list {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gh-tabs-item {
+  display: list-item;
 }
 .gh-tabs::-webkit-scrollbar {
   display: none;

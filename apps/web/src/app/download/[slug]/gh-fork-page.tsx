@@ -387,37 +387,40 @@ export default function GhForkPage({
           <a href={`https://github.com/${owner}/${repo}`}>{repo}</a>
         </nav>
         <nav className="gh-tabs" aria-label="Repository">
-          {(
-            [
-              { label: "Code", count: null, icon: "code", selected: true },
-              { label: "Issues", count: issueCount, icon: "issues", selected: false },
-              { label: "Pull requests", count: prCount, icon: "pulls", selected: false },
-              { label: "Discussions", count: null, icon: "discussions", selected: false },
-              { label: "Actions", count: null, icon: "actions", selected: false },
-              { label: "Security and quality", count: null, icon: "security", selected: false },
-              { label: "Insights", count: null, icon: "insights", selected: false },
-            ] as { label: string; count: string | null; icon: string; selected: boolean }[]
-          ).map((t) => (
-            <a
-              key={t.label}
-              href={`https://github.com/${owner}/${repo}`}
-              className={t.selected ? "gh-tab gh-tab-selected" : "gh-tab"}
-              aria-current={t.selected ? "page" : undefined}
-            >
-              <span className="gh-tab-icon">
-                <Octicon name={t.icon} />
-              </span>
-              <span className="gh-tab-label" data-content={t.label}>
-                {t.label}
-              </span>
-              {t.count != null ? (
-                <span className="gh-tab-countwrap">
-                  <span className="gh-tab-count">{t.count}</span>
-                  <span className="sr-only"> ({t.count})</span>
-                </span>
-              ) : null}
-            </a>
-          ))}
+          <ul className="gh-tabs-list">
+            {(
+              [
+                { label: "Code", count: null, icon: "code", selected: true },
+                { label: "Issues", count: issueCount, icon: "issues", selected: false },
+                { label: "Pull requests", count: prCount, icon: "pulls", selected: false },
+                { label: "Discussions", count: null, icon: "discussions", selected: false },
+                { label: "Actions", count: null, icon: "actions", selected: false },
+                { label: "Security and quality", count: null, icon: "security", selected: false },
+                { label: "Insights", count: null, icon: "insights", selected: false },
+              ] as { label: string; count: string | null; icon: string; selected: boolean }[]
+            ).map((t) => (
+              <li key={t.label} className="gh-tabs-item">
+                <a
+                  href={`https://github.com/${owner}/${repo}`}
+                  className={t.selected ? "gh-tab gh-tab-selected" : "gh-tab"}
+                  aria-current={t.selected ? "page" : undefined}
+                >
+                  <span className="gh-tab-icon">
+                    <Octicon name={t.icon} />
+                  </span>
+                  <span className="gh-tab-label" data-content={t.label}>
+                    {t.label}
+                  </span>
+                  {t.count != null ? (
+                    <span className="gh-tab-countwrap">
+                      <span className="gh-tab-count">{t.count}</span>
+                      <span className="sr-only"> ({t.count})</span>
+                    </span>
+                  ) : null}
+                </a>
+              </li>
+            ))}
+          </ul>
         </nav>
       </header>
 
