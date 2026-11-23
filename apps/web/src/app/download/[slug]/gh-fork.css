@@ -742,11 +742,6 @@ ul.gh-anchor-list {
   white-space: nowrap;
   vertical-align: top;
 }
-.gh-tag-truncate .gh-tag-text {
-  display: inline;
-  margin-left: 4px;
-  vertical-align: baseline;
-}
 .gh-verified-summary {
   display: block;
   list-style: none;
