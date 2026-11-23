@@ -457,6 +457,11 @@ html[data-gh-fork="true"] body {
   color: var(--gh-fg-muted);
   font-size: 12px;
   line-height: 19.5px;
+  overflow-wrap: anywhere;
+}
+.gh-anchor-text {
+  display: block;
+  overflow-wrap: anywhere;
 }
 .gh-anchor-list a:hover {
   background: var(--gh-neutral-muted);
