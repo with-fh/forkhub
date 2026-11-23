@@ -101,7 +101,7 @@ html[data-gh-fork="true"] body {
 .gh-global-nav {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: normal;
   margin-right: auto;
 }
 .gh-global-link {
