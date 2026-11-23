@@ -432,17 +432,17 @@ export default function GhForkPage({
                 <Octicon name="list-unordered" className="gh-side-icon" />
                 <span>On this page</span>
               </h2>
-              <ul className="gh-anchor-list">
+              <div className="gh-anchor-wrap">
                 {filtered.map((r) => (
-                  <li key={r.tag}>
+                  <div key={r.tag} className="gh-anchor-row">
                     <a href={`#release-${r.tag}`} title={r.name}>
                       <span className="gh-anchor-text">
                         {r.name}
                       </span>
                     </a>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
             <button type="button" className="gh-collapse-btn" aria-expanded="true">
               <Octicon name="sidebar-expand" className="gh-side-icon" />
