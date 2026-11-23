@@ -11,6 +11,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@fontsource-variable/mona-sans": "^5.3.0",
     "@forkhub/api": "workspace:*",
     "@forkhub/env": "workspace:*",
     "@forkhub/ui": "workspace:*",

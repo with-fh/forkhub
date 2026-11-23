@@ -328,6 +328,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@fontsource-variable/mona-sans':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@forkhub/api':
         specifier: workspace:*
         version: link:../../packages/api
@@ -363,7 +366,7 @@ importers:
         version: 17.4.2
       evlog:
         specifier: 'catalog:'
-        version: 2.22.0(@orpc/server@1.14.8(ws@8.21.0))(elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.4)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1(supports-color@10.2.2))(hono@4.12.31)(next@16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+        version: 2.22.0(@orpc/server@1.14.8(ws@8.21.0))(elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.5)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1(supports-color@10.2.2))(hono@4.12.31)(next@16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
       lucide-react:
         specifier: 'catalog:'
         version: 1.25.0(react@19.2.7)
@@ -477,7 +480,7 @@ importers:
     devDependencies:
       '@types/bun':
         specifier: latest
-        version: 1.4.4
+        version: 1.4.5
 
   packages/config: {}
 
@@ -1705,6 +1708,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource-variable/mona-sans@5.3.0':
+    resolution: {integrity: sha512-PkxRB3KI4z9Gjpk7vVqgO3GMSyQuOIIj4TaRDbvbcDj8SzWwI38jvLTQxJM/cTRorhcT7h8qjcllR+qjRtM/Fg==}
 
   '@fuma-translate/react@1.0.2':
     resolution: {integrity: sha512-uOiOtBx3nRXR8Nu1GzBf1tApgF1FErDBTHxRIAQeyQdyOoZbrNRN6H4kDCWObY4qyGeGbHydG0DHzgeUgFDMIw==}
@@ -3063,8 +3069,8 @@ packages:
   '@types/bun@1.3.14':
     resolution: {integrity: sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw==}
 
-  '@types/bun@1.4.4':
-    resolution: {integrity: sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ==}
+  '@types/bun@1.4.5':
+    resolution: {integrity: sha512-DpgwNI9z0L1S0gtb45QLCWgwCUcMLnsHYMJHQvpNj7erGiCGBvpggltAIeARrtobNMKMuy0UP7i56tKKgwFs/Q==}
 
   '@types/debug@4.1.13':
     resolution: {integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==}
@@ -3466,8 +3472,8 @@ packages:
   bun-types@1.3.14:
     resolution: {integrity: sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ==}
 
-  bun-types@1.4.4:
-    resolution: {integrity: sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ==}
+  bun-types@1.4.5:
+    resolution: {integrity: sha512-ECHn+9dhL3wv0G6u0+7dQvrnaimXiRDxxerYBmhTaLyJEEuvTPWk2Fye3XIf5Y++JIIiHKfQw4Z7V5D8KuiXbg==}
 
   bundle-name@4.1.0:
     resolution: {integrity: sha512-tjwM5exMg6BGRI+kNmTntNsvdZS1X8BFYS6tnJ2hdH0kVxM6/eVZ2xy+FqStSWvYmtfFMDLIxurorHwDKfDz5Q==}
@@ -7358,6 +7364,8 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
+  '@fontsource-variable/mona-sans@5.3.0': {}
+
   '@fuma-translate/react@1.0.2(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       react: 19.2.7
@@ -8531,9 +8539,9 @@ snapshots:
     dependencies:
       bun-types: 1.3.14
 
-  '@types/bun@1.4.4':
+  '@types/bun@1.4.5':
     dependencies:
-      bun-types: 1.4.4
+      bun-types: 1.4.5
 
   '@types/debug@4.1.13':
     dependencies:
@@ -8825,7 +8833,7 @@ snapshots:
     dependencies:
       '@types/node': 26.1.1
 
-  bun-types@1.4.4:
+  bun-types@1.4.5:
     dependencies:
       '@types/node': 26.1.1
       undici-types: 8.3.0
@@ -9100,7 +9108,7 @@ snapshots:
       '@types/bun': 1.3.14
       typescript: 6.0.3
 
-  elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.4)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3):
+  elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.5)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3):
     dependencies:
       '@sinclair/typebox': 0.34.52
       cookie: 1.1.1
@@ -9110,7 +9118,7 @@ snapshots:
       memoirist: 0.4.0
       openapi-types: 12.1.3
     optionalDependencies:
-      '@types/bun': 1.4.4
+      '@types/bun': 1.4.5
       typescript: 6.0.3
     optional: true
 
@@ -9348,10 +9356,10 @@ snapshots:
       next: 16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
 
-  evlog@2.22.0(@orpc/server@1.14.8(ws@8.21.0))(elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.4)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1(supports-color@10.2.2))(hono@4.12.31)(next@16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7):
+  evlog@2.22.0(@orpc/server@1.14.8(ws@8.21.0))(elysia@1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.5)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1(supports-color@10.2.2))(hono@4.12.31)(next@16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7):
     optionalDependencies:
       '@orpc/server': 1.14.8(ws@8.21.0)
-      elysia: 1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.4)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3)
+      elysia: 1.4.29(@sinclair/typebox@0.34.52)(@types/bun@1.4.5)(exact-mirror@1.2.2)(file-type@22.0.1(supports-color@10.2.2))(openapi-types@12.1.3)(typescript@6.0.3)
       express: 5.2.1(supports-color@10.2.2)
       hono: 4.12.31
       next: 16.2.11(@babel/core@7.29.7(supports-color@10.2.2))(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

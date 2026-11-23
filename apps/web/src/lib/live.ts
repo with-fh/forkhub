@@ -89,6 +89,24 @@ type GhApiAsset = { name: string; browser_download_url: string; size?: number };
 
 type GhApiRelease = Omit<GhRelease, "assets"> & { assets: GhApiAsset[] };
 
+/**
+ * Contributors block data, mirrored from github.com's own release page markup
+ * (the REST API exposes no per-release contributor list, and the "New
+ * Contributors" section in generated notes is a different, smaller set).
+ * Avatar srcs carry the numeric user id, which is impossible to derive.
+ */
+export type Contributor = {
+  login: string;
+  /** Upstream avatar URL, byte-identical to the one github.com renders. */
+  avatarSrc: string;
+};
+
+export type ReleaseContributors = {
+  avatars: Contributor[];
+  /** Upstream's own footer line ("a, b, and 18 other contributors"). */
+  caption: string;
+};
+
 export type UpstreamRelease = {
   tag: string;
   name: string;
@@ -109,6 +127,8 @@ export type UpstreamRelease = {
   shaUrl: string | null;
   prerelease: boolean;
   latest: boolean;
+  /** Upstream Box-footer Contributors block; null when the release has none. */
+  contributors: ReleaseContributors | null;
 };
 
 function upstreamUrl(
@@ -189,15 +209,10 @@ function renderBodyHtml(md: string, repo: string): string {
     },
     allowedSchemes: ["http", "https", "mailto"],
   });
-  return linkifyUpstream(expandDetails(clean), repo);
-}
-
-/** Drop collapsible wrappers (upstream renders notes expanded; our toggle was a fork delta). */
-function expandDetails(html: string): string {
-  return html
-    .replace(/<details[^>]*>/gi, "")
-    .replace(/<\/details>/gi, "")
-    .replace(/<summary[^>]*>[\s\S]*?<\/summary>/gi, "");
+  // <details>/<summary> stay in place: github.com renders release notes with
+  // the generated changelog collapsed behind "Full changelog". `open` is not
+  // allowlisted, so the browser defaults to closed — same as upstream.
+  return linkifyUpstream(clean, repo);
 }
 
 /** Rewrite bare @mentions/#PRs/CHANGELOG paths to upstream URLs (what github's pipeline emits). */
@@ -213,6 +228,101 @@ function linkifyUpstream(html: string, repo: string): string {
       if (link || !owner || !name) return m;
       return `<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-url="https://github.com/${owner}/${name}/issues/${num}" data-hovercard-type="pull_request" data-hovercard-url="/${owner}/${name}/pull/${num}/hovercard" href="https://github.com/${owner}/${name}/pull/${num}">#${num}</a>`;
     });
+}
+
+/**
+ * Parse the Contributors footer out of an upstream /releases page. github.com
+ * renders it from data no public API exposes (per-release contributors plus
+ * avatar URLs that embed the numeric user id), so mirroring the markup is the
+ * only way to match it. Returns {} when a release has no contributors block
+ * (hand-written notes) — same absence as upstream.
+ */
+export function parseUpstreamContributors(html: string): Record<string, ReleaseContributors> {
+  const out: Record<string, ReleaseContributors> = {};
+  const marks: { tag: string; at: number }[] = [];
+  const sectionRe = /<section id="release-([^"]+)"/g;
+  for (let m = sectionRe.exec(html); m; m = sectionRe.exec(html)) {
+    marks.push({ tag: decodeBasicEntities(m[1]!), at: m.index });
+  }
+  for (let i = 0; i < marks.length; i++) {
+    const { tag, at } = marks[i]!;
+    const end = i + 1 < marks.length ? marks[i + 1]!.at : html.length;
+    const seg = html.slice(at, end);
+    const heading = seg.indexOf(">Contributors<");
+    if (heading < 0) continue;
+    const ul = seg.indexOf("<ul", heading);
+    const ulEnd = ul < 0 ? -1 : seg.indexOf("</ul>", ul);
+    if (ul < 0 || ulEnd < 0) continue;
+    const avatars: Contributor[] = [];
+    for (const img of seg.slice(ul, ulEnd).matchAll(/<img\b[^>]*>/g)) {
+      const src = /\bsrc="([^"]+)"/.exec(img[0])?.[1];
+      const alt = /\balt="@([^"]*)"/.exec(img[0])?.[1];
+      if (src && alt) avatars.push({ login: alt, avatarSrc: decodeBasicEntities(src) });
+    }
+    if (avatars.length === 0) continue;
+    const caption =
+      /<div class="mt-2 color-fg-muted"[^>]*>\s*([^<]+?)\s*<\/div>/.exec(seg.slice(ulEnd))?.[1] ??
+      contributorCaption(avatars.map((a) => a.login));
+    out[tag] = { avatars, caption: caption.trim() };
+  }
+  return out;
+}
+
+/** Same wording github.com uses under the avatar row. */
+export function contributorCaption(logins: string[]): string {
+  if (logins.length === 0) return "";
+  if (logins.length === 1) return logins[0]!;
+  if (logins.length === 2) return `${logins[0]} and ${logins[1]}`;
+  const others = logins.length - 2;
+  return `${logins[0]}, ${logins[1]}, and ${others} other contributor${others === 1 ? "" : "s"}`;
+}
+
+function decodeBasicEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+// Per-isolate memo: the upstream page is ~800KB of HTML, and re-parsing it on
+// every request would be wasteful. Mirrors the fetch cache window.
+const contributorMemo = new Map<
+  string,
+  { at: number; data: Record<string, ReleaseContributors> }
+>();
+const CONTRIBUTOR_TTL_MS = 10 * 60 * 1000;
+
+async function fetchUpstreamContributors(
+  upstreamRepo: string,
+): Promise<Record<string, ReleaseContributors>> {
+  const hit = contributorMemo.get(upstreamRepo);
+  if (hit && Date.now() - hit.at < CONTRIBUTOR_TTL_MS) return hit.data;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12_000);
+    let res: Response;
+    try {
+      res = await fetch(`https://github.com/${upstreamRepo}/releases`, {
+        next: { revalidate: 3600 },
+        headers: {
+          "User-Agent": "forkhub-web (+https://forkhub.imbios.dev)",
+          Accept: "text/html",
+        },
+        signal: ctrl.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) return {};
+    const data = parseUpstreamContributors(await res.text());
+    contributorMemo.set(upstreamRepo, { at: Date.now(), data });
+    return data;
+  } catch {
+    // Missing avatars beat a broken page; the footer block just drops.
+    return {};
+  }
 }
 
 async function fetchUpstreamReleases(
@@ -247,6 +357,7 @@ async function fetchUpstreamReleases(
       assets?: GhApiAsset[];
     }>;
     const { toChannelRelease } = await import("./releases");
+    const contributorsByTag = await fetchUpstreamContributors(upstreamRepo);
     const releases: UpstreamRelease[] = [];
     for (const r of batch) {
       if (typeof r.tag_name !== "string") continue;
@@ -267,7 +378,8 @@ async function fetchUpstreamReleases(
       // while authorUrl keeps the API-provided apps URL. Avatar URLs from
       // the API carry no size param; upstream serves `?s=40` (20px @2x).
       const displayLogin = login.replace(/\[bot\]$/i, "");
-      const rawAvatar = r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
+      const rawAvatar =
+        r.author && typeof r.author.avatar_url === "string" ? r.author.avatar_url : "";
       const avatar =
         rawAvatar !== "" && !/[?&]s=\d+/.test(rawAvatar)
           ? `${rawAvatar}${rawAvatar.includes("?") ? "&" : "?"}s=40`
@@ -294,6 +406,7 @@ async function fetchUpstreamReleases(
         shaUrl: conv.shaUrl,
         prerelease: r.prerelease === true,
         latest: false,
+        contributors: contributorsByTag[tagName] ?? null,
       });
     }
     const sorted = [...releases].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));

@@ -443,7 +443,7 @@ describe("fetchCatalogReleases", () => {
 });
 
 describe("bodyHtml server rendering", () => {
-  test("expands details/summary, links mentions + PR numbers", async () => {
+  test("keeps details/summary collapsed, links mentions + PR numbers", async () => {
     const { getUpstreamReleases } = await import("./live");
     const origFetch = globalThis.fetch;
     const payload = [
@@ -464,14 +464,47 @@ describe("bodyHtml server rendering", () => {
     try {
       const { releases } = await getUpstreamReleases("t3code");
       const html = releases[0]?.bodyHtml ?? "";
-      expect(html.includes("<details")).toBe(false);
-      expect(html.includes("<summary")).toBe(false);
+      // github.com renders the generated changelog behind a closed
+      // "Full changelog" disclosure, so both tags must survive sanitizing
+      // and `open` must never be allowlisted.
+      expect(html).toContain("<details");
+      expect(html).toContain("<summary>Full changelog</summary>");
+      expect(html.includes("<details open")).toBe(false);
       expect(html).toContain("Body text");
       expect(html).toContain('href="https://github.com/someone">@someone</a>');
       expect(html).toContain('href="https://github.com/pingdotgg/t3code/pull/123">#123</a>');
     } finally {
       globalThis.fetch = origFetch;
     }
+  });
+
+  test("parses the upstream Contributors footer per release", async () => {
+    const { parseUpstreamContributors } = await import("./live");
+    const page = `
+      <section id="release-v1">
+        <h3 class="mb-2">Contributors</h3>
+        <ul class="list-style-none d-flex flex-wrap mb-n2">
+          <li class="mb-2 mr-2"><a href="https://github.com/alice"><img src="https://avatars.githubusercontent.com/u/1?s=64&amp;v=4" alt="@alice" width="32" height="32"></a></li>
+          <li class="mb-2 mr-2"><a href="https://github.com/bob"><img src="https://avatars.githubusercontent.com/u/2?s=64&amp;v=4" alt="@bob" width="32" height="32"></a></li>
+        </ul>
+        <div class="mt-2 color-fg-muted">alice, bob, and 18 other contributors</div>
+      </section>
+      <section id="release-v0"><p>hand-written notes, no contributors block</p></section>`;
+    const out = parseUpstreamContributors(page);
+    expect(Object.keys(out)).toEqual(["v1"]);
+    expect(out.v1?.avatars.map((a) => a.login)).toEqual(["alice", "bob"]);
+    expect(out.v1?.avatars[0]?.avatarSrc).toBe(
+      "https://avatars.githubusercontent.com/u/1?s=64&v=4",
+    );
+    expect(out.v1?.caption).toBe("alice, bob, and 18 other contributors");
+  });
+
+  test("falls back to upstream's caption wording when absent", async () => {
+    const { contributorCaption } = await import("./live");
+    expect(contributorCaption(["a"])).toBe("a");
+    expect(contributorCaption(["a", "b"])).toBe("a and b");
+    expect(contributorCaption(["a", "b", "c"])).toBe("a, b, and 1 other contributor");
+    expect(contributorCaption(["a", "b", "c", "d"])).toBe("a, b, and 2 other contributors");
   });
 });
 

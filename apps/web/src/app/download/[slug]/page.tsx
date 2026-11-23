@@ -10,6 +10,9 @@ function compact(n: number | null): string | null {
   const v = n / 1000;
   return `${v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}k`;
 }
+// github.com renders these pages in Mona Sans (its own webfont).
+// Self-hosted here so text metrics match the upstream page exactly.
+import "@fontsource-variable/mona-sans";
 import GhForkPage from "./gh-fork-page";
 import "./gh-fork.css";
 

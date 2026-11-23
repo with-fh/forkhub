@@ -2,18 +2,24 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { ReleaseContributors, UpstreamRelease } from "@/lib/live";
 import type { DownloadAsset } from "@/lib/releases";
-import type { UpstreamRelease } from "@/lib/live";
 import { formatBytes } from "@/lib/releases";
 import "./gh-markdown.css";
 
 /**
- * Upstream GitHub-releases pixel fork for /download/[slug]: same DOM order, copy, structure,
- * and behavior as github.com/<owner>/<repo>/releases — global header, repo header, repo tabs
- * (with octicon glyphs + Code selected underline), breadcrumbs, sidebar (Releases/Tags +
- * per-release anchor list), release cards (title, Pre-release label, author line, tag/commit
- * links, full notes body, asset list). Asset downloads resolve to ForkHub catalog builds
- * (same filenames as upstream); all other links are upstream URLs.
+ * Pixel fork of github.com/<owner>/<repo>/releases for /download/[slug].
+ *
+ * Every measurement below comes from the live upstream DOM at 1280x800:
+ * header 68px, repohead 100px (crumbs 16/32/4 + tabs 48 with `8px 16px 0`),
+ * tab 32px (`6px 8px`, 8px bottom margin, 6px radius), sidebar 296px with a
+ * 1px right border, main content 320..1256 (936px), h1 20/600 32.5px, find
+ * input 227x32, title 32/48 600 with a 16px right margin, Compare button
+ * 28px tall (`0 8px`, gap 4), meta row 14/21 with a 24px bottom rule, notes
+ * 16/24, Box-footer 16px padding with `margin-top: -1px`.
+ *
+ * Asset downloads resolve to ForkHub catalog builds (same filenames as
+ * upstream); every other link is the upstream URL.
  */
 
 const OCTICONS: Record<string, string> = {
@@ -34,10 +40,24 @@ const OCTICONS: Record<string, string> = {
   release:
     "M5 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm7.5-.75a.75.75 0 0 1 .75.75v7.19c0 .138-.112.25-.25.25H9.5a.75.75 0 0 1 0-1.5h2.75V4.75h-6.5v6.44h2.75a.75.75 0 0 1 0 1.5H5.5A1.75 1.75 0 0 1 3.75 11V4a.75.75 0 0 1 .75-.75h8ZM8.06 2.446A1.75 1.75 0 0 1 10.63.587l2.073 2.073a.75.75 0 0 1-1.061 1.061L10.13 2.209A.25.25 0 0 0 9.953 2.16h-.361a.75.75 0 0 1-.566-.26l-.967-1.048a.25.25 0 0 0-.18-.086H7.72a.75.75 0 0 1-.66-1.097l.001-.224c-.34.05-.68.08-1.02.08Z",
   verified:
-    "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM5.496 6.527a.748.748 0 0 1 .583-.219 1 1 0 0 1 .037.117l.006.015.011.026.067.156.09.165c.155.246.415.472.839.622c.109.038.227.071.348.099l.083.02.063.015.016.004c.096.024.192.048.285.076c.11.034.215.071.312.113a1.75 1.75 0 0 1 .593.524c.124.172.208.385.208.624c0 .176-.05.343-.136.486c-.086.142-.205.263-.344.359a2.653 2.653 0 0 1-.63.327c-.297.111-.62.183-.952.231l-.055.011a1.246 1.246 0 0 1-.079.013l-.004-1.923a.749.749 0 0 1-.752-.749l.002-1.173a.748.748 0 0 1 .166-.471l.002.556Zm3.74 2.695a.749.749 0 0 1 .75.749c0 .414-.336.75-.75.75h-.389c.07.125.113.27.119.421h.268a.75.75 0 0 1 .005 1.5h-.135l-.125.008c-.255.028-.51.078-.74.148a3.007 3.007 0 0 0-.203.073l-.06.025-.084.037-.043.021c-.123.064-.231.135-.323.216a1.433 1.433 0 0 0-.245.357c-.045.106-.067.219-.067.334c0 .119.025.23.066.33c.045.113.11.215.19.302c.09.099.2.185.328.256c.15.084.323.15.51.202c.131.037.268.068.409.093l.126.022v.019a.75.75 0 0 1 1.5-.004l-.002-.052c-.021-.437-.169-.829-.392-1.149a3.227 3.227 0 0 0-.759-.763c-.233-.158-.497-.289-.778-.391a5.123 5.123 0 0 1-.759-.327a1.175 1.175 0 0 1-.366-.283a.625.625 0 0 1-.129-.387c0-.078.026-.146.071-.208c.056-.077.15-.153.302-.223c.114-.051.249-.096.398-.134c.15-.038.309-.069.473-.09l.11-.014v-.004a.75.75 0 0 1 0-1.5h-.5a.75.75 0 0 1-.75-.75a.75.75 0 0 1 .014-.144c.07-.39.335-.721.69-.885c.155-.071.33-.125.522-.163c.12-.023.244-.038.37-.047l.165-.008h.004a.75.75 0 0 1 .122.003h.031Z",
+    "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm8.28-1.22a.75.75 0 0 1 0 1.06l-2.75 2.75a.75.75 0 0 1-1.06 0L4.72 9.34a.75.75 0 0 1 1.06-1.06l.75.75 2.22-2.22a.75.75 0 0 1 1.06 0Z",
+  package:
+    "m8.878.392 5.25 3.045c.54.314.872.89.872 1.514v6.098a1.75 1.75 0 0 1-.872 1.514l-5.25 3.045a1.75 1.75 0 0 1-1.756 0l-5.25-3.045A1.75 1.75 0 0 1 1 11.049V4.951c0-.624.332-1.201.872-1.514L7.122.392a1.75 1.75 0 0 1 1.756 0ZM7.875 1.69l-4.63 2.685L8 7.133l4.755-2.758-4.63-2.685a.248.248 0 0 0-.25 0ZM2.5 5.677v5.372c0 .09.047.171.125.216l4.625 2.683V8.432Zm6.25 8.271 4.625-2.683a.25.25 0 0 0 .125-.216V5.677L8.75 8.432Z",
+  "triangle-down":
+    "m4.427 7.427 3.396 3.396a.25.25 0 0 0 .354 0l3.396-3.396A.25.25 0 0 0 11.396 7H4.604a.25.25 0 0 0-.177.427Z",
+  "three-bars":
+    "M1 2.75A.75.75 0 0 1 1.75 2h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 2.75Zm0 5A.75.75 0 0 1 1.75 7h12.5a.75.75 0 0 1 0 1.5H1.75A.75.75 0 0 1 1 7.75ZM1.75 12h12.5a.75.75 0 0 1 0 1.5H1.75a.75.75 0 0 1 0-1.5Z",
+  search:
+    "M10.68 11.74a6 6 0 0 1-7.922-8.982 6 6 0 0 1 8.982 7.922l3.04 3.04a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215ZM11.5 7a4.499 4.499 0 1 0-8.997 0A4.499 4.499 0 0 0 11.5 7Z",
+  "list-unordered":
+    "M5 3.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm2.5.75a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5ZM5 8.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM4 12.75a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z",
+  sliders:
+    "M2 3.75A.75.75 0 0 1 2.75 3h3.5a.75.75 0 0 1 0 1.5h-3.5A.75.75 0 0 1 2 3.75Zm9.5 0A.75.75 0 0 1 12.25 3h1a.75.75 0 0 1 0 1.5h-1a.75.75 0 0 1-.75-.75ZM9.25 1.5h1.5v4.5h-1.5Zm-7.25 6.75A.75.75 0 0 1 2.75 7.5h1a.75.75 0 0 1 0 1.5h-1A.75.75 0 0 1 2 8.25Zm4.5 0a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75ZM5.75 6h1.5v4.5h-1.5ZM2 12.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Zm9.5 0a.75.75 0 0 1 .75-.75h1a.75.75 0 0 1 0 1.5h-1a.75.75 0 0 1-.75-.75ZM9.25 10.5h1.5v4.5h-1.5Z",
+  "sidebar-expand":
+    "M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177ZM1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25Z",
 };
 
-function Octicon({ name }: { name: string }) {
+function Octicon({ name, className }: { name: string; className?: string }) {
   return (
     <svg
       aria-hidden="true"
@@ -46,7 +66,7 @@ function Octicon({ name }: { name: string }) {
       viewBox="0 0 16 16"
       width={16}
       fill="currentColor"
-      style={{ verticalAlign: "text-bottom" }}
+      className={className ? `gh-octicon ${className}` : "gh-octicon"}
     >
       <path d={OCTICONS[name]} />
     </svg>
@@ -68,10 +88,11 @@ function timeAgo(iso: string): string {
 }
 
 function shortTime(iso: string): string {
-  // Fallback text inside <time>, matching github.com server-rendered
-  // <relative-time> output ("17 Nov 02:59"); client JS hydrates it to
-  // relative text ("1 hour ago"). The old hydration-crash fix (#66)
-  // stands: plain <time>, never the custom element (React 19 choke).
+  // Fallback text inside <time>, matching github.com's server-rendered
+  // <relative-time> output ("17 Nov 02:59"); client JS upgrades it to
+  // relative text ("1 hour ago"). React keeps rendering this plain <time>
+  // (identical tag/attrs/text to upstream), so hydration stays safe — the
+  // custom element is only ever created via the DOM API in the effect below.
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return timeAgo(iso);
   const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
@@ -92,14 +113,6 @@ function absoluteTitle(iso: string): string {
   });
 }
 
-// Post-hydration upgrade of the server-rendered absolute timestamp to
-// GitHub's live relative text ("3 hours ago", "yesterday", "on Oct 8").
-// React keeps rendering the plain <time> fallback (identical tag, attrs,
-// and text to github.com server HTML — hence hydration-safe); this hook
-// only mutates textContent via the DOM API using GitHub's own published
-// element, so there is no custom-element JSX for React to reconcile.
-// A re-render (e.g. filter change) restores server text and the effect
-// re-applies the upgrade. Failures keep the absolute fallback.
 let relativeTimeModule: Promise<unknown> | null = null;
 
 function useRelativeTime(iso: string) {
@@ -115,25 +128,19 @@ function useRelativeTime(iso: string) {
         if (!node || typeof document === "undefined") return;
         const probe = document.createElement("relative-time");
         probe.setAttribute("datetime", iso);
-        // NOTE: no threshold attribute — in this element version
-        // threshold="PT0S" caps relative display (verified live: a 2h-old
-        // timestamp rendered "on Nov 17" with it, "2 hours ago" without),
-        // while github.com shows relative text for recent releases.
+        // No threshold attribute: in this element version threshold="PT0S"
+        // caps relative display (a 2h-old stamp rendered "on Nov 17").
         document.body.appendChild(probe);
         const rendered = (probe.shadowRoot?.textContent ?? "").trim();
-        // Mirror the element's own tooltip (viewer-local absolute time),
-        // exactly as github.com upgrades title on render.
         const upgradedTitle = probe.getAttribute("title");
         probe.remove();
         if (cancelled) return;
-        if (rendered !== "" && node.textContent !== rendered) {
-          node.textContent = rendered;
-        }
+        if (rendered !== "" && node.textContent !== rendered) node.textContent = rendered;
         if (upgradedTitle && node.getAttribute("title") !== upgradedTitle) {
           node.setAttribute("title", upgradedTitle);
         }
       } catch {
-        // keep server-rendered absolute fallback
+        // keep the server-rendered absolute fallback
       }
     })();
     return () => {
@@ -146,210 +153,148 @@ function useRelativeTime(iso: string) {
 function AssetRow({ asset }: { asset: DownloadAsset }) {
   const size = formatBytes(asset.size);
   return (
-    <li
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        padding: "6px 0",
-        borderTop: "1px solid var(--gh-border-muted)",
-        fontSize: 14,
-      }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/gh/file-icon.svg"
-        alt=""
-        aria-hidden="true"
-        width={16}
-        height={16}
-        style={{ flex: "none", opacity: 0.7 }}
-      />
-      <a
-        href={asset.url}
-        style={{ color: "var(--gh-fg-accent)", textDecoration: "none", wordBreak: "break-all" }}
-      >
+    <li className="gh-asset-row">
+      <Octicon name="package" className="gh-asset-icon" />
+      <a href={asset.url} className="gh-asset-name">
         {asset.name}
       </a>
-      {size && <span style={{ color: "var(--gh-fg-muted)", fontSize: 12 }}>{size}</span>}
+      {size ? <span className="gh-asset-size">{size}</span> : null}
     </li>
   );
 }
 
-function ContributorsBlock({ body }: { body: string }) {
-  const users = useMemo(() => {
-    const seen = new Map<string, string>();
-    for (const m of body.matchAll(/@([A-Za-z0-9-]+)/g)) {
-      if (!seen.has(m[1]!)) seen.set(m[1]!, `https://github.com/${m[1]}`);
-    }
-    return [...seen.entries()].slice(0, 12);
-  }, [body]);
-  if (users.length === 0) return null;
+function ContributorsFooter({ contributors }: { contributors: ReleaseContributors }) {
   return (
     <div className="gh-contributors">
       <h3>Contributors</h3>
       <ul>
-        {users.map(([login, url]) => (
-          <li key={login}>
-            <a href={url} aria-label={login}>
+        {contributors.avatars.map((c) => (
+          <li key={c.login}>
+            <a href={`https://github.com/${c.login}`} aria-label={c.login}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://avatars.githubusercontent.com/${login}?s=64&v=4`}
-                alt={`@${login}`}
-                width={32}
-                height={32}
-              />
+              <img src={c.avatarSrc} alt={`@${c.login}`} width={32} height={32} />
             </a>
           </li>
         ))}
       </ul>
+      {contributors.caption ? (
+        <div className="gh-contributors-caption">{contributors.caption}</div>
+      ) : null}
     </div>
   );
 }
 
 function ReleaseCard({ release }: { release: UpstreamRelease }) {
-  const [assetsOpen, setAssetsOpen] = useState(false);
   const timeRef = useRelativeTime(release.publishedAt);
   return (
-    <section
-      id={`release-${release.tag}`}
-      aria-label={release.name}
-      className="gh-release-card"
-      style={{ scrollMarginTop: 24 }}
-    >
+    <section id={`release-${release.tag}`} aria-label={release.name} className="gh-release-card">
       <h2 className="sr-only">{release.name}</h2>
       <div className="gh-box">
         <div className="gh-box-body">
           <div className="gh-release-head">
-            <div className="gh-compare">
-              {release.compareUrl ? (
-                <a href={release.compareUrl} className="gh-compare-btn" aria-haspopup="dialog">
-                  <span>Compare</span>
-                  <svg
-                    aria-hidden="true"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    width="16"
-                    fill="currentColor"
-                  >
-                    <path d="m4.427 7.427 3.396 3.396a.25.25 0 0 1 0 .354l-3.396 3.396A.25.25 0 0 1 4.604 7H4.604a.25.25 0 0 1-.177-.427Z" />
-                  </svg>
-                </a>
-              ) : null}
-            </div>
             <div className="gh-release-titlewrap">
               <span className="gh-release-title">
                 <a href={release.tagUrl} className="gh-link-primary">
                   {release.name}
                 </a>
               </span>
-              <span>
-                {release.prerelease ? (
-                  <span className="gh-label-warning">Pre-release</span>
-                ) : release.latest ? (
-                  <span className="gh-label-success">Latest</span>
+              {release.prerelease ? (
+                <span className="gh-label gh-label-warning">Pre-release</span>
+              ) : release.latest ? (
+                <span className="gh-label gh-label-success">Latest</span>
+              ) : null}
+            </div>
+            {release.compareUrl ? (
+              <div className="gh-compare">
+                <button
+                  type="button"
+                  className="gh-compare-btn"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                >
+                  <span>Compare</span>
+                  <Octicon name="triangle-down" />
+                </button>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="gh-release-metawrap">
+            <div className="gh-release-meta">
+              <div className="gh-meta-group">
+                {release.authorAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={release.authorAvatar}
+                    alt={`@${release.authorLogin}`}
+                    width={20}
+                    height={20}
+                    className="gh-meta-avatar"
+                  />
                 ) : null}
-              </span>
+                <a href={release.authorUrl} className="gh-author-link">
+                  {release.authorLogin}
+                </a>
+                <span>
+                  released this{" "}
+                  <time
+                    ref={timeRef}
+                    className="gh-no-wrap"
+                    dateTime={release.publishedAt}
+                    title={absoluteTitle(release.publishedAt)}
+                  >
+                    {shortTime(release.publishedAt)}
+                  </time>
+                </span>
+              </div>
+              <div className="gh-meta-group gh-meta-tag">
+                <Octicon name="tag" className="gh-meta-icon" />
+                <a href={release.tagUrl} className="gh-tag-link" title={release.tag}>
+                  {release.tag}
+                </a>
+              </div>
+              {release.commitSha ? (
+                <div className="gh-meta-group gh-meta-commit">
+                  <Octicon name="commit" className="gh-meta-icon" />
+                  <a
+                    href={release.commitUrl}
+                    className="gh-commit-link"
+                    data-hovercard-type="commit"
+                  >
+                    {release.commitSha.slice(0, 7)}
+                  </a>
+                  <Octicon name="verified" className="gh-verified" />
+                </div>
+              ) : null}
             </div>
           </div>
-          <div className="gh-release-meta">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {release.authorAvatar ? (
-              <img
-                src={release.authorAvatar}
-                alt={`@${release.authorLogin}`}
-                width={20}
-                height={20}
-                style={{ borderRadius: "50%" }}
-              />
-            ) : null}
-            <a href={release.authorUrl} className="gh-link-muted gh-author-link">
-              {release.authorLogin}
-            </a>
-            <span>
-              released this{" "}
-              <time
-                ref={timeRef}
-                className="no-wrap"
-                dateTime={release.publishedAt}
-                title={absoluteTitle(release.publishedAt)}
-              >
-                {shortTime(release.publishedAt)}
-              </time>
-            </span>
-            <a href={release.tagUrl} className="gh-link-muted gh-tag-link">
-              <svg
-                aria-label="Tag"
-                role="img"
-                height={16}
-                viewBox="0 0 16 16"
-                version="1.1"
-                width={16}
-                fill="currentColor"
-                style={{ verticalAlign: "text-bottom" }}
-              >
-                <path d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z" />
-              </svg>
-              <span style={{ marginLeft: 4 }}>{release.tag}</span>
-            </a>
-            {release.commitSha ? (
-              <a
-                href={release.commitUrl}
-                className="gh-link-muted gh-commit-link"
-                data-hovercard-type="commit"
-              >
-                <svg
-                  aria-hidden="true"
-                  height={16}
-                  viewBox="0 0 16 16"
-                  width={16}
-                  fill="currentColor"
-                  style={{ verticalAlign: "text-bottom" }}
-                >
-                  <path d="M11.93 8.5a4.91 4.91 0 0 1-1.75 3.74c-.85.7-1.97 1.07-3.17 1.07H4.06A3.06 3.06 0 0 1 1 10.25v-.39c0-.2.04-.39.11-.56.03-.1.04-.2.04-.31a1.5 1.5 0 0 1 2.98-.26c.11-.15.31-.43.31-.43a2.5 2.5 0 0 1 4.23-.87l.33.34a3.28 3.28 0 0 1 2.93-.7ZM8 1.75a3.24 3.24 0 0 1 2.62 1.34l.29.38.35-.5a1.75 1.75 0 0 1 2.84.26l.06.08c.32.45.49.97.49 1.51a3.24 3.24 0 0 1-.65 1.95l-.31.36-.31-.36a3.24 3.24 0 0 1-.65-1.95c0-.25.04-.49.11-.72l-2.08 2.08a.75.75 0 0 1-1.06 0l-2.08-2.08c.07.23.11.47.11.72a3.24 3.24 0 0 1-.65 1.95l-.31.36-.31-.36a3.24 3.24 0 0 1-.65-1.95c0-.54.17-1.06.49-1.51l.06-.08a1.75 1.75 0 0 1 2.84-.26l.35.5.29-.38A3.24 3.24 0 0 1 8 1.75Z" />
-                </svg>
-                <span className="gh-commit-sha">{release.commitSha.slice(0, 7)}</span>
-                <svg
-                  aria-label="Verified"
-                  role="img"
-                  height={16}
-                  viewBox="0 0 16 16"
-                  width={16}
-                  fill="currentColor"
-                  className="gh-verified"
-                  style={{ verticalAlign: "text-bottom", marginLeft: 4 }}
-                >
-                  <path d={OCTICONS.verified} />
-                </svg>
-              </a>
-            ) : null}
-          </div>
+
           <div
-            className="gh-release-notes markdown-body tmp-my-3"
+            className="gh-release-notes markdown-body"
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: release.bodyHtml }}
           />
-          <ContributorsBlock body={release.body} />
-          {release.assets.length > 0 ? (
-            <div className="gh-assets">
-              <button
-                type="button"
-                className="gh-assets-toggle"
-                onClick={() => setAssetsOpen((v) => !v)}
-                aria-expanded={assetsOpen}
-              >
-                Assets ({release.assets.length})
-              </button>
-              {assetsOpen && (
+        </div>
+        {release.contributors || release.assets.length > 0 ? (
+          <div className="gh-box-footer">
+            {release.contributors ? (
+              <ContributorsFooter contributors={release.contributors} />
+            ) : null}
+            {release.assets.length > 0 ? (
+              <details className="gh-assets">
+                <summary>
+                  <span className="gh-assets-label">Assets</span>
+                  <span className="gh-counter">{release.assets.length}</span>
+                </summary>
                 <ul className="gh-asset-list">
                   {release.assets.map((a) => (
                     <AssetRow key={a.url} asset={a} />
                   ))}
                 </ul>
-              )}
-            </div>
-          ) : null}
-        </div>
+              </details>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -381,39 +326,44 @@ export default function GhForkPage({
         r.body.toLowerCase().includes(q),
     );
   }, [releases, query]);
+
   return (
     <div className="gh-fork gh-fork-scope">
       <header className="gh-global-header">
-        <a href="https://github.com" className="gh-global-logo" aria-label="GitHub homepage">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/gh/github-mark-white.svg" alt="" width={32} height={32} />
-        </a>
-        <nav className="gh-global-nav" aria-label="Global">
-          {["Products", "Developers", "Businesses", "Resources", "Pricing"].map((t) => (
-            <a key={t} href="https://github.com" className="gh-global-link">
-              {t}
-            </a>
-          ))}
-        </nav>
-        <div className="gh-global-search" role="search">
-          <span>Search</span>
-          <kbd>/</kbd>
+        <div className="gh-global-inner">
+          <a href="https://github.com" className="gh-global-logo" aria-label="GitHub homepage">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/gh/github-mark-white.svg" alt="" width={32} height={32} />
+          </a>
+          <nav className="gh-global-nav" aria-label="Global">
+            {["Products", "Developers", "Businesses", "Resources", "Pricing"].map((t) => (
+              <a key={t} href="https://github.com" className="gh-global-link">
+                <span>{t}</span>
+                {t === "Pricing" ? null : <Octicon name="triangle-down" className="gh-caret" />}
+              </a>
+            ))}
+          </nav>
+          <div className="gh-global-search" role="search">
+            <span>Search</span>
+            <kbd>/</kbd>
+          </div>
+          <a href="https://github.com/login" className="gh-signin">
+            Sign in
+          </a>
+          <a href="https://github.com/signup" className="gh-signup">
+            Sign up
+          </a>
+          <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
+            <Octicon name="sliders" />
+          </button>
         </div>
-        <a href="https://github.com/login" className="gh-signin">
-          Sign in
-        </a>
-        <a href="https://github.com/signup" className="gh-signup">
-          Sign up
-        </a>
       </header>
 
-      <div className="gh-repohead">
+      <header className="gh-repohead">
         <nav className="gh-crumbs" aria-label="Breadcrumbs">
           <a href={`https://github.com/${owner}`}>{owner}</a>
-          <span> / </span>
-          <a href={`https://github.com/${owner}/${repo}`} className="gh-crumb-repo">
-            {repo}
-          </a>
+          <span className="gh-crumb-sep">/</span>
+          <a href={`https://github.com/${owner}/${repo}`}>{repo}</a>
         </nav>
         <nav className="gh-tabs" aria-label="Repository">
           {(
@@ -437,56 +387,49 @@ export default function GhForkPage({
                 <Octicon name={t.icon} />
               </span>
               <span>{t.label}</span>
-              {t.count != null ? (
-                <>
-                  {" "}
-                  <span className="gh-tab-count">{t.count}</span>
-                </>
-              ) : null}
+              {t.count != null ? <span className="gh-tab-count">{t.count}</span> : null}
             </a>
           ))}
         </nav>
-      </div>
+      </header>
 
       <div className="gh-layout">
         <aside className="gh-sidebar">
           <nav aria-label="Releases and tags">
-            <a href={upstreamReleasesUrl} className="gh-side-active" aria-current="page">
-              <span className="gh-side-icon">
-                <Octicon name="release" />
-              </span>
-              <span>Releases</span>
-            </a>
-            <a href={`${upstreamReleasesUrl.replace(/\/releases\/?$/, "/tags")}`}>
-              <span className="gh-side-icon">
-                <Octicon name="tag" />
-              </span>
-              <span>Tags</span>
-            </a>
-            <h2>On this page</h2>
-            <ul className="gh-anchor-list">
-              {filtered.map((r) => (
-                <li key={r.tag}>
-                  <a href={`#release-${r.tag}`} title={r.name}>
-                    {r.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div className="gh-side-group">
+              <a
+                href={upstreamReleasesUrl}
+                className="gh-side-item gh-side-active"
+                aria-current="page"
+              >
+                <Octicon name="release" className="gh-side-icon" />
+                <span>Releases</span>
+              </a>
+              <a
+                href={upstreamReleasesUrl.replace(/\/releases\/?$/, "/tags")}
+                className="gh-side-item"
+              >
+                <Octicon name="tag" className="gh-side-icon" />
+                <span>Tags</span>
+              </a>
+            </div>
+            <div className="gh-side-group">
+              <h2 className="gh-side-heading">
+                <Octicon name="list-unordered" className="gh-side-icon" />
+                <span>On this page</span>
+              </h2>
+              <ul className="gh-anchor-list">
+                {filtered.map((r) => (
+                  <li key={r.tag}>
+                    <a href={`#release-${r.tag}`} title={r.name}>
+                      {r.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <button type="button" className="gh-collapse-btn" aria-expanded="true">
-              <span className="gh-side-icon">
-                <svg
-                  aria-hidden="true"
-                  height={16}
-                  viewBox="0 0 16 16"
-                  width={16}
-                  fill="currentColor"
-                  style={{ verticalAlign: "text-bottom" }}
-                >
-                  <path d="M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177Z" />
-                  <path d="M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25Z" />
-                </svg>
-              </span>
+              <Octicon name="sidebar-expand" className="gh-side-icon" />
               <span>Collapse sidebar</span>
             </button>
           </nav>
@@ -495,7 +438,8 @@ export default function GhForkPage({
         <main className="gh-main">
           <div className="gh-releases-head">
             <h1>Releases</h1>
-            <div className="gh-find">
+            <form className="gh-find" role="search" onSubmit={(e) => e.preventDefault()}>
+              <Octicon name="search" className="gh-find-icon" />
               <input
                 type="search"
                 aria-label="Find a release"
@@ -503,7 +447,7 @@ export default function GhForkPage({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
-            </div>
+            </form>
           </div>
           <div className="gh-results">
             {filtered.map((r) => (
