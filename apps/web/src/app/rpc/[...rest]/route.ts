@@ -1,9 +1,14 @@
 import { createContext } from "@forkhub/api/context";
 import { appRouter } from "@forkhub/api/routers/index";
+import { workerRouter } from "@forkhub/api/routers/worker";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 
-const rpcHandler = new RPCHandler(appRouter, {
+// Workers (opennext build, OPENNEXT=1) serve the Postgres-free subset:
+// healthcheck + oss catalog. Node/docker serves the full router.
+const router = (process.env.OPENNEXT ? workerRouter : appRouter) as typeof appRouter;
+
+const rpcHandler = new RPCHandler(router, {
   interceptors: [
     onError((error) => {
       console.error(error);

@@ -1,0 +1,641 @@
+import { describe, expect, test } from "bun:test";
+
+import {
+  channelHistory,
+  channelOf,
+  classifyAsset,
+  formatBytes,
+  isMetaAsset,
+  isTryBuild,
+  isUnifiedRelease,
+  mergePlatformBuilds,
+  newestShaUrl,
+  pickLatest,
+  type ChannelRelease,
+  type GhRelease,
+} from "./releases";
+import { fetchCatalogReleases } from "./live";
+
+const asset = (name: string, size = 1024) => ({
+  name,
+  browser_download_url: `https://github.com/dl/${name}`,
+  size,
+});
+
+// Shapes copied from the live with-fh/.forkhub releases API (Oct 2026).
+const T3_NIGHTLY_SPLIT: GhRelease = {
+  tag_name: "pingdotgg-t3code--v0.1.1-nightly.20261019.3373-fh1",
+  name: "pingdotgg-t3code--v0.1.1-nightly.20261019.3373-fh1",
+  html_url: "https://github.com/r/1",
+  published_at: "2026-10-20T01:02:58Z",
+  assets: [
+    asset("builder-debug.yml"),
+    asset("BUILD_LOG.md"),
+    asset("latest-linux.yml"),
+    asset("SHA256SUMS"),
+    asset("T3-Code-0.1.1-nightly.20261019.3373.fh.with-fh.1-amd64.deb", 80_000_000),
+    asset("T3-Code-0.1.1-nightly.20261019.3373.fh.with-fh.1-x86_64.AppImage", 120_000_000),
+    asset("with-fh-fh-t3-0.1.1-nightly.20261019.3373.fh.with-fh.1.tgz"),
+  ],
+};
+
+const NAT_LINUX_SPLIT: GhRelease = {
+  tag_name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh19",
+  name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh19",
+  html_url: "https://github.com/r/2",
+  published_at: "2026-10-16T05:18:34Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("Natively-2.9.2-fh.with-fh.4.AppImage", 150_000_000),
+    asset("natively_2.9.2-fh.with-fh.4_amd64.deb", 90_000_000),
+    asset("SHA256SUMS"),
+  ],
+};
+
+const NAT_MAC_SPLIT: GhRelease = {
+  tag_name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh22",
+  name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh22",
+  html_url: "https://github.com/r/3",
+  published_at: "2026-10-16T05:30:14Z",
+  assets: [
+    asset("corespeechd-2.9.2-fh.with-fh.4-arm64.dmg", 110_000_000),
+    asset("corespeechd-2.9.2-fh.with-fh.4-x64.dmg", 115_000_000),
+    asset("Natively-2.9.2-fh.with-fh.4-arm64.zip", 108_000_000),
+    asset("Natively-2.9.2-fh.with-fh.4-x64.zip", 112_000_000),
+    asset("SHA256SUMS-mac"),
+  ],
+};
+
+const NAT_WIN_SPLIT: GhRelease = {
+  tag_name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh21",
+  name: "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh21",
+  html_url: "https://github.com/r/4",
+  published_at: "2026-10-16T05:22:00Z",
+  assets: [
+    asset("corespeechd-Setup-2.9.2-fh.with-fh.4.exe", 95_000_000),
+    asset("corespeechd.2.9.2-fh.with-fh.4.exe", 96_000_000),
+    asset("SHA256SUMS-win"),
+  ],
+};
+
+// Shapes copied from the live with-fh/.forkhub dsh releases API (Nov 2026).
+// Unified updater tags (v<base>.<owner>.<date>.<n>) carry no repo slug;
+// production matches them by release name ("DeepSeek Harness ForkHub ...").
+const DSH_UNIFIED: GhRelease = {
+  tag_name: "v0.2.2-rc.3.with-fh.20261116.1",
+  name: "DeepSeek Harness ForkHub v0.2.2-rc.3.with-fh.20261116.1",
+  html_url: "https://github.com/r/5",
+  published_at: "2026-11-16T04:00:34Z",
+  assets: [
+    asset("fh-linux.yml"),
+    asset("fh.yml"),
+    asset("latest-linux.yml"),
+    asset("latest.yml"),
+    asset(
+      "deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-linux-x86_64-unsigned.AppImage",
+      375_212_022,
+    ),
+    asset("deepseek-harness-0.2.2-rc.3.with-fh.20261116.1-win-x64-unsigned.exe", 308_000_000),
+  ],
+};
+
+const DSH_MAC_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.3-fh2",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.3-fh2",
+  html_url: "https://github.com/r/6",
+  published_at: "2026-11-13T04:44:47Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("deepseek-harness-0.2.2-rc.3.with-fh.20261113.1-mac-arm64-unsigned.dmg", 270_000_000),
+    asset("SHA256SUMS"),
+    asset("SHA256SUMS-mac"),
+  ],
+};
+
+const DSH_WIN_SPLIT: GhRelease = {
+  tag_name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  name: "deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh13",
+  html_url: "https://github.com/r/7",
+  published_at: "2026-11-10T04:44:47Z",
+  assets: [
+    asset("BUILD_LOG.md"),
+    asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe", 308_000_000),
+    asset("SHA256SUMS"),
+    asset("SHA256SUMS-win"),
+  ],
+};
+
+describe("channelOf", () => {
+  test("nightly tags vs stable tags", () => {
+    expect(channelOf("v0.1.1-nightly.20261019.3373.fh.with-fh.1")).toBe("nightly");
+    expect(channelOf("v2.9.2-fh.with-fh.4")).toBe("stable");
+    expect(channelOf("v2.9.2-fh.imbios.1")).toBe("stable");
+  });
+});
+
+describe("classifyAsset", () => {
+  test("excludes metadata", () => {
+    for (const n of [
+      "latest-linux.yml",
+      "nightly-linux.yml",
+      "SHA256SUMS",
+      "SHA256SUMS-mac",
+      "BUILD_LOG.md",
+      "builder-debug.yml",
+      "x-arm64.dmg.blockmap",
+      "fh.yml",
+    ]) {
+      expect(isMetaAsset(n)).toBe(true);
+      expect(classifyAsset(asset(n))).toBeNull();
+    }
+  });
+
+  test("maps desktop formats to platforms", () => {
+    expect(classifyAsset(asset("T3-Code-x86_64.AppImage"))).toMatchObject({
+      platform: "linux",
+      arch: "x64",
+      kind: "portable",
+      format: "AppImage",
+    });
+    expect(classifyAsset(asset("natively_2.9.2_amd64.deb"))).toMatchObject({
+      platform: "linux",
+      arch: "x64",
+      kind: "installer",
+      format: ".deb",
+    });
+    expect(classifyAsset(asset("corespeechd-2.9.2-arm64.dmg"))).toMatchObject({
+      platform: "mac",
+      arch: "arm64",
+      kind: "installer",
+      format: ".dmg",
+    });
+    expect(classifyAsset(asset("corespeechd-2.9.2-x64.dmg"))).toMatchObject({
+      platform: "mac",
+      arch: "x64",
+    });
+    expect(classifyAsset(asset("corespeechd-Setup-2.9.2.exe"))).toMatchObject({
+      platform: "windows",
+      kind: "installer",
+      format: "Setup .exe",
+    });
+    expect(classifyAsset(asset("Natively-2.9.2-arm64.zip"))).toMatchObject({
+      platform: "mac",
+      arch: "arm64",
+      format: ".zip",
+    });
+    // OpenDia Firefox XPI: browser add-on card (portable, own format).
+    expect(classifyAsset(asset("opendia-firefox-1.1.4-fh.with-fh.5.xpi"))).toMatchObject({
+      kind: "portable",
+      format: ".xpi",
+    });
+    expect(
+      classifyAsset(asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-mac-arm64-unsigned.dmg")),
+    ).toMatchObject({ platform: "mac", arch: "arm64", format: ".dmg" });
+    expect(
+      classifyAsset(asset("deepseek-harness-0.2.2-rc.1.with-fh.20261110.1-win-x64-unsigned.exe")),
+    ).toMatchObject({ platform: "windows", arch: "x64", kind: "portable", format: ".exe" });
+    // Managed fh-run tarball is not a desktop download card.
+    expect(classifyAsset(asset("with-fh-fh-t3-0.1.1.tgz"))?.kind).toBe("package");
+    // Patched-source tarballs get their own Source code section.
+    expect(
+      classifyAsset(
+        asset("natively-ai-assistant-natively-cluely-ai-assistant-patched-source.tar.gz"),
+      ),
+    ).toMatchObject({ platform: "source", kind: "archive", format: ".tar.gz" });
+  });
+});
+
+describe("channelHistory + mergePlatformBuilds", () => {
+  const all = [T3_NIGHTLY_SPLIT, NAT_LINUX_SPLIT, NAT_MAC_SPLIT, NAT_WIN_SPLIT];
+  const nativelyOnly = (r: GhRelease) => /natively/i.test(r.tag_name);
+
+  test("splits channels newest-first with a cap", () => {
+    const { stable, nightly } = channelHistory(all, nativelyOnly, 2);
+    expect(nightly).toEqual([]);
+    expect(stable.map((r) => r.version)).toEqual([NAT_MAC_SPLIT.tag_name, NAT_WIN_SPLIT.tag_name]);
+  });
+
+  test("merges split per-platform releases into full coverage", () => {
+    const { stable } = channelHistory(all, nativelyOnly, 10);
+    const builds = mergePlatformBuilds(stable);
+    const keys = builds.map((b) => `${b.platform}/${b.arch}/${b.format}`);
+    expect(keys).toContain("linux/x64/AppImage");
+    expect(keys).toContain("linux/x64/.deb");
+    expect(keys).toContain("mac/arm64/.dmg");
+    expect(keys).toContain("mac/x64/.dmg");
+    expect(keys).toContain("mac/arm64/.zip");
+    expect(keys).toContain("windows/x64/Setup .exe");
+    // Newest provider wins per card.
+    expect(builds.find((b) => b.format === ".dmg" && b.arch === "arm64")?.fromVersion).toBe(
+      NAT_MAC_SPLIT.tag_name,
+    );
+  });
+
+  test("dsh unified release maps AppImage + exe + mac dmg fallback", () => {
+    // Unified tags (v<base>.<owner>.<date>.<n>) carry no repo slug — the
+    // ownerOf matcher keys on release names for dsh, so the fixture names
+    // mirror production ("DeepSeek Harness ForkHub ..." for unified).
+    const allDsh = [DSH_UNIFIED, DSH_MAC_SPLIT];
+    const { stable } = channelHistory(allDsh, (r) => /deepseek/i.test(r.name), 10);
+    expect(stable.map((r) => r.version)).toEqual([DSH_UNIFIED.tag_name, DSH_MAC_SPLIT.tag_name]);
+    const [unified, macSplit] = stable;
+    expect(unified?.assets.map((a) => a.format).sort()).toEqual([".exe", "AppImage"]);
+    expect(macSplit?.assets.map((a) => a.format)).toEqual([".dmg"]);
+    const builds = mergePlatformBuilds(stable);
+    const keys = builds.map((b) => `${b.platform}/${b.arch}/${b.format}`);
+    expect(keys).toContain("linux/x64/AppImage");
+    expect(keys).toContain("windows/x64/.exe");
+    expect(keys).toContain("mac/arm64/.dmg");
+    // Linux AppImage comes from the newest unified release.
+    expect(builds.find((b) => b.format === "AppImage")?.fromVersion).toBe(DSH_UNIFIED.tag_name);
+    // mac dmg falls back to the older per-platform split.
+    expect(builds.find((b) => b.format === ".dmg")?.fromVersion).toBe(DSH_MAC_SPLIT.tag_name);
+    expect(pickLatest(stable)?.version).toBe(DSH_UNIFIED.tag_name);
+  });
+
+  test("opendia channel maps signed XPI as its own card", () => {
+    // Live shape: aeonfun-opendia--v1.1.4-fhN splits carry the signed XPI
+    // (+ PROVENANCE.md); updates.json + SHA256SUMS are metadata.
+    const odia: GhRelease = {
+      tag_name: "aeonfun-opendia--v1.1.4-fh6",
+      name: "aeonfun-opendia--v1.1.4-fh6",
+      html_url: "https://github.com/r/8",
+      published_at: "2026-11-01T00:00:00Z",
+      assets: [
+        asset("BUILD_LOG.md"),
+        asset("opendia-firefox-1.1.4-fh.with-fh.5.xpi", 2_000_000),
+        asset("PROVENANCE.md"),
+        asset("SHA256SUMS"),
+      ],
+    };
+    const { stable } = channelHistory([odia], (r) => /opendia/i.test(r.tag_name), 10);
+    expect(stable).toHaveLength(1);
+    const builds = mergePlatformBuilds(stable);
+    expect(builds.map((b) => b.format)).toEqual([".xpi"]);
+    expect(builds[0]?.name).toBe("opendia-firefox-1.1.4-fh.with-fh.5.xpi");
+    expect(pickLatest(stable)?.version).toBe(odia.tag_name);
+  });
+
+  test("newestShaUrl walks newest-first", () => {
+    const { stable } = channelHistory(all, nativelyOnly, 10);
+    expect(newestShaUrl(stable)).toBe("https://github.com/dl/SHA256SUMS-mac");
+  });
+
+  test("t3 nightly single release maps deb + appimage", () => {
+    const { nightly } = channelHistory(all, (r) => /t3code/i.test(r.tag_name), 10);
+    expect(nightly).toHaveLength(1);
+    expect(nightly[0]?.assets.map((a) => a.format).sort()).toEqual([".deb", "AppImage"]);
+    expect(newestShaUrl(nightly)).toBe("https://github.com/dl/SHA256SUMS");
+  });
+
+  test("dsh splits map dmg + unsigned exe, merge composes mac + windows", () => {
+    const dshAll = [DSH_MAC_SPLIT, DSH_WIN_SPLIT];
+    const dshOnly = (r: GhRelease) => /deepseek/i.test(r.name);
+    const { stable, nightly } = channelHistory(dshAll, dshOnly, 10);
+    expect(nightly).toEqual([]);
+    expect(stable).toHaveLength(2);
+    expect(stable[0]?.assets.map((a) => a.format)).toEqual([".dmg"]);
+    expect(stable[1]?.assets.map((a) => a.format)).toEqual([".exe"]);
+    const builds = mergePlatformBuilds(stable);
+    const keys = builds.map((b) => `${b.platform}/${b.arch}/${b.format}`);
+    expect(keys).toContain("mac/arm64/.dmg");
+    expect(keys).toContain("windows/x64/.exe");
+    // fh14 carries both SHA256SUMS and SHA256SUMS-mac; shaOf takes the
+    // first checksum asset, so the plain SHA256SUMS URL wins here.
+    expect(newestShaUrl(stable)).toBe("https://github.com/dl/SHA256SUMS");
+  });
+});
+
+describe("isTryBuild + isUnifiedRelease + pickLatest", () => {
+  const rel = (
+    version: string,
+    publishedAt: string,
+    name = version,
+    body: string | null = null,
+  ): ChannelRelease => ({
+    version,
+    name,
+    publishedAt,
+    releaseUrl: `https://github.com/r/${version}`,
+    assets: [],
+    shaUrl: null,
+    tryBuild: isTryBuild(name, body),
+  });
+
+  test("detects PR try-builds by notes", () => {
+    expect(
+      isTryBuild(
+        "Natively PR #661 (full) @ v2.9.2",
+        "Try-build for upstream PR #661 (full flavor). Not for general use.",
+      ),
+    ).toBe(true);
+    expect(isTryBuild("v2.9.2-fh.with-fh.6-pr661", "PR try-build")).toBe(true);
+    expect(isTryBuild("Natively ForkHub v2.9.2-fh.with-fh.5", "Stable release")).toBe(false);
+  });
+
+  test("unified releases are v<up>-fh.<owner>.<n>", () => {
+    expect(isUnifiedRelease("v2.9.2-fh.with-fh.5")).toBe(true);
+    expect(isUnifiedRelease("v2.9.2-fh.imbios.1")).toBe(true);
+    expect(
+      isUnifiedRelease("natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh24"),
+    ).toBe(false);
+    expect(isUnifiedRelease("pingdotgg-t3code--v0.1.0-fh1")).toBe(false);
+    expect(isUnifiedRelease("deepseek-ai-deepseek-harness--dsh-v0.2.2-rc.1-fh14")).toBe(false);
+  });
+
+  test("Latest prefers canonical unified over newer splits and try-builds", () => {
+    const history = [
+      rel(
+        "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26",
+        "2026-10-22T20:39:10Z",
+      ),
+      rel("v2.9.2-fh.with-fh.5", "2026-10-21T20:42:23Z", "Natively ForkHub v2.9.2-fh.with-fh.5"),
+      rel(
+        "v2.9.2-fh.imbios.1",
+        "2026-10-17T10:49:49Z",
+        "Natively PR #661 (full) @ v2.9.2",
+        "Try-build. Not for general use.",
+      ),
+    ];
+    // Newest raw tag is the fh26 split; Latest must be the unified with-fh.5.
+    expect(pickLatest(history)?.version).toBe("v2.9.2-fh.with-fh.5");
+    // Without any unified release, newest non-try-build wins.
+    expect(pickLatest([history[0]!, history[2]!])?.version).toBe(
+      "natively-ai-assistant-natively-cluely-ai-assistant--v2.9.2-fh26",
+    );
+    // All try-builds: still returns something rather than nothing.
+    expect(pickLatest([history[2]!])?.version).toBe("v2.9.2-fh.imbios.1");
+    expect(pickLatest([])).toBeNull();
+  });
+});
+
+describe("formatBytes", () => {
+  test("human sizes", () => {
+    expect(formatBytes(null)).toBeNull();
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(120_000_000)).toBe("114 MB");
+    expect(formatBytes(90_000_000)).toBe("85.8 MB");
+  });
+});
+
+describe("fetchCatalogReleases", () => {
+  const rel = (tag: string): GhRelease => ({
+    tag_name: tag,
+    name: tag,
+    html_url: "https://github.com/r/x",
+    published_at: "2026-10-20T00:00:00Z",
+    assets: [],
+  });
+
+  const stubPages = (pages: GhRelease[][], seen: { urls: string[]; auth: (string | null)[] }) => {
+    return (async (url: string, init?: { headers?: Record<string, string> }) => {
+      seen.urls.push(url);
+      seen.auth.push(init?.headers?.Authorization ?? null);
+      const page = Number(new URL(url).searchParams.get("page") ?? "1");
+      const batch = pages[page - 1] ?? [];
+      return new Response(JSON.stringify(batch), { status: 200 });
+    }) as unknown as Parameters<typeof fetchCatalogReleases>[0];
+  };
+
+  test("fetches pages concurrently and stops at the first short page", async () => {
+    const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+    const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
+    const pages = [full(100), [rel("v0.8-fh1-t3code")]];
+    const { releases, apiOk, apiStatus } = await fetchCatalogReleases(stubPages(pages, seen));
+    expect(seen.urls).toHaveLength(3);
+    expect(releases).toHaveLength(101);
+    expect(apiOk).toBe(true);
+    expect(apiStatus).toBe(200);
+  });
+
+  test("caps at 3 pages", async () => {
+    const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+    const full = (n: number) => Array.from({ length: n }, (_, i) => rel(`misc-release-${i}`));
+    const pages = [full(100), full(100), full(100), full(100)];
+    const { releases } = await fetchCatalogReleases(stubPages(pages, seen));
+    expect(seen.urls).toHaveLength(3);
+    expect(releases).toHaveLength(300);
+  });
+
+  test("reports API failure instead of throwing", async () => {
+    const failing = (async () =>
+      new Response("rate limited", { status: 403 })) as unknown as Parameters<
+      typeof fetchCatalogReleases
+    >[0];
+    const { releases, apiOk, apiStatus } = await fetchCatalogReleases(failing);
+    expect(releases).toEqual([]);
+    expect(apiOk).toBe(false);
+    expect(apiStatus).toBe(403);
+  });
+
+  test("sends GITHUB_TOKEN when set", async () => {
+    const prev = process.env.GITHUB_TOKEN;
+    process.env.GITHUB_TOKEN = "test-token-123";
+    try {
+      const seen = { urls: [] as string[], auth: [] as (string | null)[] };
+      await fetchCatalogReleases(stubPages([[]], seen));
+      expect(seen.auth[0]).toBe("Bearer test-token-123");
+    } finally {
+      if (prev == null) delete process.env.GITHUB_TOKEN;
+      else process.env.GITHUB_TOKEN = prev;
+    }
+  });
+});
+
+describe("bodyHtml server rendering", () => {
+  test("keeps details/summary collapsed, links mentions + PR numbers", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v9.9.9",
+        name: "R",
+        html_url: "https://github.com/o/r/releases/tag/v9.9.9",
+        published_at: "2026-11-01T00:00:00Z",
+        prerelease: false,
+        body: "Hi @someone see #123\n\n<details><summary>Full changelog</summary>\n\nBody text\n\n</details>",
+        author: { login: "x", avatar_url: "", html_url: "https://github.com/x" },
+        target_commitish: "abc1234",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("t3code");
+      const html = releases[0]?.bodyHtml ?? "";
+      // github.com renders the generated changelog behind a closed
+      // "Full changelog" disclosure, so both tags must survive sanitizing
+      // and `open` must never be allowlisted.
+      expect(html).toContain("<details");
+      expect(html).toContain("<summary>Full changelog</summary>");
+      expect(html.includes("<details open")).toBe(false);
+      expect(html).toContain("Body text");
+      expect(html).toContain('href="https://github.com/someone">@someone</a>');
+      expect(html).toContain('href="https://github.com/pingdotgg/t3code/pull/123">#123</a>');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("parses the upstream Contributors footer per release", async () => {
+    const { parseUpstreamContributors } = await import("./live");
+    const page = `
+      <section id="release-v1">
+        <h3 class="mb-2">Contributors</h3>
+        <ul class="list-style-none d-flex flex-wrap mb-n2">
+          <li class="mb-2 mr-2"><a href="https://github.com/alice"><img src="https://avatars.githubusercontent.com/u/1?s=64&amp;v=4" alt="@alice" width="32" height="32"></a></li>
+          <li class="mb-2 mr-2"><a href="https://github.com/bob"><img src="https://avatars.githubusercontent.com/u/2?s=64&amp;v=4" alt="@bob" width="32" height="32"></a></li>
+        </ul>
+        <div class="mt-2 color-fg-muted">alice, bob, and 18 other contributors</div>
+      </section>
+      <section id="release-v0"><p>hand-written notes, no contributors block</p></section>`;
+    const out = parseUpstreamContributors(page);
+    expect(Object.keys(out)).toEqual(["v1"]);
+    expect(out.v1?.avatars.map((a) => a.login)).toEqual(["alice", "bob"]);
+    expect(out.v1?.avatars[0]?.avatarSrc).toBe(
+      "https://avatars.githubusercontent.com/u/1?s=64&v=4",
+    );
+    expect(out.v1?.caption).toBe("alice, bob, and 18 other contributors");
+  });
+
+  test("falls back to upstream's caption wording when absent", async () => {
+    const { contributorCaption } = await import("./live");
+    expect(contributorCaption(["a"])).toBe("a");
+    expect(contributorCaption(["a", "b"])).toBe("a and b");
+    expect(contributorCaption(["a", "b", "c"])).toBe("a, b, and 1 other contributor");
+    expect(contributorCaption(["a", "b", "c", "d"])).toBe("a, b, and 2 other contributors");
+  });
+});
+
+describe("getUpstreamMeta counts", () => {
+  test("returns compact stars/issues/pulls from repo + search APIs", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
+      const u = String(url);
+      if (u.includes("/search/issues")) {
+        return new Response(JSON.stringify({ total_count: 2300 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ stargazers_count: 23940, open_issues_count: 1200 }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta.stars).toBe(23940);
+      expect(meta.issues).toBe(0);
+      expect(meta.pulls).toBe(2300);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("issues count excludes open PRs (Issues tab semantics)", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async (url: unknown) => {
+      const u = String(url);
+      if (u.includes("/search/issues")) {
+        return new Response(JSON.stringify({ total_count: 2300 }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ stargazers_count: 23940, open_issues_count: 3500 }), {
+        status: 200,
+      });
+    }) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta.pulls).toBe(2300);
+      expect(meta.issues).toBe(1200);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("nulls on API failure", async () => {
+    const { getUpstreamMeta } = await import("./live");
+    const origFetch = globalThis.fetch;
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response("nope", { status: 403 })) as typeof fetch;
+    try {
+      const { meta } = await getUpstreamMeta("t3code");
+      expect(meta).toEqual({ stars: null, issues: null, pulls: null });
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
+
+describe("getUpstreamReleases URL wiring", () => {
+  test("tag/commit/author URLs point at upstream repo paths", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v1.2.3",
+        name: "Release v1.2.3",
+        html_url: "https://github.com/o/r/releases/tag/v1.2.3",
+        published_at: "2026-11-01T00:00:00Z",
+        prerelease: false,
+        body: "notes",
+        author: {
+          login: "someone",
+          avatar_url: "https://avatars/x",
+          html_url: "https://github.com/someone",
+        },
+        target_commitish: "abc123def456",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("t3code");
+      expect(releases).toHaveLength(1);
+      // upstream repo for t3code per catalog data
+      expect(releases[0]?.tagUrl).toBe("https://github.com/pingdotgg/t3code/tree/v1.2.3");
+      expect(releases[0]?.commitUrl).toBe(
+        "https://github.com/pingdotgg/t3code/commit/abc123def456",
+      );
+      expect(releases[0]?.authorUrl).toBe("https://github.com/someone");
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  test("bot authors keep their apps URL", async () => {
+    const { getUpstreamReleases } = await import("./live");
+    const origFetch = globalThis.fetch;
+    const payload = [
+      {
+        tag_name: "v9.9.9",
+        name: "Bot release",
+        html_url: "https://github.com/o/r/releases/tag/v9.9.9",
+        published_at: "2026-11-02T00:00:00Z",
+        prerelease: false,
+        body: "",
+        author: {
+          login: "github-actions[bot]",
+          avatar_url: "https://avatars/x",
+          html_url: "https://github.com/apps/github-actions",
+        },
+        target_commitish: "main",
+        assets: [],
+      },
+    ];
+    (globalThis as { fetch: unknown }).fetch = (async () =>
+      new Response(JSON.stringify(payload), { status: 200 })) as typeof fetch;
+    try {
+      const { releases } = await getUpstreamReleases("natively");
+      expect(releases[0]?.authorUrl).toBe("https://github.com/apps/github-actions");
+      // display convention matches github.com server HTML: bot suffix
+      // stripped for display, avatar sized like upstream (?s=40)
+      expect(releases[0]?.authorLogin).toBe("github-actions");
+      expect(releases[0]?.authorAvatar).toBe("https://avatars/x?s=40");
+      // non-sha target_commitish falls back to release URL
+      expect(releases[0]?.commitUrl).toBe(releases[0]?.url);
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});

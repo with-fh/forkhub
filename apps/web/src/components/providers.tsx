@@ -1,21 +1,13 @@
-"use client";
-
 import { Toaster } from "@forkhub/ui/components/sonner";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
-import { queryClient } from "@/utils/orpc";
-
-import { ThemeProvider } from "./theme-provider";
-
+// Public site is static + dark-only (t3.codes design): no next-themes,
+// no react-query provider. The OSS catalog is a static import, not RPC,
+// so forkhub.imbios.dev works with zero backend.
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        <ReactQueryDevtools />
-      </QueryClientProvider>
+    <>
+      {children}
       <Toaster richColors />
-    </ThemeProvider>
+    </>
   );
 }

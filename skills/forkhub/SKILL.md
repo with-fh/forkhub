@@ -1,3 +1,12 @@
+---
+name: forkhub
+description: Manage patches for forked repos using intent-based re-derivation. Use when creating a patch, finalizing a patch, checking drift, re-deriving against new upstream releases, or finding and reusing published intent-patches.
+license: MIT
+metadata:
+  version: "0.3.0"
+  homepage: https://github.com/with-fh/forkhub
+---
+
 # forkhub
 
 ## Description

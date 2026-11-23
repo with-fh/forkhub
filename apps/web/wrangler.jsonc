@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/configuration-schema.json",
+  "name": "forkhub-web",
+  "workers_dev": true,
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "routes": [{ "pattern": "forkhub.imbios.dev/*", "zone_name": "imbios.dev" }],
+  "vars": {
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_SERVER_URL": "https://forkhub.imbios.dev",
+    "CORS_ORIGIN": "https://forkhub.imbios.dev",
+    "DATABASE_URL": "postgresql://dummy:dummy@localhost:5432/dummy",
+  },
+}
