@@ -251,7 +251,10 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
               </div>
               <div className="gh-meta-group gh-meta-tag">
                 <a href={release.tagUrl} className="gh-tag-link" title={release.tag}>
-                  {release.tag}
+                  <span className="gh-tag-truncate">
+                    <Octicon name="tag" className="gh-meta-icon" />
+                    {release.tag}
+                  </span>
                 </a>
               </div>
               {release.commitSha ? (

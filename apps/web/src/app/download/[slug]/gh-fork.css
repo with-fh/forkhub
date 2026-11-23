@@ -732,13 +732,19 @@ ul.gh-anchor-list {
   color: var(--gh-fg-muted);
   vertical-align: bottom;
 }
-.gh-tag-link > span {
+.gh-tag-truncate {
   display: inline-block;
   max-width: 125px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
+}
+.gh-verified-summary {
+  display: block;
+  list-style: none;
+  color: var(--gh-success-fg);
+  cursor: default;
 }
 .gh-commit-link {
   display: inline;
