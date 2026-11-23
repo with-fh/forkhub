@@ -393,7 +393,9 @@ export default function GhForkPage({
               <span className="gh-tab-icon">
                 <Octicon name={t.icon} />
               </span>
-              <span>{t.label}</span>
+              <span className="gh-tab-label" data-content={t.label}>
+                {t.label}
+              </span>
               {t.count != null ? (
                 <span className="gh-tab-countwrap">
                   <span className="gh-tab-count">{t.count}</span>

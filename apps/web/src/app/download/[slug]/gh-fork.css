@@ -296,22 +296,37 @@ html[data-gh-fork="true"] body {
   height: 2px;
   background: #fd8c73;
 }
+/* Upstream reserves selected-tab width with a hidden semibold ::before
+   (content: attr(data-content), block, 600, height 0, invisible), so every
+   tab box is as wide as its semibold rendering even though the text
+   renders at 400. Without this the tabs sit ~7px too narrow. */
+.gh-tab-label {
+  display: block;
+}
+.gh-tab-label::before {
+  content: attr(data-content);
+  display: block;
+  height: 0;
+  font-weight: 600;
+  visibility: hidden;
+}
 .gh-tab-countwrap {
   display: flex;
   margin-left: 8px;
 }
 .gh-tab-count {
   display: block;
-  min-width: 20px;
   height: 18px;
   box-sizing: border-box;
   padding: 2px 6px;
-  border-radius: 24px;
+  border: 1px solid transparent;
+  border-radius: 20px;
   background: var(--gh-neutral-muted);
   color: var(--gh-fg-default);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 12px;
+  white-space: nowrap;
   text-align: center;
 }
 
