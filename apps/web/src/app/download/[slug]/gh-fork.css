@@ -93,10 +93,11 @@ html[data-gh-fork="true"] body {
   align-items: center;
   margin-right: 16px;
 }
-.gh-global-logo img {
+.gh-global-logo svg {
   display: block;
   width: 32px;
   height: 32px;
+  overflow: visible;
 }
 .gh-global-nav {
   display: flex;
