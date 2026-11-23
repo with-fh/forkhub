@@ -722,6 +722,7 @@ ul.gh-anchor-list {
   font-weight: 600;
 }
 .gh-meta-icon {
+  display: inline-block;
   color: var(--gh-fg-muted);
   vertical-align: text-bottom;
 }
