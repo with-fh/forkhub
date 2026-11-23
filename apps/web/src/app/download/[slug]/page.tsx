@@ -10,9 +10,11 @@ function compact(n: number | null): string | null {
   const v = n / 1000;
   return `${v >= 100 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, "")}k`;
 }
-// github.com renders these pages in Mona Sans (its own webfont).
-// Self-hosted here so text metrics match the upstream page exactly.
-import "@fontsource-variable/mona-sans";
+// github.com's releases CSS lists "Mona Sans VF" first, but ships no
+// @font-face for it, so browsers fall through to the system stack. The fork
+// must do exactly the same: no webfont import, identical stack, so glyph
+// advances match upstream on every machine (self-hosting real Mona Sans
+// made our text ~6% wider and broke pixel parity).
 import GhForkPage from "./gh-fork-page";
 import "./gh-fork.css";
 
