@@ -83,6 +83,8 @@ html[data-gh-fork="true"] body {
   align-items: center;
   gap: 8px;
   margin-right: auto;
+  font-size: 16px;
+  line-height: 24px;
 }
 .gh-global-link {
   display: inline-flex;
@@ -99,7 +101,7 @@ html[data-gh-fork="true"] body {
   font-size: 14px;
   font-weight: 400;
   line-height: 21px;
-  letter-spacing: 0.24px;
+  letter-spacing: normal;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -143,7 +145,6 @@ html[data-gh-fork="true"] body {
   color: #fff;
   font-size: 14px;
   line-height: 21px;
-  letter-spacing: 0.24px;
   white-space: nowrap;
 }
 .gh-signup {
@@ -155,7 +156,6 @@ html[data-gh-fork="true"] body {
   font-size: 14px;
   font-weight: 400;
   line-height: 21px;
-  letter-spacing: 0.24px;
   white-space: nowrap;
 }
 .gh-fork .gh-signup {
