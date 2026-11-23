@@ -754,7 +754,7 @@ ul.gh-anchor-list {
   vertical-align: baseline;
 }
 .gh-verified-summary {
-  display: block;
+  display: list-item;
   list-style: none;
   color: var(--gh-success-fg);
   cursor: default;
