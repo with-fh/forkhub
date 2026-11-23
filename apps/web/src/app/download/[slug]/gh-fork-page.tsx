@@ -199,7 +199,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 <a href={release.tagUrl} className="gh-link-primary">
                   {release.name}
                 </a>
-              </span>
+              </span>{" "}
               {release.prerelease ? (
                 <span className="gh-label gh-label-warning">Pre-release</span>
               ) : release.latest ? (

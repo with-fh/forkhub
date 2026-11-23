@@ -636,8 +636,6 @@ ul.gh-anchor-list {
 }
 .gh-release-titlewrap .gh-label-warning,
 .gh-release-titlewrap .gh-label-success {
-  /* upstream relies on a literal space in the 14px wrapper (~4px) */
-  margin-left: 4px;
   vertical-align: text-bottom;
 }
 .gh-compare {
