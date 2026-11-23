@@ -437,7 +437,7 @@ export default function GhForkPage({
                   <li key={r.tag}>
                     <a href={`#release-${r.tag}`} title={r.name}>
                       <span className="gh-anchor-text">
-                        {r.name} ({r.commitSha ? r.commitSha.slice(0, 7) : r.tag})
+                        {r.name} ({r.commitSha ? r.commitSha.slice(0, 10) : r.tag})
                       </span>
                     </a>
                   </li>
