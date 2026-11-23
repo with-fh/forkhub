@@ -57,23 +57,37 @@ html[data-gh-fork="true"] body {
 }
 
 /* Upstream's marketing header renders in "Mona Sans" (a real webfont on
-   github.com). Self-host the variable build here and alias it under both
-   "Mona Sans" and "MonaSansFallback" so the fork resolves the identical
-   binary. Scoped to the header only — the releases body intentionally keeps
-   the named-but-unshipped "Mona Sans VF" fallback stack like upstream. */
+   github.com). Self-host the static 400/500 cuts here so the fork resolves
+   real Mona Sans metrics. Scoped to the header only — the releases body
+   intentionally keeps the named-but-unshipped "Mona Sans VF" fallback stack
+   like upstream. */
 @font-face {
   font-family: "Mona Sans";
   font-style: normal;
-  font-weight: 200 900;
+  font-weight: 400;
   font-display: swap;
-  src: url(/fonts/mona-sans-latin-wght-normal.woff2) format("woff2-variations");
+  src: url(/fonts/mona-sans-latin-400-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Mona Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/mona-sans-latin-500-normal.woff2) format("woff2");
 }
 @font-face {
   font-family: "MonaSansFallback";
   font-style: normal;
-  font-weight: 200 900;
+  font-weight: 400;
   font-display: swap;
-  src: url(/fonts/mona-sans-latin-wght-normal.woff2) format("woff2-variations");
+  src: url(/fonts/mona-sans-latin-400-normal.woff2) format("woff2");
+}
+@font-face {
+  font-family: "MonaSansFallback";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(/fonts/mona-sans-latin-500-normal.woff2) format("woff2");
 }
 
 /* ── global header: 68px black bar ── */
