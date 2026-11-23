@@ -274,19 +274,22 @@ html[data-gh-fork="true"] body {
   height: 2px;
   background: #fd8c73;
 }
+.gh-tab-countwrap {
+  display: flex;
+  margin-left: 8px;
+}
 .gh-tab-count {
-  display: inline-block;
+  display: block;
   min-width: 20px;
   height: 20px;
   box-sizing: border-box;
-  padding: 0 6px;
-  margin-left: 8px;
+  padding: 2px 6px;
   border-radius: 24px;
   background: var(--gh-neutral-muted);
   color: var(--gh-fg-default);
   font-size: 12px;
   font-weight: 500;
-  line-height: 18px;
+  line-height: 16px;
   text-align: center;
 }
 

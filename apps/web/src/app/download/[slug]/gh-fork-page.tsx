@@ -391,7 +391,12 @@ export default function GhForkPage({
                 <Octicon name={t.icon} />
               </span>
               <span>{t.label}</span>
-              {t.count != null ? <span className="gh-tab-count">{t.count}</span> : null}
+              {t.count != null ? (
+                <span className="gh-tab-countwrap">
+                  <span className="gh-tab-count">{t.count}</span>
+                  <span className="sr-only"> ({t.count})</span>
+                </span>
+              ) : null}
             </a>
           ))}
         </nav>
