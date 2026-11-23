@@ -687,6 +687,8 @@ ul.gh-anchor-list {
   align-items: center;
   gap: 4px;
   margin: 0 24px 8px 0;
+  font-size: 14px;
+  line-height: 21px;
 }
 .gh-meta-avatar {
   display: inline-block;
@@ -702,7 +704,7 @@ ul.gh-anchor-list {
   color: var(--gh-fg-muted);
 }
 .gh-tag-link {
-  display: inline-block;
+  display: inline;
   max-width: 125px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -710,9 +712,16 @@ ul.gh-anchor-list {
   color: var(--gh-fg-muted);
   vertical-align: bottom;
 }
+.gh-tag-link > span {
+  display: inline-block;
+  max-width: 125px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
 .gh-commit-link {
-  display: inline-flex;
-  align-items: center;
+  display: inline;
   color: var(--gh-fg-muted);
 }
 .gh-verified {
