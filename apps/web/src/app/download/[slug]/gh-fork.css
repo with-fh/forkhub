@@ -727,6 +727,24 @@ ul.gh-anchor-list {
 .gh-verified {
   color: var(--gh-fg-muted);
 }
+/* Upstream verified badge is a details/summary dropdown (16px inline-block
+   with 4px left margin); summary renders as list-item so the marker is
+   suppressed to keep the icon box at 16px. */
+.gh-verified-details {
+  display: inline-block;
+  margin-left: 4px;
+}
+.gh-verified-summary {
+  display: block;
+  list-style: none;
+  cursor: default;
+}
+.gh-verified-summary::-webkit-details-marker {
+  display: none;
+}
+.gh-verified-summary::marker {
+  content: "";
+}
 .gh-no-wrap {
   white-space: nowrap;
 }

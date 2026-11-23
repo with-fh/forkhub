@@ -263,7 +263,11 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                   >
                     {release.commitSha.slice(0, 7)}
                   </a>
-                  <Octicon name="verified" className="gh-verified" />
+                  <details className="gh-verified-details">
+                    <summary className="gh-verified-summary">
+                      <Octicon name="verified" className="gh-verified" />
+                    </summary>
+                  </details>
                 </div>
               ) : null}
             </div>
