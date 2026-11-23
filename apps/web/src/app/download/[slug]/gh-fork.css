@@ -741,6 +741,13 @@ ul.gh-anchor-list {
   display: inline;
   color: var(--gh-fg-muted);
 }
+.gh-commit-sha {
+  margin-left: 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 400;
+}
 .gh-verified {
   color: var(--gh-fg-muted);
 }

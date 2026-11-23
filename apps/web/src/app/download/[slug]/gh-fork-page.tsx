@@ -261,7 +261,8 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                     className="gh-commit-link"
                     data-hovercard-type="commit"
                   >
-                    {release.commitSha.slice(0, 7)}
+                    <Octicon name="git-commit" className="gh-meta-icon" />
+                    <code className="gh-commit-sha">{release.commitSha.slice(0, 7)}</code>
                   </a>
                   <details className="gh-verified-details">
                     <summary className="gh-verified-summary">
