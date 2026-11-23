@@ -720,6 +720,7 @@ ul.gh-anchor-list {
   width: 20px;
   height: 20px;
   border-radius: 3px;
+  vertical-align: middle;
 }
 .gh-author-link {
   color: var(--gh-fg-muted);
