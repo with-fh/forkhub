@@ -110,7 +110,7 @@ html[data-gh-fork="true"] body {
   font-size: 14px;
   font-weight: 600;
   line-height: 21px;
-  letter-spacing: normal;
+  letter-spacing: 0.24px;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -151,21 +151,28 @@ html[data-gh-fork="true"] body {
   color: #a4aea6;
 }
 .gh-signin {
-  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
   color: #fff;
-  font-size: 14px;
-  line-height: 21px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
   white-space: nowrap;
 }
 .gh-signup {
-  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
   margin-left: 8px;
   background: #fff;
   border-radius: 6px;
   color: #000;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 21px;
+  line-height: 24px;
   white-space: nowrap;
 }
 .gh-fork .gh-signup {
@@ -179,12 +186,13 @@ html[data-gh-fork="true"] body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-left: 16px;
+  width: 32px;
+  height: 32px;
+  margin-left: 8px;
   padding: 0;
   background: none;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
   color: #fff;
   cursor: pointer;
 }
