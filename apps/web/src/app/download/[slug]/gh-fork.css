@@ -511,22 +511,6 @@ ul.gh-anchor-list {
   background: var(--gh-neutral-muted);
   text-decoration: none;
 }
-.gh-anchor-list li:first-child a,
-.gh-anchor-row:first-child a {
-  font-weight: 600;
-  background: var(--gh-neutral-muted);
-}
-.gh-anchor-list li:first-child a::before,
-.gh-anchor-row:first-child a::before {
-  content: "";
-  position: absolute;
-  left: -8px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  border-radius: 2px;
-  background: var(--gh-fg-accent);
-}
 .gh-collapse-btn {
   display: flex;
   align-items: center;
