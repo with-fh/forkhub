@@ -698,9 +698,7 @@ ul.gh-anchor-list {
   line-height: 21px;
 }
 .gh-meta-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  display: block;
   margin: 0 24px 8px 0;
   font-size: 14px;
   line-height: 21px;
