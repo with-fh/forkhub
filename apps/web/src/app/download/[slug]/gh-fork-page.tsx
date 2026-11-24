@@ -470,8 +470,10 @@ export default function GhForkPage({
               </div>
             </div>
             <button type="button" className="gh-collapse-btn" aria-expanded="true">
-              <Octicon name="sidebar-expand" className="gh-side-icon" />
-              <span>Collapse sidebar</span>
+              <span className="gh-collapse-content">
+                <Octicon name="sidebar-expand" className="gh-side-icon" />
+                <span>Collapse sidebar</span>
+              </span>
             </button>
           </nav>
         </aside>
