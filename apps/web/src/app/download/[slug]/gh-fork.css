@@ -842,9 +842,30 @@ ul.gh-anchor-list {
 }
 .gh-assets summary {
   display: list-item;
-  font-size: 14px;
-  line-height: 21px;
+  font-size: 16px;
+  line-height: normal;
   cursor: pointer;
+}
+/* Upstream collapsed row: inline wrap with 16px label (f3 text-bold
+   ml-2 mr-2) + inline Counter number — plain text flow, no pill badge. */
+.gh-assets-row {
+  display: inline;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+}
+.gh-assets-title {
+  display: inline;
+  margin: 0 8px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
+}
+.gh-assets-count {
+  display: inline;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: normal;
 }
 .gh-assets-label {
   margin: 0 8px;

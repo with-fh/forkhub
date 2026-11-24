@@ -291,8 +291,10 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             {release.assets.length > 0 ? (
               <details className="gh-assets">
                 <summary>
-                  <span className="gh-assets-label">Assets</span>
-                  <span className="gh-counter">{release.assets.length}</span>
+                  <span className="gh-assets-row">
+                    <span className="gh-assets-title">Assets</span>
+                    <span className="gh-assets-count">{release.assets.length}</span>
+                  </span>
                 </summary>
                 <ul className="gh-asset-list">
                   {release.assets.map((a) => (
