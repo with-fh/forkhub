@@ -29,11 +29,11 @@ const OCTICONS: Record<string, string> = {
   pulls:
     "M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z",
   discussions:
-    "M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm5.28 2.47 2.5 2.5a.75.75 0 0 1-1.06 1.06l-2.5-2.5a.75.75 0 0 1 1.06-1.06Z",
+    "M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z",
   actions:
     "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm4.879-2.773 4.264 2.559a.25.25 0 0 1 0 .428l-4.264 2.559A.25.25 0 0 1 6 10.559V5.442a.25.25 0 0 1 .379-.215Z",
   security:
-    "M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.7 1.067 1.836 2.008 3.725 2.804a.25.25 0 0 0 .196 0c1.889-.796 3.025-1.737 3.725-2.804.782-1.194 1.057-2.502 1.057-3.86V3.48a.25.25 0 0 0-.174-.238l-5.25-1.68ZM8 4.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7ZM8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4Z",
+    "M7.467.133a1.748 1.748 0 0 1 1.066 0l5.25 1.68A1.75 1.75 0 0 1 15 3.48V7c0 1.566-.32 3.182-1.303 4.682-.983 1.498-2.585 2.813-5.032 3.855a1.697 1.697 0 0 1-1.33 0c-2.447-1.042-4.049-2.357-5.032-3.855C1.32 10.182 1 8.566 1 7V3.48a1.75 1.75 0 0 1 1.217-1.667Zm.61 1.429a.25.25 0 0 0-.153 0l-5.25 1.68a.25.25 0 0 0-.174.238V7c0 1.358.275 2.666 1.057 3.86.784 1.194 2.121 2.34 4.366 3.297a.196.196 0 0 0 .154 0c2.245-.956 3.582-2.104 4.366-3.298C13.225 9.666 13.5 8.36 13.5 7V3.48a.251.251 0 0 0-.174-.237l-5.25-1.68ZM8.75 4.75v3a.75.75 0 0 1-1.5 0v-3a.75.75 0 0 1 1.5 0ZM9 10.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z",
   insights:
     "M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z",
   tag: "M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z",
@@ -54,7 +54,7 @@ const OCTICONS: Record<string, string> = {
   "list-unordered":
     "M5 3.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm2.5.75a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5Zm0 5a.75.75 0 0 0 0 1.5h6.25a.75.75 0 0 0 0-1.5ZM5 8.75a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM4 12.75a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z",
   sliders:
-    "M2 3.75A.75.75 0 0 1 2.75 3h3.5a.75.75 0 0 1 0 1.5h-3.5A.75.75 0 0 1 2 3.75Zm9.5 0A.75.75 0 0 1 12.25 3h1a.75.75 0 0 1 0 1.5h-1a.75.75 0 0 1-.75-.75ZM9.25 1.5h1.5v4.5h-1.5Zm-7.25 6.75A.75.75 0 0 1 2.75 7.5h1a.75.75 0 0 1 0 1.5h-1A.75.75 0 0 1 2 8.25Zm4.5 0a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5h-6a.75.75 0 0 1-.75-.75ZM5.75 6h1.5v4.5h-1.5ZM2 12.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 0 1.5h-3.5a.75.75 0 0 1-.75-.75Zm9.5 0a.75.75 0 0 1 .75-.75h1a.75.75 0 0 1 0 1.5h-1a.75.75 0 0 1-.75-.75ZM9.25 10.5h1.5v4.5h-1.5Z",
+    "M15 2.75a.75.75 0 0 1-.75.75h-4a.75.75 0 0 1 0-1.5h4a.75.75 0 0 1 .75.75Zm-8.5.75v1.25a.75.75 0 0 0 1.5 0v-4a.75.75 0 0 0-1.5 0V2H1.75a.75.75 0 0 0 0 1.5H6.5Zm1.25 5.25a.75.75 0 0 0 0-1.5h-6a.75.75 0 0 0 0 1.5h6ZM15 8a.75.75 0 0 1-.75.75H11.5V10a.75.75 0 1 1-1.5 0V6a.75.75 0 0 1 1.5 0v1.25h2.75A.75.75 0 0 1 15 8Zm-9 5.25v-2a.75.75 0 0 0-1.5 0v1.25H1.75a.75.75 0 0 0 0 1.5H4.5v1.25a.75.75 0 0 0 1.5 0v-2Zm9 0a.75.75 0 0 0-.75.75h-6a.75.75 0 0 0 0-1.5h6a.75.75 0 0 0 .75.75Z",
   "sidebar-expand":
     "M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177ZM1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H1.75a.25.25 0 0 0-.25.25Z",
 };
@@ -199,7 +199,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 <a href={release.tagUrl} className="gh-link-primary">
                   {release.name}
                 </a>
-              </span>
+              </span>{" "}
               {release.prerelease ? (
                 <span className="gh-label gh-label-warning">Pre-release</span>
               ) : release.latest ? (
@@ -250,22 +250,28 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                 </span>
               </div>
               <div className="gh-meta-group gh-meta-tag">
-                <Octicon name="tag" className="gh-meta-icon" />
                 <a href={release.tagUrl} className="gh-tag-link" title={release.tag}>
-                  {release.tag}
+                  <span className="gh-tag-truncate">
+                    <Octicon name="tag" className="gh-meta-icon" />
+                    <span className="gh-tag-text">{release.tag}</span>
+                  </span>
                 </a>
               </div>
               {release.commitSha ? (
                 <div className="gh-meta-group gh-meta-commit">
-                  <Octicon name="commit" className="gh-meta-icon" />
                   <a
                     href={release.commitUrl}
                     className="gh-commit-link"
                     data-hovercard-type="commit"
                   >
-                    {release.commitSha.slice(0, 7)}
+                    <Octicon name="git-commit" className="gh-meta-icon" />
+                    <code className="gh-commit-sha">{release.commitSha.slice(0, 7)}</code>
                   </a>
-                  <Octicon name="verified" className="gh-verified" />
+                  <details className="gh-verified-details">
+                    <summary className="gh-verified-summary">
+                      <Octicon name="verified" className="gh-verified" />
+                    </summary>
+                  </details>
                 </div>
               ) : null}
             </div>
@@ -285,8 +291,10 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
             {release.assets.length > 0 ? (
               <details className="gh-assets">
                 <summary>
-                  <span className="gh-assets-label">Assets</span>
-                  <span className="gh-counter">{release.assets.length}</span>
+                  <span className="gh-assets-row">
+                    <span className="gh-assets-title">Assets</span>
+                    <span className="gh-assets-count">{release.assets.length}</span>
+                  </span>
                 </summary>
                 <ul className="gh-asset-list">
                   {release.assets.map((a) => (
@@ -334,32 +342,49 @@ export default function GhForkPage({
       <header className="gh-global-header">
         <div className="gh-global-inner">
           <a href="https://github.com" className="gh-global-logo" aria-label="GitHub homepage">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/gh/github-mark-white.svg" alt="" width={32} height={32} />
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              width={32}
+              height={32}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="gh-octicon"
+              style={{ verticalAlign: "text-bottom", overflow: "visible" }}
+            >
+              <path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943" />
+            </svg>
           </a>
           <nav className="gh-global-nav" aria-label="Global">
-            {["Products", "Developers", "Businesses", "Resources", "Pricing"].map((t) => (
-              <span key={t} className="gh-global-item">
-                <button type="button" className="gh-global-link" aria-expanded="false">
-                  <span>{t}</span>
-                  {t === "Pricing" ? null : <Octicon name="triangle-right" className="gh-caret" />}
-                </button>
-              </span>
+            {["Products", "Developers", "Businesses", "Resources"].map((t) => (
+              <button key={t} type="button" className="gh-global-link" aria-expanded="false">
+                {t}
+                <Octicon name="triangle-right" className="gh-caret" />
+              </button>
             ))}
+            <a href="https://github.com/pricing" className="gh-global-link gh-global-anchor">
+              Pricing
+            </a>
           </nav>
-          <div className="gh-global-search" role="search">
-            <span>Search</span>
-            <kbd>/</kbd>
+          <div className="gh-cta">
+            <button type="button" className="gh-global-search" aria-label="Search or jump to, type / to search">
+              <span className="gh-search-text">
+                <span className="gh-search-label">Search</span>
+                <kbd>/</kbd>
+              </span>
+            </button>
+            <span className="gh-signin-wrap">
+              <a href="https://github.com/login" className="gh-signin">
+                <span className="gh-auth-label">Sign in</span>
+              </a>
+            </span>
+            <a href="https://github.com/signup" className="gh-signup">
+              <span className="gh-auth-label">Sign up</span>
+            </a>
+            <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
+              <Octicon name="sliders" />
+            </button>
           </div>
-          <a href="https://github.com/login" className="gh-signin">
-            Sign in
-          </a>
-          <a href="https://github.com/signup" className="gh-signup">
-            Sign up
-          </a>
-          <button type="button" className="gh-menu-btn" aria-label="Navigation Menu">
-            <Octicon name="sliders" />
-          </button>
         </div>
       </header>
 
@@ -370,35 +395,40 @@ export default function GhForkPage({
           <a href={`https://github.com/${owner}/${repo}`}>{repo}</a>
         </nav>
         <nav className="gh-tabs" aria-label="Repository">
-          {(
-            [
-              { label: "Code", count: null, icon: "code", selected: true },
-              { label: "Issues", count: issueCount, icon: "issues", selected: false },
-              { label: "Pull requests", count: prCount, icon: "pulls", selected: false },
-              { label: "Discussions", count: null, icon: "discussions", selected: false },
-              { label: "Actions", count: null, icon: "actions", selected: false },
-              { label: "Security and quality", count: null, icon: "security", selected: false },
-              { label: "Insights", count: null, icon: "insights", selected: false },
-            ] as { label: string; count: string | null; icon: string; selected: boolean }[]
-          ).map((t) => (
-            <a
-              key={t.label}
-              href={`https://github.com/${owner}/${repo}`}
-              className={t.selected ? "gh-tab gh-tab-selected" : "gh-tab"}
-              aria-current={t.selected ? "page" : undefined}
-            >
-              <span className="gh-tab-icon">
-                <Octicon name={t.icon} />
-              </span>
-              <span>{t.label}</span>
-              {t.count != null ? (
-                <span className="gh-tab-countwrap">
-                  <span className="gh-tab-count">{t.count}</span>
-                  <span className="sr-only"> ({t.count})</span>
-                </span>
-              ) : null}
-            </a>
-          ))}
+          <ul className="gh-tabs-list">
+            {(
+              [
+                { label: "Code", count: null, icon: "code", selected: true },
+                { label: "Issues", count: issueCount, icon: "issues", selected: false },
+                { label: "Pull requests", count: prCount, icon: "pulls", selected: false },
+                { label: "Discussions", count: null, icon: "discussions", selected: false },
+                { label: "Actions", count: null, icon: "actions", selected: false },
+                { label: "Security and quality", count: null, icon: "security", selected: false },
+                { label: "Insights", count: null, icon: "insights", selected: false },
+              ] as { label: string; count: string | null; icon: string; selected: boolean }[]
+            ).map((t) => (
+              <li key={t.label} className="gh-tabs-item">
+                <a
+                  href={`https://github.com/${owner}/${repo}`}
+                  className={t.selected ? "gh-tab gh-tab-selected" : "gh-tab"}
+                  aria-current={t.selected ? "page" : undefined}
+                >
+                  <span className="gh-tab-icon">
+                    <Octicon name={t.icon} />
+                  </span>
+                  <span className="gh-tab-label" data-content={t.label}>
+                    {t.label}
+                  </span>
+                  {t.count != null ? (
+                    <span className="gh-tab-countwrap">
+                      <span className="gh-tab-count">{t.count}</span>
+                      <span className="sr-only"> ({t.count})</span>
+                    </span>
+                  ) : null}
+                </a>
+              </li>
+            ))}
+          </ul>
         </nav>
       </header>
 
@@ -427,19 +457,23 @@ export default function GhForkPage({
                 <Octicon name="list-unordered" className="gh-side-icon" />
                 <span>On this page</span>
               </h2>
-              <ul className="gh-anchor-list">
+              <div className="gh-anchor-wrap">
                 {filtered.map((r) => (
-                  <li key={r.tag}>
+                  <div key={r.tag} className="gh-anchor-row">
                     <a href={`#release-${r.tag}`} title={r.name}>
-                      {r.name}
+                      <span className="gh-anchor-text">
+                        {r.name}
+                      </span>
                     </a>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
             <button type="button" className="gh-collapse-btn" aria-expanded="true">
-              <Octicon name="sidebar-expand" className="gh-side-icon" />
-              <span>Collapse sidebar</span>
+              <span className="gh-collapse-content">
+                <Octicon name="sidebar-expand" className="gh-side-icon" />
+                <span>Collapse sidebar</span>
+              </span>
             </button>
           </nav>
         </aside>
