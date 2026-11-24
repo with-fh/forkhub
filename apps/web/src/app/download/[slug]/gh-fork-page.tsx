@@ -214,8 +214,12 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                   aria-haspopup="dialog"
                   aria-expanded="false"
                 >
-                  <span>Compare</span>
-                  <Octicon name="triangle-down" />
+                  <span className="gh-compare-content">
+                    <span className="gh-compare-label">Compare</span>
+                    <span className="gh-compare-trailing">
+                      <Octicon name="triangle-down" />
+                    </span>
+                  </span>
                 </button>
               </div>
             ) : null}

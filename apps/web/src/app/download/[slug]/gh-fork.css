@@ -657,6 +657,21 @@ ul.gh-anchor-list {
   white-space: nowrap;
   cursor: pointer;
 }
+/* Upstream Compare nests content/label/trailing-visual spans; the label
+   carries a 4px right margin that our bare flex children lacked. */
+.gh-compare-content {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+}
+.gh-compare-label {
+  display: block;
+  margin-right: 4px;
+}
+.gh-compare-trailing {
+  display: flex;
+  align-items: center;
+}
 .gh-compare-btn:hover {
   background: #f3f4f6;
 }
