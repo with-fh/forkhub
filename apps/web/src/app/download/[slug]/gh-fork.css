@@ -803,7 +803,7 @@ ul.gh-anchor-list {
 
 /* ── Box-footer: Contributors + Assets ── */
 .gh-box-footer {
-  padding: 16px 16px 20px;
+  padding: 16px;
   margin-top: -1px;
   border-top: 1px solid var(--gh-border-default);
   border-radius: 0 0 6px 6px;
