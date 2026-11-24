@@ -457,7 +457,7 @@ html[data-gh-fork="true"] body {
   background: var(--gh-fg-accent);
 }
 .gh-side-icon {
-  display: inline-flex;
+  display: flex;
   color: var(--gh-fg-muted);
   flex: none;
 }
