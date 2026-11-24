@@ -142,7 +142,7 @@ html[data-gh-fork="true"] body {
 }
 .gh-global-search {
   display: grid;
-  align-items: normal;
+  align-items: center;
   justify-content: stretch;
   gap: 12px;
   width: 200px;
