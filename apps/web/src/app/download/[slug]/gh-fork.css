@@ -833,30 +833,41 @@ ul.gh-anchor-list {
 }
 .gh-assets summary {
   display: list-item;
-  font-size: 16px;
-  line-height: normal;
+  font-size: 14px;
+  line-height: 21px;
   cursor: pointer;
 }
-/* Upstream collapsed row: inline wrap with 16px label (f3 text-bold
-   ml-2 mr-2) + inline Counter number — plain text flow, no pill badge. */
+/* Upstream collapsed row: inline-flex wrap with 20px/600 label
+   (f3 text-bold ml-2 mr-2) + 12px/500 Counter pill. */
 .gh-assets-row {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
   font-size: 16px;
   font-weight: 400;
   line-height: normal;
 }
 .gh-assets-title {
-  display: inline;
+  display: block;
   margin: 0 8px;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: normal;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 30px;
 }
 .gh-assets-count {
-  display: inline;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: normal;
+  display: inline-block;
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  background: var(--gh-neutral-muted);
+  color: var(--gh-fg-default);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  vertical-align: middle;
 }
 .gh-assets-label {
   margin: 0 8px;
