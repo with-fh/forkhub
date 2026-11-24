@@ -744,6 +744,7 @@ ul.gh-anchor-list {
 .gh-verified-summary {
   display: list-item;
   list-style: none;
+  height: 16px;
   color: var(--gh-success-fg);
   cursor: default;
 }
@@ -767,9 +768,12 @@ ul.gh-anchor-list {
 .gh-verified-details {
   display: inline-block;
   margin-left: 4px;
+  vertical-align: baseline;
 }
 .gh-verified-summary {
-  display: block;
+  display: list-item;
+  height: 21px;
+  line-height: 21px;
   list-style: none;
   cursor: default;
 }
