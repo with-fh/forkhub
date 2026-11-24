@@ -159,11 +159,11 @@ html[data-gh-fork="true"] body {
 }
 .gh-search-text {
   display: flex;
-  align-items: normal;
+  align-items: center;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.21px;
-  line-height: 21px;
+  line-height: 26px;
 }
 .gh-global-search kbd {
   display: flex;
@@ -196,6 +196,7 @@ html[data-gh-fork="true"] body {
   font-weight: 500;
   letter-spacing: 0.21px;
   line-height: 26px;
+  text-align: center;
   color: #a4aea6;
 }
 .gh-signin-wrap {
