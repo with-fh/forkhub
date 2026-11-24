@@ -576,8 +576,8 @@ ul.gh-anchor-list {
 }
 .gh-find-icon {
   position: absolute;
-  left: 10px;
-  top: 8px;
+  left: 8px;
+  top: 9px;
   width: 16px;
   height: 16px;
   color: var(--gh-fg-muted);
