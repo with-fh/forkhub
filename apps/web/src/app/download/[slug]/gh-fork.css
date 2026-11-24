@@ -142,7 +142,7 @@ html[data-gh-fork="true"] body {
 }
 .gh-global-search {
   display: grid;
-  align-items: center;
+  align-items: normal;
   justify-content: stretch;
   gap: 12px;
   width: 200px;
@@ -159,7 +159,7 @@ html[data-gh-fork="true"] body {
 }
 .gh-search-text {
   display: flex;
-  align-items: center;
+  align-items: normal;
   font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.21px;
