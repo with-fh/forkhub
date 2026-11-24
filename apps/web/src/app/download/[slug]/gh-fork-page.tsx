@@ -237,7 +237,7 @@ function ReleaseCard({ release }: { release: UpstreamRelease }) {
                     height={20}
                     className="gh-meta-avatar"
                   />
-                ) : null}
+                ) : null}{" "}
                 <a href={release.authorUrl} className="gh-author-link">
                   {release.authorLogin}
                 </a>
