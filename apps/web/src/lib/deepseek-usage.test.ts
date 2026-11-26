@@ -5,11 +5,12 @@ import { join } from "node:path";
 import { getPlatformProxy, unstable_splitSqlQuery } from "wrangler";
 
 import { collectDeepSeekUsage } from "./deepseek-usage";
+import { readDeepSeekDailyUsage } from "./deepseek-usage-dashboard";
 
 interface LocalStatement {
   bind(...values: string[]): LocalStatement;
   run(): Promise<{ success: boolean }>;
-  all<Row>(): Promise<{ results: Row[] }>;
+  all<Row>(): Promise<{ success: boolean; results: Row[] }>;
 }
 
 interface LocalD1 {
@@ -61,11 +62,15 @@ test("the local D1 collector validates reports, deduplicates, and preserves aggr
     });
     try {
       const database = platform.env.DB;
+      const dashboardTime = new Date("2026-11-29T23:59:59Z");
+      const dashboard = () => readDeepSeekDailyUsage(database, dashboardTime);
+      expect(await dashboard()).toEqual({ kind: "unavailable" });
       const migration = await readFile(
         new URL("../../migrations/0001_deepseek_usage.sql", import.meta.url),
         "utf8",
       );
       await database.batch(unstable_splitSqlQuery(migration).map((sql) => database.prepare(sql)));
+      expect(await dashboard()).toEqual({ kind: "empty" });
 
       const receive = (payload: unknown, at = "2026-11-26T23:59:59Z") =>
         collectDeepSeekUsage(usageRequest(payload), database, new Date(at));
@@ -200,6 +205,24 @@ test("the local D1 collector validates reports, deduplicates, and preserves aggr
         version,
         installations: 1,
       });
+
+      await database
+        .prepare(
+          `INSERT INTO deepseek_usage_daily_totals VALUES
+            ('2026-10-30', ?, 90), ('2026-10-31', ?, 4),
+            ('2026-11-29', ?, 6), ('2026-11-30', ?, 91)`,
+        )
+        .bind(version, version, otherVersion, version)
+        .run();
+      const usage = await dashboard();
+      if (usage.kind !== "ready") throw new Error("Expected dashboard data");
+      expect(usage.today).toBe("2026-11-29");
+      expect(usage.days).toHaveLength(30);
+      expect(usage.days.slice(0, 2)).toEqual([
+        { day: "2026-10-31", installations: 4 },
+        { day: "2026-11-01", installations: 0 },
+      ]);
+      expect(usage.days.at(-1)).toEqual({ day: "2026-11-29", installations: 7 });
     } finally {
       await platform.dispose();
     }

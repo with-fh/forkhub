@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText, Package } from "lucide-react";
+import { ArrowRight, FileText, Package } from "lucide-react";
 import { OSS_CATALOG, listOss } from "@forkhub/api/oss/data";
 
 import HeroFloat from "@/components/hero-float";
@@ -66,6 +66,19 @@ export default async function Home() {
             upstream release — you keep your patches and upstream&apos;s features.
           </p>
           <div className="fh-hero-actions" style={{ flexDirection: "column", gap: 16 }}>
+            <Link
+              href="/download/deepseek-harness#linux"
+              className="fh-linux-release"
+              prefetch={false}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/download/harness-icon-176.webp" alt="" width={36} height={36} />
+              <span>
+                <strong>DeepSeek Harness for Linux</strong>
+                <small>x86-64 · Community build · Signed AppImage</small>
+              </span>
+              <ArrowRight aria-hidden="true" size={18} />
+            </Link>
             <Link href="/download" className="fh-btn fh-btn-primary fh-btn-lg">
               Download
             </Link>

@@ -118,3 +118,6 @@ a.dsh-download-installer:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+#linux {
+  scroll-margin-top: 72px;
+}
