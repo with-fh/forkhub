@@ -2,7 +2,7 @@ name: Deploy web
 
 # CD for forkhub.imbios.dev (Cloudflare Workers via opennext).
 # Pushes to the web branch deploy; anything else is verify-only.
-# Required repo secrets: CLOUDFLARE_API_TOKEN (Workers deploy permission),
+# Required repo secrets: CLOUDFLARE_API_TOKEN (Workers deploy and D1 edit permission),
 # CLOUDFLARE_ACCOUNT_ID. Catalog reads use the automatic github.token.
 
 on:
@@ -39,11 +39,11 @@ jobs:
       - name: Typecheck web
         run: pnpm exec tsc --noEmit
         working-directory: apps/web
-      - name: Web unit tests
-        run: bun test ./apps/web/src/lib/releases.test.ts
+      - name: Web tests
+        run: bun test ./apps/web/src/lib
         working-directory: .
       - name: Lint changed web files
-        run: pnpm oxlint apps/web/src/lib apps/web/src/app/download
+        run: pnpm oxlint apps/web/src/lib apps/web/src/app/download apps/web/src/app/api/usage
         working-directory: .
 
   deploy:
@@ -76,6 +76,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build worker
         run: OPENNEXT=1 pnpm exec opennextjs-cloudflare build
+        working-directory: apps/web
+      - name: Apply usage database migrations
+        run: pnpm exec wrangler d1 migrations apply DEEPSEEK_USAGE_DB --remote
         working-directory: apps/web
       - name: Upload version
         id: upload

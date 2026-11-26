@@ -10,6 +10,13 @@
     "binding": "ASSETS",
   },
   "routes": [{ "pattern": "forkhub.imbios.dev/*", "zone_name": "imbios.dev" }],
+  "d1_databases": [
+    {
+      "binding": "DEEPSEEK_USAGE_DB",
+      "database_name": "forkhub-dsh-usage",
+      "database_id": "ab6b6c8d-6160-45e1-b7e8-c3333f6a4ea2",
+    },
+  ],
   "vars": {
     "NODE_ENV": "production",
     "NEXT_PUBLIC_SERVER_URL": "https://forkhub.imbios.dev",
