@@ -1,0 +1,120 @@
+.fh-chrome:has(.dsh-download) > :is(.fh-nav, .fh-footer) {
+  display: none;
+}
+
+.dsh-download {
+  min-height: 100svh;
+  background: radial-gradient(ellipse at 85% 24%, var(--t3-accent-dim), transparent 50%);
+}
+
+.dsh-download-header {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--t3-border);
+}
+
+.dsh-download-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.dsh-download-languages {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--t3-border-strong);
+  border-radius: 10px;
+  background: var(--t3-bg-elev);
+}
+
+.dsh-download-languages a {
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--t3-fg-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.dsh-download-languages a[aria-current],
+.dsh-download-languages a:hover {
+  background: var(--secondary);
+  color: var(--t3-fg);
+}
+
+.dsh-download a:focus-visible {
+  outline: 2px solid var(--t3-accent);
+  outline-offset: 3px;
+}
+
+.dsh-download-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+  padding-block: clamp(48px, 9vw, 124px);
+}
+
+.dsh-download h1 {
+  font-size: clamp(2.35rem, 5vw, 4.25rem);
+}
+
+.dsh-download-description {
+  margin-top: 18px;
+  color: var(--t3-fg-muted);
+  font-size: 17px;
+  text-wrap: pretty;
+}
+
+.dsh-download-installers {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.dsh-download-installer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 10px 14px;
+  border: 1px solid var(--t3-border-strong);
+  border-radius: 12px;
+  background: var(--t3-bg-card);
+}
+
+.dsh-download-installer[data-recommended] {
+  border-color: var(--t3-accent);
+  background: var(--t3-accent-dim);
+}
+
+a.dsh-download-installer:hover {
+  border-color: var(--t3-accent);
+}
+
+.dsh-download-installer svg {
+  flex-shrink: 0;
+}
+
+.dsh-download-installer small {
+  display: block;
+  color: var(--t3-fg-muted);
+}
+
+.dsh-download-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--t3-border-strong);
+  border-radius: 18px;
+}
+
+@media (max-width: 767px) {
+  .dsh-download-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
