@@ -1,9 +1,9 @@
 # DeepSeek Harness Linux usage
 
 The collector uses the `DEEPSEEK_USAGE_DB` binding and returns HTTP 503 if that
-binding is unavailable. The web deployment workflow applies the D1 migrations
-before uploading the Worker. For a manual rollout, run this command from
-`apps/web` before deploying.
+binding is unavailable. The web deployment token has Workers permissions. Apply
+schema changes separately with an account that can edit D1. Run this command
+from `apps/web` before deploying a release that needs a new migration.
 
 ```sh
 pnpm exec wrangler d1 migrations apply DEEPSEEK_USAGE_DB --remote
