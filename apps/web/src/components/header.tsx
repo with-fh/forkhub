@@ -23,6 +23,9 @@ export default function Header() {
           <Link href="/download" className="fh-nav-link">
             Download
           </Link>
+          <Link href="/dashboard" className="fh-nav-link" prefetch={false}>
+            Dashboard
+          </Link>
           <a
             href="https://github.com/with-fh/.forkhub"
             target="_blank"

@@ -116,7 +116,7 @@ export default function DshDownloadPage({
                 const build = downloads[item];
                 const name = platformNames[item];
                 return (
-                  <li key={item}>
+                  <li key={item} id={item === "linux" ? item : undefined}>
                     {build ? (
                       <a
                         className="dsh-download-installer"
