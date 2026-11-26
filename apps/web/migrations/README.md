@@ -1,9 +1,9 @@
 # DeepSeek Harness Linux usage
 
-The collector returns HTTP 503 until the ForkHub web Worker has a D1 binding named
-`DEEPSEEK_USAGE_DB`. When the database is ready, add its binding and ID to the
-Worker configuration. From `apps/web`, apply the migrations before deploying the
-Worker.
+The collector uses the `DEEPSEEK_USAGE_DB` binding and returns HTTP 503 if that
+binding is unavailable. The web deployment workflow applies the D1 migrations
+before uploading the Worker. For a manual rollout, run this command from
+`apps/web` before deploying.
 
 ```sh
 pnpm exec wrangler d1 migrations apply DEEPSEEK_USAGE_DB --remote
