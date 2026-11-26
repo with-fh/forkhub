@@ -121,11 +121,15 @@ jobs:
             done
           done
           tries=0
-          until curl -s -A "$UA" --max-time 60 "$DEV/download/deepseek-harness" | grep -q 'Download for macOS'; do
+          until curl -s -A "$UA" -H 'Accept-Language: en' --max-time 60 "$DEV/download/deepseek-harness" | grep -q 'DeepSeek Harness for desktop'; do
             tries=$((tries + 1))
-            if [ "$tries" -ge 6 ]; then echo "::error::upstream-clone content missing on deepseek-harness page"; exit 1; fi
+            if [ "$tries" -ge 6 ]; then echo "::error::desktop download content missing on deepseek-harness page"; exit 1; fi
             sleep 20
           done
+          page=$(curl -fsS -A "$UA" -H 'Accept-Language: zh-CN,en;q=0.8' --max-time 60 "$DEV/download/deepseek-harness")
+          echo "$page" | grep -q 'DeepSeek Harness 桌面版'
+          echo "$page" | grep -q '下载 Linux 版'
+          echo "$page" | grep -q '推荐用于此设备'
           # Latest-redirect parity for the fork page: linux AppImage resolves.
           code=$(curl -s -A "$UA" -o /dev/null -w '%{http_code}' --max-time 60 "$DEV/download/deepseek-harness/latest?channel=stable&platform=linux")
           if [ "$code" != "307" ]; then echo "::error::dsh /latest?platform=linux returned $code, want 307"; exit 1; fi
@@ -142,9 +146,9 @@ jobs:
               echo "::error::$slug page unexpected content"; exit 1;
             fi
           done
-          body=$(curl -s -A "$UA" --max-time 60 "https://forkhub.imbios.dev/download/deepseek-harness")
-          if echo "$body" | grep -q 'Download for macOS'; then
-            echo "deepseek-harness: live with upstream clone"
+          body=$(curl -s -A "$UA" -H 'Accept-Language: en' --max-time 60 "https://forkhub.imbios.dev/download/deepseek-harness")
+          if echo "$body" | grep -q 'DeepSeek Harness for desktop'; then
+            echo "deepseek-harness: desktop downloads live"
           elif echo "$body" | grep -q 'Just a moment'; then
             echo "deepseek-harness: route alive (edge challenge for runner egress, browsers pass)"
           else

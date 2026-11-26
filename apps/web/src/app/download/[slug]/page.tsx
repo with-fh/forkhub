@@ -31,8 +31,8 @@ export function generateStaticParams() {
  * /download/[slug]: GitHub-releases pixel fork for t3code / natively /
  * opendia (same Primer look, DOM order, and live upstream content as
  * github.com/<owner>/<repo>/releases; downloads resolve to catalog
- * builds). deepseek-harness keeps its bespoke deepseek.com chromeless
- * clone (/download/deepseek-harness route) since upstream has no
+ * builds). DeepSeek Harness has a dedicated desktop download page
+ * (/download/deepseek-harness) since upstream has no
  * releases page — see apps/web/src/app/download/deepseek-harness/.
  *
  * Title matches the upstream releases page (`Releases · owner/repo · GitHub`).
@@ -49,7 +49,7 @@ export async function generateMetadata({
 }
 export default async function DownloadSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  // deepseek-harness has its own bespoke chromeless route; [slug] serves the gh forks.
+  // DeepSeek Harness has a dedicated route. [slug] serves the GitHub releases pages.
   if (slug === "deepseek-harness") notFound();
   const e = getOss(slug);
   if (!e) notFound();
